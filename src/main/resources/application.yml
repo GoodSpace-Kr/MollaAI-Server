@@ -1,0 +1,59 @@
+spring:
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:3306/molla_db
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+        default_batch_fetch_size: 100
+
+server:
+  port: 8080
+
+jwt:
+  secret: ${JWT_SECRET:molla-jwt-secret-key-must-be-at-least-256-bits-long-for-hs256}
+  access-token-expiration-ms: 3600000
+  refresh-token-expiration-ms: 2592000000
+
+naver:
+  sens:
+    access-key: ${NAVER_SENS_ACCESS_KEY}
+    secret-key: ${NAVER_SENS_SECRET_KEY}
+    service-id: ${NAVER_SENS_SERVICE_ID}
+    from-number: ${NAVER_SENS_FROM_NUMBER}
+    base-url: https://sens.apigw.ntruss.com
+
+openai:
+  api-key: ${OPENAI_API_KEY}
+  base-url: https://api.openai.com/v1
+  model: gpt-4o
+  embedding-model: text-embedding-3-small
+
+qdrant:
+  host: ${QDRANT_HOST:localhost}
+  port: ${QDRANT_PORT:6333}
+  collection-name: molla_turns
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+    display-request-duration: true
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+
+logging:
+  level:
+    com.molla: DEBUG
+    org.springframework.security: INFO

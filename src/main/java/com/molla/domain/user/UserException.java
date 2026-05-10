@@ -1,0 +1,15 @@
+package com.molla.domain.user;
+
+import com.molla.common.exception.GlobalException;
+import com.molla.common.response.ErrorCode;
+
+public class UserException extends GlobalException {
+
+    public UserException(ErrorCode errorCode) {
+        super(errorCode);
+    }
+
+    public UserException(ErrorCode errorCode, String message) {
+        super(errorCode, message);
+    }
+}
