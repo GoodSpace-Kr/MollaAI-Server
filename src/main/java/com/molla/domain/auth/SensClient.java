@@ -55,7 +55,7 @@ public class SensClient {
 
         try {
             webClient.post()
-                    .uri(uriBuilder -> uriBuilder.path(url).build())
+                    .uri(url)
                     .header("x-ncp-apigw-timestamp", String.valueOf(timestamp))
                     .header("x-ncp-iam-access-key", accessKey)
                     .header("x-ncp-apigw-signature-v2", signature)
