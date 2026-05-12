@@ -11,8 +11,6 @@ public interface FeedbackReportRepository extends JpaRepository<FeedbackReport, 
 
     Optional<FeedbackReport> findBySessionId(String sessionId);
 
-    boolean existsBySessionId(String sessionId);
-
     /**
      * 유저의 리포트 목록 — 서브쿼리로 CallSession 조인
      * @ManyToOne 연관관계 없이 String ID로만 관리하므로 cross join 방지

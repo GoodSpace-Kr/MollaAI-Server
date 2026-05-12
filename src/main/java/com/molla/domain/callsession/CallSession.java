@@ -45,6 +45,10 @@ public class CallSession {
     @Column(name = "duration_seconds")
     private Integer durationSeconds;
 
+    @Lob
+    @Column(name = "transcript", columnDefinition = "LONGTEXT")
+    private String transcript;
+
     @Column(nullable = false, length = 20)
     private String status;                       // in_progress / completed / failed
 
@@ -86,6 +90,10 @@ public class CallSession {
     public void fail() {
         this.endedAt = LocalDateTime.now();
         this.status = "failed";
+    }
+
+    public void updateTranscript(String transcript) {
+        this.transcript = transcript;
     }
 
     public boolean isInProgress() {

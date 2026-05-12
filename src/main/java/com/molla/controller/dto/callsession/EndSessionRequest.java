@@ -6,7 +6,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record EndSessionRequest(
 
         @Schema(description = "종료 상태 (completed / failed). 기본값: completed", example = "completed")
-        String status
+        String status,
+
+        @Schema(description = "통화 내용 전문", example = "Hello. I am Joshua. i want to ...")
+        String transcript
 ) {
     public String resolvedStatus() {
         return (status != null && "failed".equals(status)) ? "failed" : "completed";

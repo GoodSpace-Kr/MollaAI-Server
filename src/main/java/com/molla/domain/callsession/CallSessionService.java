@@ -77,6 +77,15 @@ public class CallSessionService {
         }
 
         String resolvedStatus = request != null ? request.resolvedStatus() : "completed";
+        String transcript = request != null ? request.transcript() : null;
+
+        if ("completed".equals(resolvedStatus) && (transcript == null || transcript.isBlank())) {
+            throw new CallSessionException(ErrorCode.INVALID_REQUEST, "completed 상태로 종료하려면 transcript가 필요합니다.");
+        }
+
+        if (transcript != null) {
+            session.updateTranscript(transcript);
+        }
 
         if ("failed".equals(resolvedStatus)) {
             session.fail();

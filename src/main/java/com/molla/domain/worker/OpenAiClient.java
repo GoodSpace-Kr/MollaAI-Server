@@ -2,7 +2,6 @@ package com.molla.domain.worker;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.molla.domain.conversationturn.ConversationTurn;
 import com.molla.domain.usermemory.UserMemory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -12,7 +11,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -32,9 +30,7 @@ public class OpenAiClient {
         this.model = model;
     }
 
-    public String generateReport(List<ConversationTurn> turns, String sessionType) {
-        String transcript = buildTranscript(turns);
-
+    public String generateReport(String transcript, String sessionType) {
         String systemPrompt = """
                 당신은 영어 학습 코치입니다. 아래 통화 대화록을 분석해서 반드시 아래 JSON 형식으로만 응답하세요.
                 다른 텍스트는 절대 포함하지 마세요.
@@ -156,12 +152,6 @@ public class OpenAiClient {
             log.error("OpenAI API 호출 실패: {}", e.getMessage(), e);
             throw new RuntimeException("OpenAI API 호출 실패: " + e.getMessage(), e);
         }
-    }
-
-    private String buildTranscript(List<ConversationTurn> turns) {
-        return turns.stream()
-                .map(t -> "[" + t.getSpeaker().toUpperCase() + "] " + t.getContent())
-                .collect(Collectors.joining("\n"));
     }
 
     private String buildExistingMemoryJson(UserMemory memory) {
