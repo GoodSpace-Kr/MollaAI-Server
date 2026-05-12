@@ -3,14 +3,12 @@ package com.molla.controller;
 import com.molla.common.response.ApiResponse;
 import com.molla.controller.dto.feedbackreport.FeedbackReportResponse;
 import com.molla.controller.dto.feedbackreport.FeedbackReportSummaryResponse;
-import com.molla.controller.dto.feedbackreport.SaveReportRequest;
 import com.molla.domain.feedbackreport.FeedbackReportService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -24,30 +22,6 @@ import java.util.List;
 public class FeedbackReportController {
 
     private final FeedbackReportService feedbackReportService;
-
-    @Operation(
-            summary = "[내부] 리포트 저장",
-            description = """
-                    통화 종료 후 비동기 워커가 OpenAI로 생성한 리포트를 저장합니다.
-                    - 동일 세션에 이미 리포트가 있으면 기존 리포트를 반환합니다 (멱등성 보장).
-                    - 이 API는 JWT 인증 없이 호출됩니다 (내부망 전용).
-                    """
-    )
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200", description = "저장 성공",
-                    content = @Content(schema = @Schema(implementation = FeedbackReportResponse.class))),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "400", description = "요청 데이터 오류",
-                    content = @Content(schema = @Schema(implementation = ApiResponse.class)))
-    })
-    @PostMapping("/api/v1/internal/reports")
-    public ResponseEntity<ApiResponse<FeedbackReportResponse>> saveReport(
-            @RequestBody @Valid SaveReportRequest request
-    ) {
-        FeedbackReportResponse response = feedbackReportService.saveReport(request);
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
 
     @Operation(
             summary = "내 리포트 목록 조회",

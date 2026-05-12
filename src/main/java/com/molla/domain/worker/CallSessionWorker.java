@@ -5,11 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.molla.domain.callsession.CallSession;
 import com.molla.domain.callsession.CallSessionRepository;
 import com.molla.domain.callsession.SessionEndedEvent;
-import com.molla.domain.conversationturn.ConversationTurn;
-import com.molla.domain.conversationturn.ConversationTurnRepository;
 import com.molla.domain.feedbackreport.FeedbackReport;
 import com.molla.domain.feedbackreport.FeedbackReportRepository;
-import com.molla.domain.subscription.SubscriptionRepository;
 import com.molla.domain.user.UserRepository;
 import com.molla.domain.usermemory.UserMemory;
 import com.molla.domain.usermemory.UserMemoryService;
@@ -21,19 +18,15 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import java.util.List;
-
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class CallSessionWorker {
 
     private final CallSessionRepository callSessionRepository;
-    private final ConversationTurnRepository conversationTurnRepository;
     private final FeedbackReportRepository feedbackReportRepository;
-    private final SubscriptionRepository subscriptionRepository;
     private final UserMemoryService userMemoryService;
-    private final UserRepository userRepository;          // ← 추가
+    private final UserRepository userRepository;
     private final OpenAiClient openAiClient;
     private final QdrantClient qdrantClient;
     private final ObjectMapper objectMapper;
@@ -47,37 +40,30 @@ public class CallSessionWorker {
 
         log.info("워커 시작 — sessionId: {}, userId: {}, isLevelTest: {}", sessionId, userId, isLevelTest);
 
-        if (!isLevelTest && !subscriptionRepository.existsActiveByUserId(userId)) {
-            log.warn("구독 없음 — 리포트 생성 스킵, sessionId: {}", sessionId);
-            return;
-        }
-
-        List<ConversationTurn> turns = conversationTurnRepository
-                .findBySessionIdOrderBySequenceOrderAsc(sessionId);
-
-        if (turns.isEmpty()) {
-            log.warn("발화 기록 없음 — 워커 종료, sessionId: {}", sessionId);
-            return;
-        }
-
         CallSession session = callSessionRepository.findById(sessionId).orElse(null);
         if (session == null) {
             log.error("세션 없음 — 워커 종료, sessionId: {}", sessionId);
             return;
         }
 
+        String transcript = session.getTranscript();
+
         // ── Step 1: 리포트 생성 ──────────────────────
         String reportJson = null;
         FeedbackReport savedReport = null;
 
         try {
-            reportJson = openAiClient.generateReport(turns, session.getSessionType());
-            savedReport = saveReport(sessionId, session.getSessionType(), reportJson);
-            log.info("Step 1 완료 — 리포트 생성, sessionId: {}", sessionId);
+            if (transcript == null || transcript.isBlank()) {
+                log.warn("통화 전문 없음 — 리포트 생성 스킵, sessionId: {}", sessionId);
+            } else {
+                reportJson = openAiClient.generateReport(transcript, session.getSessionType());
+                savedReport = saveReport(sessionId, session.getSessionType(), reportJson);
+                log.info("Step 1 완료 — 리포트 생성, sessionId: {}", sessionId);
 
-            // level_test 통화 완료 시 english_level 자동 업데이트
-            if (isLevelTest && savedReport.getLevelResult() != null) {
-                updateUserEnglishLevel(userId, savedReport.getLevelResult());
+                // level_test 통화 완료 시 english_level 자동 업데이트
+                if (isLevelTest && savedReport.getLevelResult() != null) {
+                    updateUserEnglishLevel(userId, savedReport.getLevelResult());
+                }
             }
         } catch (Exception e) {
             log.error("Step 1 실패 — 리포트 생성 오류, sessionId: {}, error: {}", sessionId, e.getMessage(), e);
@@ -97,8 +83,12 @@ public class CallSessionWorker {
 
         // ── Step 3: Qdrant upsert ────────────────────
         try {
-            qdrantClient.upsertTurns(sessionId, userId, turns);
-            log.info("Step 3 완료 — Qdrant upsert, sessionId: {}", sessionId);
+            if (transcript == null || transcript.isBlank()) {
+                log.info("통화 전문 없음 — Qdrant upsert 스킵, sessionId: {}", sessionId);
+            } else {
+                qdrantClient.upsertTranscript(sessionId, userId, transcript);
+                log.info("Step 3 완료 — Qdrant upsert, sessionId: {}", sessionId);
+            }
         } catch (Exception e) {
             log.error("Step 3 실패 — Qdrant upsert 오류, sessionId: {}, error: {}", sessionId, e.getMessage(), e);
         }
@@ -119,6 +109,12 @@ public class CallSessionWorker {
     }
 
     private FeedbackReport saveReport(String sessionId, String sessionType, String reportJson) throws Exception {
+        FeedbackReport existingReport = feedbackReportRepository.findBySessionId(sessionId).orElse(null);
+        if (existingReport != null) {
+            log.info("기존 리포트 재사용 — sessionId: {}", sessionId);
+            return existingReport;
+        }
+
         JsonNode node = objectMapper.readTree(reportJson);
 
         FeedbackReport report = FeedbackReport.create(
