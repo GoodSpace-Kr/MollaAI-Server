@@ -30,7 +30,6 @@ import java.util.Map;
 public class SecurityConfig {
     private final JwtProvider jwtProvider;
     private final ObjectMapper objectMapper;
-
     private static final String[] PUBLIC_ENDPOINTS = {
             "/api/v1/auth/send-code",
             "/api/v1/auth/verify-code",

@@ -1,9 +1,7 @@
 name: Deploy
 
 on:
-  pull_request:
-    types:
-      - closed
+  push:
     branches:
       - main
 
@@ -13,7 +11,7 @@ env:
 
 jobs:
   ci:
-    if: github.event.pull_request.merged == true
+    if: ${{ !env.ACT }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -38,7 +36,7 @@ jobs:
         run: ./gradlew build -x test
 
   build-and-push:
-    if: github.event.pull_request.merged == true
+    if: ${{ !env.ACT }}
     needs: ci
     runs-on: ubuntu-latest
     permissions:
@@ -73,7 +71,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
   deploy:
-    if: github.event.pull_request.merged == true
+    if: ${{ !env.ACT }}
     needs: build-and-push
     runs-on: ubuntu-latest
 
