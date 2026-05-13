@@ -95,6 +95,14 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
+            set -e
             cd ${{ env.DEPLOY_PATH }}
+            docker rm -f molla-server || true
             docker compose pull
             docker compose up -d
+            if ! docker ps --filter name=molla-server --filter status=running | grep -q molla-server; then
+              echo "molla-server failed to start"
+              docker ps -a --filter name=molla-server
+              docker ps --filter publish=8080
+              exit 1
+            fi
