@@ -41,7 +41,6 @@ public class SecurityConfig {
             "/api-docs/**",
             "/v3/api-docs/**",
     };
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
