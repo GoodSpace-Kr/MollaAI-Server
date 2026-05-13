@@ -1,0 +1,38 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:molla-test;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+jwt:
+  secret: molla-jwt-secret-key-must-be-at-least-256-bits-long-for-tests
+  access-token-expiration-ms: 3600000
+  refresh-token-expiration-ms: 2592000000
+
+naver:
+  sens:
+    access-key: test-access-key
+    secret-key: test-secret-key
+    service-id: test-service-id
+    from-number: "01000000000"
+    base-url: https://example.com
+
+openai:
+  api-key: test-api-key
+  base-url: https://api.openai.com/v1
+  model: gpt-4o
+  embedding-model: text-embedding-3-small
+
+qdrant:
+  host: localhost
+  port: 6333
+  collection-name: molla_turns_test
