@@ -1,0 +1,19 @@
+services:
+  app:
+    image: docker.io/goodspace/molla-server:latest
+    container_name: molla-server
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      NAVER_SENS_ACCESS_KEY: ${NAVER_SENS_ACCESS_KEY}
+      NAVER_SENS_SECRET_KEY: ${NAVER_SENS_SECRET_KEY}
+      NAVER_SENS_SERVICE_ID: ${NAVER_SENS_SERVICE_ID}
+      NAVER_SENS_FROM_NUMBER: ${NAVER_SENS_FROM_NUMBER}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      QDRANT_HOST: ${QDRANT_HOST}
+      QDRANT_PORT: ${QDRANT_PORT}
+    restart: always
