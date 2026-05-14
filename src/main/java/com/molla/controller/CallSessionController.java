@@ -33,8 +33,10 @@ public class CallSessionController {
             summary = "[내부] 통화 세션 시작",
             description = """
                     AI 오케스트레이션 서버가 통화 연결 시 호출합니다.
+                    - 전화번호로 유저를 조회해 세션 소유자를 결정합니다.
+                    - 해당 전화번호의 첫 통화면 level_test, 아니면 practice로 자동 결정합니다.
                     - 유저 상태(user_state_at_call) 스냅샷을 저장합니다.
-                    - practice 타입은 활성 구독이 없으면 403 반환합니다.
+                    - 자동 결정된 타입이 practice면 활성 구독이 없을 때 403 반환합니다.
                     - 이 API는 JWT 인증 없이 호출됩니다 (내부망 전용).
                     """
     )
@@ -42,9 +44,6 @@ public class CallSessionController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200", description = "세션 시작 성공",
                     content = @Content(schema = @Schema(implementation = CallSessionResponse.class))),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "404", description = "유저 없음",
-                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "403", description = "구독 없음 (practice 타입)",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class)))

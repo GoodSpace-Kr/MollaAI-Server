@@ -18,8 +18,11 @@ public class CallSession {
     @Column(length = 36, columnDefinition = "CHAR(36)")
     private String id;
 
-    @Column(name = "user_id", nullable = false, length = 36, columnDefinition = "CHAR(36)")
+    @Column(name = "user_id", length = 36, columnDefinition = "CHAR(36)")
     private String userId;
+
+    @Column(name = "phone_number", nullable = false, length = 20)
+    private String phoneNumber;
 
     @Column(name = "call_sid", length = 100)
     private String callSid;
@@ -29,9 +32,6 @@ public class CallSession {
 
     @Column(name = "user_state_at_call", nullable = false, length = 20)
     private String userStateAtCall;              // unregistered / registered / subscribed
-
-    @Column(length = 100)
-    private String topic;
 
     @Column(name = "started_at", nullable = false)
     private LocalDateTime startedAt;
@@ -55,18 +55,18 @@ public class CallSession {
 
     public static CallSession create(
             String userId,
+            String phoneNumber,
             String callSid,
             String sessionType,
-            String userStateAtCall,
-            String topic
+            String userStateAtCall
     ) {
         CallSession session = new CallSession();
         session.id = UUID.randomUUID().toString();
         session.userId = userId;
+        session.phoneNumber = phoneNumber;
         session.callSid = callSid;
         session.sessionType = sessionType;
         session.userStateAtCall = userStateAtCall;
-        session.topic = topic;
         session.startedAt = LocalDateTime.now();
         session.status = "in_progress";
         return session;

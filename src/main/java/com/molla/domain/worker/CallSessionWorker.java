@@ -61,7 +61,7 @@ public class CallSessionWorker {
                 log.info("Step 1 완료 — 리포트 생성, sessionId: {}", sessionId);
 
                 // level_test 통화 완료 시 english_level 자동 업데이트
-                if (isLevelTest && savedReport.getLevelResult() != null) {
+                if (isLevelTest && userId != null && savedReport.getLevelResult() != null) {
                     updateUserEnglishLevel(userId, savedReport.getLevelResult());
                 }
             }
@@ -71,11 +71,13 @@ public class CallSessionWorker {
 
         // ── Step 2: user_memories 갱신 ──────────────
         try {
-            if (reportJson != null) {
+            if (reportJson != null && userId != null) {
                 UserMemory existingMemory = userMemoryService.getMemory(userId);
                 String memorySummaryJson = openAiClient.generateMemorySummary(existingMemory, reportJson);
                 upsertUserMemory(userId, memorySummaryJson, session.getDurationSeconds());
                 log.info("Step 2 완료 — user_memories 갱신, userId: {}", userId);
+            } else if (reportJson != null) {
+                log.info("userId 없음 — user_memories 갱신 스킵, sessionId: {}", sessionId);
             }
         } catch (Exception e) {
             log.error("Step 2 실패 — user_memories 갱신 오류, userId: {}, error: {}", userId, e.getMessage(), e);
@@ -86,7 +88,7 @@ public class CallSessionWorker {
             if (transcript == null || transcript.isBlank()) {
                 log.info("통화 전문 없음 — Qdrant upsert 스킵, sessionId: {}", sessionId);
             } else {
-                qdrantClient.upsertTranscript(sessionId, userId, transcript);
+                qdrantClient.upsertTranscript(sessionId, userId, session.getPhoneNumber(), transcript);
                 log.info("Step 3 완료 — Qdrant upsert, sessionId: {}", sessionId);
             }
         } catch (Exception e) {
