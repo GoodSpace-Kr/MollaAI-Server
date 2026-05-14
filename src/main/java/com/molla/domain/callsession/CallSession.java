@@ -24,9 +24,6 @@ public class CallSession {
     @Column(name = "call_sid", length = 100)
     private String callSid;
 
-    @Column(name = "ai_ws_session_id", length = 100)
-    private String aiWsSessionId;
-
     @Column(name = "session_type", nullable = false, length = 20)
     private String sessionType;                  // level_test / practice
 
@@ -59,7 +56,6 @@ public class CallSession {
     public static CallSession create(
             String userId,
             String callSid,
-            String aiWsSessionId,
             String sessionType,
             String userStateAtCall,
             String topic
@@ -68,7 +64,6 @@ public class CallSession {
         session.id = UUID.randomUUID().toString();
         session.userId = userId;
         session.callSid = callSid;
-        session.aiWsSessionId = aiWsSessionId;
         session.sessionType = sessionType;
         session.userStateAtCall = userStateAtCall;
         session.topic = topic;

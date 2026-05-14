@@ -14,9 +14,6 @@ public record StartSessionRequest(
         @Schema(description = "통화 공급자가 발급한 통화 ID", example = "CA1234abcd")
         String callSid,
 
-        @Schema(description = "AI 서버 WebSocket 세션 ID", example = "ws-session-abc123")
-        String aiWsSessionId,
-
         @Schema(description = "세션 타입 (level_test / practice)", example = "practice")
         @NotBlank(message = "sessionType을 입력해주세요.")
         @Pattern(regexp = "^(level_test|practice)$", message = "sessionType은 level_test 또는 practice여야 합니다.")

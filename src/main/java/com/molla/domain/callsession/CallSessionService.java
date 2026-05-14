@@ -49,7 +49,6 @@ public class CallSessionService {
         CallSession session = CallSession.create(
                 request.userId(),
                 request.callSid(),
-                request.aiWsSessionId(),
                 request.sessionType(),
                 userStateAtCall,
                 request.topic()
