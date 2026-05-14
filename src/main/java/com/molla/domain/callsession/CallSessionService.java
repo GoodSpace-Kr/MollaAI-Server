@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -32,33 +33,35 @@ public class CallSessionService {
 
     @Transactional
     public CallSessionResponse startSession(StartSessionRequest request) {
-        User user = userRepository.findById(request.userId())
-                .orElseThrow(() -> new GlobalException(ErrorCode.USER_NOT_FOUND));
+        Optional<User> userOptional = userRepository.findByPhoneNumber(request.phoneNumber());
+        User user = userOptional.orElse(null);
+        String resolvedUserId = user != null ? user.getId() : null;
+        String sessionType = resolveSessionType(request.phoneNumber());
 
         // 통화 시점의 유저 상태 스냅샷
-        String userStateAtCall = resolveUserState(user, request.userId());
+        String userStateAtCall = resolveUserState(user);
 
         // practice 타입이면 구독 여부 확인
-        if ("practice".equals(request.sessionType())) {
-            boolean hasActiveSubscription = subscriptionRepository.existsActiveByUserId(request.userId());
+        if ("practice".equals(sessionType)) {
+            boolean hasActiveSubscription = resolvedUserId != null
+                    && subscriptionRepository.existsActiveByUserId(resolvedUserId);
             if (!hasActiveSubscription) {
                 throw new GlobalException(ErrorCode.SUBSCRIPTION_NOT_FOUND);
             }
         }
 
         CallSession session = CallSession.create(
-                request.userId(),
+                resolvedUserId,
+                request.phoneNumber(),
                 request.callSid(),
-                request.aiWsSessionId(),
-                request.sessionType(),
-                userStateAtCall,
-                request.topic()
+                sessionType,
+                userStateAtCall
         );
 
         callSessionRepository.save(session);
 
         log.info("통화 세션 시작 — sessionId: {}, userId: {}, type: {}",
-                session.getId(), request.userId(), request.sessionType());
+                session.getId(), session.getUserId(), sessionType);
 
         return CallSessionResponse.from(session);
     }
@@ -110,7 +113,8 @@ public class CallSessionService {
     // ──────────────────────────────────────────────
 
     public List<CallSessionResponse> getMySessions(String userId) {
-        return callSessionRepository.findByUserIdOrderByStartedAtDesc(userId)
+        String phoneNumber = getPhoneNumberByUserId(userId);
+        return callSessionRepository.findByPhoneNumberOrderByStartedAtDesc(phoneNumber)
                 .stream()
                 .map(CallSessionResponse::from)
                 .toList();
@@ -121,7 +125,8 @@ public class CallSessionService {
     // ──────────────────────────────────────────────
 
     public CallSessionResponse getSession(String sessionId, String userId) {
-        CallSession session = callSessionRepository.findByIdAndUserId(sessionId, userId)
+        String phoneNumber = getPhoneNumberByUserId(userId);
+        CallSession session = callSessionRepository.findByIdAndPhoneNumber(sessionId, phoneNumber)
                 .orElseThrow(() -> new CallSessionException(ErrorCode.SESSION_NOT_FOUND));
         return CallSessionResponse.from(session);
     }
@@ -130,9 +135,20 @@ public class CallSessionService {
     // 내부 유틸
     // ──────────────────────────────────────────────
 
-    private String resolveUserState(User user, String userId) {
+    private String resolveUserState(User user) {
+        if (user == null) return "unregistered";
         if (!user.isRegistered()) return "unregistered";
-        if (subscriptionRepository.existsActiveByUserId(userId)) return "subscribed";
+        if (subscriptionRepository.existsActiveByUserId(user.getId())) return "subscribed";
         return "registered";
+    }
+
+    private String resolveSessionType(String phoneNumber) {
+        return callSessionRepository.existsByPhoneNumber(phoneNumber) ? "practice" : "level_test";
+    }
+
+    private String getPhoneNumberByUserId(String userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new GlobalException(ErrorCode.USER_NOT_FOUND))
+                .getPhoneNumber();
     }
 }

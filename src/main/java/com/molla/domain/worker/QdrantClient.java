@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -39,7 +40,7 @@ public class QdrantClient {
      * transcript를 파싱해서 user 발화만 임베딩 후 Qdrant에 upsert.
      * transcript 포맷에 화자 라벨이 명확히 없으면 적재를 스킵한다.
      */
-    public void upsertTranscript(String sessionId, String userId, String transcript) {
+    public void upsertTranscript(String sessionId, String userId, String phoneNumber, String transcript) {
         List<TranscriptChunk> userTurns = extractUserTurns(transcript);
 
         if (userTurns.isEmpty()) {
@@ -50,15 +51,19 @@ public class QdrantClient {
         List<Map<String, Object>> points = userTurns.stream()
                 .map(turn -> {
                     List<Float> vector = openAiClient.createEmbedding(turn.content(), embeddingModel);
+                    Map<String, Object> payload = new HashMap<>();
+                    payload.put("sessionId", sessionId);
+                    payload.put("phoneNumber", phoneNumber);
+                    payload.put("content", turn.content());
+                    payload.put("sequenceOrder", turn.sequenceOrder());
+                    if (userId != null) {
+                        payload.put("userId", userId);
+                    }
+
                     return Map.<String, Object>of(
                             "id", UUID.randomUUID().toString(),
                             "vector", vector,
-                            "payload", Map.of(
-                                    "sessionId", sessionId,
-                                    "userId", userId,
-                                    "content", turn.content(),
-                                    "sequenceOrder", turn.sequenceOrder()
-                            )
+                            "payload", payload
                     );
                 })
                 .toList();

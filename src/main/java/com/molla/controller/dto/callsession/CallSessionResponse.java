@@ -17,9 +17,6 @@ public record CallSessionResponse(
         @Schema(description = "통화 시작 시점의 유저 상태 (unregistered / registered / subscribed)", example = "subscribed")
         String userStateAtCall,
 
-        @Schema(description = "통화 주제", example = "비즈니스 미팅 영어")
-        String topic,
-
         @Schema(description = "통화 시작 일시")
         LocalDateTime startedAt,
 
@@ -37,7 +34,6 @@ public record CallSessionResponse(
                 session.getId(),
                 session.getSessionType(),
                 session.getUserStateAtCall(),
-                session.getTopic(),
                 session.getStartedAt(),
                 session.getEndedAt(),
                 session.getDurationSeconds(),
