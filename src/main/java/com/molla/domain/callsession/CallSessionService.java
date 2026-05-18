@@ -41,15 +41,6 @@ public class CallSessionService {
         // 통화 시점의 유저 상태 스냅샷
         String userStateAtCall = resolveUserState(user);
 
-        // practice 타입이면 구독 여부 확인
-        if ("practice".equals(sessionType)) {
-            boolean hasActiveSubscription = resolvedUserId != null
-                    && subscriptionRepository.existsActiveByUserId(resolvedUserId);
-            if (!hasActiveSubscription) {
-                throw new GlobalException(ErrorCode.SUBSCRIPTION_NOT_FOUND);
-            }
-        }
-
         CallSession session = CallSession.create(
                 resolvedUserId,
                 request.phoneNumber(),

@@ -35,7 +35,7 @@ public enum ErrorCode {
     // ──────────────────────────────────────────────
     // 구독
     // ──────────────────────────────────────────────
-    SUBSCRIPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "SUBSCRIPTION_NOT_FOUND", "구독 정보를 찾을 수 없습니다."),
+    SUBSCRIPTION_NOT_FOUND(HttpStatus.FORBIDDEN, "SUBSCRIPTION_NOT_FOUND", "구독 정보를 찾을 수 없습니다."),
     SUBSCRIPTION_ALREADY_ACTIVE(HttpStatus.CONFLICT, "SUBSCRIPTION_ALREADY_ACTIVE", "이미 활성화된 구독이 있습니다."),
     DAILY_LIMIT_EXCEEDED(HttpStatus.FORBIDDEN, "DAILY_LIMIT_EXCEEDED", "오늘의 통화 가능 시간을 초과했습니다."),
 
