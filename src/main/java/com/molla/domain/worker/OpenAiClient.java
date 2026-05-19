@@ -3,7 +3,6 @@ package com.molla.domain.worker;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.molla.domain.feedbackreport.Report;
-import com.molla.domain.usermemory.UserMemory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,29 +47,6 @@ public class OpenAiClient {
 
         String userPrompt = "세션 타입: " + sessionType + "\n\n대화록:\n" + transcript;
         return parseReport(callChatApi(systemPrompt, userPrompt));
-    }
-
-    public String generateMemorySummary(UserMemory existingMemory, String reportJson) {
-        String existingMemoryJson = existingMemory != null
-                ? buildExistingMemoryJson(existingMemory)
-                : "{}";
-
-        String systemPrompt = """
-                당신은 영어 학습 코치입니다. 기존 학습자 메모리와 이번 통화 리포트를 합쳐서
-                업데이트된 메모리를 반드시 아래 JSON 형식으로만 응답하세요.
-                다른 텍스트는 절대 포함하지 마세요.
-                
-                {
-                  "summary": "학습자 전체 요약",
-                  "weakPoints": ["약점1", "약점2"],
-                  "habitPatterns": ["패턴1", "패턴2"]
-                }
-                """;
-
-        String userPrompt = "기존 메모리:\n" + existingMemoryJson
-                + "\n\n이번 통화 리포트:\n" + reportJson;
-
-        return callChatApi(systemPrompt, userPrompt);
     }
 
     public List<Float> createEmbedding(String text, String embeddingModel) {
@@ -145,20 +121,6 @@ public class OpenAiClient {
         } catch (Exception e) {
             log.error("OpenAI API 호출 실패: {}", e.getMessage(), e);
             throw new RuntimeException("OpenAI API 호출 실패: " + e.getMessage(), e);
-        }
-    }
-
-    private String buildExistingMemoryJson(UserMemory memory) {
-        try {
-            return objectMapper.writeValueAsString(Map.of(
-                    "summary", memory.getSummary() != null ? memory.getSummary() : "",
-                    "weakPoints", memory.getWeakPoints() != null ? memory.getWeakPoints() : "[]",
-                    "habitPatterns", memory.getHabitPatterns() != null ? memory.getHabitPatterns() : "[]",
-                    "interests", memory.getInterests() != null ? memory.getInterests() : "[]",
-                    "goals", memory.getGoals() != null ? memory.getGoals() : ""
-            ));
-        } catch (Exception e) {
-            return "{}";
         }
     }
 

@@ -88,7 +88,7 @@ public class CallSessionService {
         }
 
         // 통화 종료 후 비동기 워커 트리거 (Spring Event)
-        // 리포트 생성 → user_memories 갱신 → Qdrant upsert 순으로 처리
+        // 리포트 생성 → Qdrant upsert 순으로 처리
         if ("completed".equals(session.getStatus())) {
             eventPublisher.publishEvent(new SessionEndedEvent(session.getId(), session.getUserId(), session.isLevelTest()));
         }

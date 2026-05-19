@@ -33,6 +33,15 @@
 - 비고: 남은 작업이나 주의사항
 ```
 
+## 2026-05-19 - 채팅 기능 및 user_memories 제거
+
+- 구분: 메인 로직, 엔드포인트, 문서
+- 변경: 채팅 API와 chatmessage 도메인을 제거하고, 통화 후 워커의 Step 2 `user_memories` 갱신을 삭제했다. `usermemory` 도메인도 함께 제거했다.
+- 영향: 비동기 워커는 이제 `FeedbackReport` 생성과 `Qdrant` 업서트만 수행한다. `/api/v1/chat` API는 더 이상 제공되지 않는다.
+- 확인: 채팅 컨트롤러/DTO/도메인, `usermemory` 패키지, 워커 Step 2, 관련 기획 문서와 드롭 SQL 문서를 함께 수정했다.
+- 관련 파일: `src/main/java/com/molla/domain/worker/CallSessionWorker.java`, `src/main/java/com/molla/domain/callsession/CallSessionService.java`, `src/main/java/com/molla/domain/worker/OpenAiClient.java`, `docs/PROJECT_PLAN.md`, `docs/sql/20260519_drop_chat_and_user_memories.sql`
+- 비고: 운영 DB 반영 시 `chat_messages`, `user_memories` 테이블 드롭 SQL을 적용해야 한다.
+
 ## 2026-05-19 - 피드백 리포트 구조 개편
 
 - 구분: 메인 로직, 엔드포인트, 문서
