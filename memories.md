@@ -33,6 +33,15 @@
 - 비고: 남은 작업이나 주의사항
 ```
 
+## 2026-05-19 - 내부 세션 종료 요청 utterances 수신 추가
+
+- 구분: 엔드포인트, 메인 로직, test
+- 변경: 내부 `PATCH /api/v1/internal/sessions/{id}/end` 요청 DTO가 `transcript`와 함께 `utterances` 배열도 받을 수 있도록 확장했다.
+- 영향: AI 서버가 `status`, `transcript`, `utterances`를 함께 보내도 백엔드 요청 바인딩이 깨지지 않는다.
+- 확인: `EndSessionRequest`에 `utterances` 필드를 추가했고, JSON 역직렬화 테스트를 작성했다.
+- 관련 파일: `src/main/java/com/molla/controller/dto/callsession/EndSessionRequest.java`, `src/test/java/com/molla/controller/dto/callsession/EndSessionRequestJsonTest.java`
+- 비고: 현재는 API 연결 호환성 확보가 목적이며, `utterances` 저장/활용 로직은 아직 추가하지 않았다.
+
 ## 2026-05-19 - 작업 단위 커밋 규칙 추가
 
 - 구분: 운영, 문서
