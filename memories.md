@@ -33,6 +33,15 @@
 - 비고: 남은 작업이나 주의사항
 ```
 
+## 2026-05-19 - 리포트 프롬프트에서 핵심 문장 다중 생성 강제
+
+- 구분: 메인 로직, test
+- 변경: `OpenAiClient.generateReport` 프롬프트에 `coreSentences`는 여러 문장이어야 하고 최소 3개 이상이어야 한다는 조건을 명시했다.
+- 영향: OpenAI 리포트 생성 시 핵심 문장 피드백이 단일 문장이 아니라 복수 문장 배열로 생성될 가능성이 높아진다.
+- 확인: 프롬프트 본문과 JSON 예시에 다중 `coreSentences` 구조를 추가했고, 관련 문자열 검증 테스트를 작성했다.
+- 관련 파일: `src/main/java/com/molla/domain/worker/OpenAiClient.java`, `src/test/java/com/molla/domain/worker/OpenAiClientPromptTest.java`
+- 비고: 이 변경은 프롬프트 제약 강화이며, 모델 응답 품질은 실제 샘플 transcript로 추가 검증할 수 있다.
+
 ## 2026-05-19 - 채팅 기능 및 user_memories 제거
 
 - 구분: 메인 로직, 엔드포인트, 문서

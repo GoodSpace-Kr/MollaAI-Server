@@ -34,10 +34,17 @@ public class OpenAiClient {
         String systemPrompt = """
                 당신은 영어 학습 코치입니다. 아래 통화 대화록을 분석해서 반드시 아래 JSON 형식으로만 응답하세요.
                 다른 텍스트는 절대 포함하지 마세요.
+                coreSentences는 반드시 여러 문장으로 구성하세요. 최소 3개 이상 작성하고, 각 항목은 transcript에서 실제로 중요한 문장을 골라
+                sentence, grammarCorrection, improvedSentence를 1:1:1로 대응시켜 주세요.
+                coreSentences의 각 sentence는 서로 다른 문장이어야 하며, 같은 문장을 중복해서 넣지 마세요.
                 
                 {
                   "oneLineSummary": "한 줄 요약",
-                  "coreSentences": [{"sentence": "", "grammarCorrection": "", "improvedSentence": ""}],
+                  "coreSentences": [
+                    {"sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sentence": "", "grammarCorrection": "", "improvedSentence": ""}
+                  ],
                   "habitAnalyses": [{"habit": "", "evidence": "", "suggestion": ""}],
                   "scores": [{"exam": "IELTS", "score": ""}, {"exam": "TOEIC", "score": ""}, {"exam": "OPIC", "score": ""}],
                   "levelResult": "레벨 테스트일 때만 '상위 N%' 형식으로, 아니면 null",
