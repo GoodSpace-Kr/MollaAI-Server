@@ -122,3 +122,12 @@
 - 확인: 현재 컨트롤러, 도메인, 배포 문서를 읽고 기획 문서를 작성했다.
 - 관련 파일: `docs/PROJECT_PLAN.md`
 - 비고: API나 도메인 모델이 변경되면 함께 갱신한다.
+
+## 2026-05-19 - 리포트 응답 DTO를 Report 기반 구조로 변경
+
+- 구분: API, DTO, 리포트
+- 변경: `FeedbackReportResponse`, `FeedbackReportSummaryResponse`가 JSON 문자열 대신 `Report` 기반의 구조화된 배열과 객체를 반환하도록 변경했다.
+- 영향: 프론트는 `coreSentences`, `habitAnalyses`, `scores`, `weakPoints`를 문자열 파싱 없이 바로 사용할 수 있다.
+- 확인: `FeedbackReportViewMapperTest`, `ReportJsonTest`로 구조화 응답 매핑과 JSON 역직렬화를 검증했다.
+- 관련 파일: `src/main/java/com/molla/controller/dto/feedbackreport/FeedbackReportResponse.java`, `src/main/java/com/molla/controller/dto/feedbackreport/FeedbackReportSummaryResponse.java`, `src/main/java/com/molla/domain/feedbackreport/FeedbackReportViewMapper.java`, `src/main/java/com/molla/domain/feedbackreport/FeedbackReportService.java`
+- 비고: DB 저장 형식은 JSON 문자열 컬럼을 유지하고, API 응답 시점에만 구조화해서 내려준다.

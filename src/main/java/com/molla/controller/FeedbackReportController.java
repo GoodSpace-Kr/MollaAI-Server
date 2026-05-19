@@ -51,8 +51,7 @@ public class FeedbackReportController {
             description = """
                     특정 세션의 리포트 전체 내용을 반환합니다.
                     - sessionId 기준으로 조회합니다.
-                    - JSON 컬럼(coreSentences, habitAnalyses, scores, weakPoints)은
-                      문자열로 반환되므로 클라이언트에서 파싱해서 사용하세요.
+                    - coreSentences, habitAnalyses, scores, weakPoints는 구조화된 배열로 반환합니다.
                     - 본인 세션의 리포트만 조회 가능합니다.
                     - 리포트가 아직 생성 중이면 404를 반환합니다.
                     """

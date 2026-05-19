@@ -1,9 +1,10 @@
 package com.molla.controller.dto.feedbackreport;
 
-import com.molla.domain.feedbackreport.FeedbackReport;
+import com.molla.domain.feedbackreport.Report;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Schema(description = "리포트 상세 응답")
 public record FeedbackReportResponse(
@@ -21,28 +22,28 @@ public record FeedbackReportResponse(
         String oneLineSummary,
 
         @Schema(
-                description = "핵심 문장 피드백 목록 (JSON 문자열 — 클라이언트에서 파싱)",
+                description = "핵심 문장 피드백 목록",
                 example = "[{\"sentence\":\"She go to school\",\"grammarCorrection\":\"She goes to school\",\"improvedSentence\":\"She usually goes to school early in the morning.\"}]"
         )
-        String coreSentences,
+        List<Report.CoreSentenceFeedback> coreSentences,
 
         @Schema(
-                description = "습관 분석 목록 (JSON 문자열)",
+                description = "습관 분석 목록",
                 example = "[{\"habit\":\"문장 끝에 right? 반복\",\"evidence\":\"It's important, right?\",\"suggestion\":\"확인 표현을 다양하게 바꿔보세요.\"}]"
         )
-        String habitAnalyses,
+        List<Report.HabitAnalysis> habitAnalyses,
 
         @Schema(
-                description = "시험 점수 목록 (JSON 문자열)",
+                description = "시험 점수 목록",
                 example = "[{\"exam\":\"IELTS\",\"score\":\"6.0\"},{\"exam\":\"TOEIC\",\"score\":\"780\"},{\"exam\":\"OPIC\",\"score\":\"IM2\"}]"
         )
-        String scores,
+        List<Report.ReportScore> scores,
 
         @Schema(
-                description = "약점 목록 (JSON 문자열)",
+                description = "약점 목록",
                 example = "[\"3인칭 단수 동사 활용\", \"시제 일관성\"]"
         )
-        String weakPoints,
+        List<String> weakPoints,
 
         @Schema(description = "레벨 결과 (level_test 타입만 사용)", example = "상위 23%")
         String levelResult,
@@ -50,18 +51,4 @@ public record FeedbackReportResponse(
         @Schema(description = "리포트 생성 일시")
         LocalDateTime createdAt
 ) {
-    public static FeedbackReportResponse from(FeedbackReport report) {
-        return new FeedbackReportResponse(
-                report.getId(),
-                report.getSessionId(),
-                report.getReportType(),
-                report.getOneLineSummary(),
-                report.getCoreSentences(),
-                report.getHabitAnalyses(),
-                report.getScores(),
-                report.getWeakPoints(),
-                report.getLevelResult(),
-                report.getCreatedAt()
-        );
-    }
 }

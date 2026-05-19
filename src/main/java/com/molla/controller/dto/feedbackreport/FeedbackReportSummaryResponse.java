@@ -1,9 +1,10 @@
 package com.molla.controller.dto.feedbackreport;
 
-import com.molla.domain.feedbackreport.FeedbackReport;
+import com.molla.domain.feedbackreport.Report;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Schema(description = "리포트 목록 응답 (요약)")
 public record FeedbackReportSummaryResponse(
@@ -21,10 +22,10 @@ public record FeedbackReportSummaryResponse(
         String oneLineSummary,
 
         @Schema(
-                description = "시험 점수 목록 (JSON 문자열)",
+                description = "시험 점수 목록",
                 example = "[{\"exam\":\"IELTS\",\"score\":\"6.0\"},{\"exam\":\"TOEIC\",\"score\":\"780\"},{\"exam\":\"OPIC\",\"score\":\"IM2\"}]"
         )
-        String scores,
+        List<Report.ReportScore> scores,
 
         @Schema(description = "레벨 결과 (level_test 타입만 사용)", example = "상위 23%")
         String levelResult,
@@ -32,15 +33,4 @@ public record FeedbackReportSummaryResponse(
         @Schema(description = "리포트 생성 일시")
         LocalDateTime createdAt
 ) {
-    public static FeedbackReportSummaryResponse from(FeedbackReport report) {
-        return new FeedbackReportSummaryResponse(
-                report.getId(),
-                report.getSessionId(),
-                report.getReportType(),
-                report.getOneLineSummary(),
-                report.getScores(),
-                report.getLevelResult(),
-                report.getCreatedAt()
-        );
-    }
 }
