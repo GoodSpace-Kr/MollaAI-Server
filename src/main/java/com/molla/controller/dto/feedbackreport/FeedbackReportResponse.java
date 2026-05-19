@@ -21,28 +21,28 @@ public record FeedbackReportResponse(
         String oneLineSummary,
 
         @Schema(
-                description = "문법 교정 목록 (JSON 문자열 — 클라이언트에서 파싱)",
-                example = "[{\"original\":\"She go to school\",\"corrected\":\"She goes to school\",\"explanation\":\"3인칭 단수 주어에는 동사에 -s를 붙입니다.\"}]"
+                description = "핵심 문장 피드백 목록 (JSON 문자열 — 클라이언트에서 파싱)",
+                example = "[{\"sentence\":\"She go to school\",\"grammarCorrection\":\"She goes to school\",\"improvedSentence\":\"She usually goes to school early in the morning.\"}]"
         )
-        String grammarCorrections,
-
-        @Schema(
-                description = "어휘 개선 제안 목록 (JSON 문자열)",
-                example = "[{\"used\":\"big\",\"better\":\"significant\",\"reason\":\"비즈니스 맥락에서 더 격식 있는 표현입니다.\"}]"
-        )
-        String vocabularySuggestions,
+        String coreSentences,
 
         @Schema(
                 description = "습관 분석 목록 (JSON 문자열)",
-                example = "[{\"pattern\":\"문장 끝에 'right?' 반복\",\"example\":\"It's important, right?\",\"suggestion\":\"다양한 확인 표현을 사용해 보세요.\"}]"
+                example = "[{\"habit\":\"문장 끝에 right? 반복\",\"evidence\":\"It's important, right?\",\"suggestion\":\"확인 표현을 다양하게 바꿔보세요.\"}]"
         )
-        String habitAnalysis,
+        String habitAnalyses,
 
-        @Schema(description = "발음 노트", example = "th 발음이 d 발음으로 대체되는 경향이 있습니다.")
-        String pronunciationNotes,
+        @Schema(
+                description = "시험 점수 목록 (JSON 문자열)",
+                example = "[{\"exam\":\"IELTS\",\"score\":\"6.0\"},{\"exam\":\"TOEIC\",\"score\":\"780\"},{\"exam\":\"OPIC\",\"score\":\"IM2\"}]"
+        )
+        String scores,
 
-        @Schema(description = "종합 점수 (0~100)", example = "78.5")
-        Float overallScore,
+        @Schema(
+                description = "약점 목록 (JSON 문자열)",
+                example = "[\"3인칭 단수 동사 활용\", \"시제 일관성\"]"
+        )
+        String weakPoints,
 
         @Schema(description = "레벨 결과 (level_test 타입만 사용)", example = "상위 23%")
         String levelResult,
@@ -56,11 +56,10 @@ public record FeedbackReportResponse(
                 report.getSessionId(),
                 report.getReportType(),
                 report.getOneLineSummary(),
-                report.getGrammarCorrections(),
-                report.getVocabularySuggestions(),
-                report.getHabitAnalysis(),
-                report.getPronunciationNotes(),
-                report.getOverallScore(),
+                report.getCoreSentences(),
+                report.getHabitAnalyses(),
+                report.getScores(),
+                report.getWeakPoints(),
                 report.getLevelResult(),
                 report.getCreatedAt()
         );

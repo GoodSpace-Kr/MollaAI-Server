@@ -2,6 +2,7 @@ package com.molla.domain.worker;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.molla.domain.feedbackreport.Report;
 import com.molla.domain.usermemory.UserMemory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -30,28 +31,23 @@ public class OpenAiClient {
         this.model = model;
     }
 
-    public String generateReport(String transcript, String sessionType) {
+    public Report generateReport(String transcript, String sessionType) {
         String systemPrompt = """
                 당신은 영어 학습 코치입니다. 아래 통화 대화록을 분석해서 반드시 아래 JSON 형식으로만 응답하세요.
                 다른 텍스트는 절대 포함하지 마세요.
                 
                 {
                   "oneLineSummary": "한 줄 요약",
-                  "grammarCorrections": [{"original": "", "corrected": "", "explanation": ""}],
-                  "vocabularySuggestions": [{"used": "", "better": "", "reason": ""}],
-                  "habitAnalysis": [{"pattern": "", "example": "", "suggestion": ""}],
-                  "pronunciationNotes": "발음 피드백",
-                  "overallScore": 0.0,
+                  "coreSentences": [{"sentence": "", "grammarCorrection": "", "improvedSentence": ""}],
+                  "habitAnalyses": [{"habit": "", "evidence": "", "suggestion": ""}],
+                  "scores": [{"exam": "IELTS", "score": ""}, {"exam": "TOEIC", "score": ""}, {"exam": "OPIC", "score": ""}],
                   "levelResult": "레벨 테스트일 때만 '상위 N%' 형식으로, 아니면 null",
-                  "weakPoints": ["약점1", "약점2"],
-                  "habitPatterns": ["패턴1", "패턴2"],
-                  "interests": ["관심사1", "관심사2"],
-                  "goals": "대화에서 파악된 학습 목표"
+                  "weakPoints": ["약점1", "약점2"]
                 }
                 """;
 
         String userPrompt = "세션 타입: " + sessionType + "\n\n대화록:\n" + transcript;
-        return callChatApi(systemPrompt, userPrompt);
+        return parseReport(callChatApi(systemPrompt, userPrompt));
     }
 
     public String generateMemorySummary(UserMemory existingMemory, String reportJson) {
@@ -67,9 +63,7 @@ public class OpenAiClient {
                 {
                   "summary": "학습자 전체 요약",
                   "weakPoints": ["약점1", "약점2"],
-                  "habitPatterns": ["패턴1", "패턴2"],
-                  "interests": ["관심사1", "관심사2"],
-                  "goals": "학습 목표"
+                  "habitPatterns": ["패턴1", "패턴2"]
                 }
                 """;
 
@@ -165,6 +159,15 @@ public class OpenAiClient {
             ));
         } catch (Exception e) {
             return "{}";
+        }
+    }
+
+    private Report parseReport(String reportJson) {
+        try {
+            return objectMapper.readValue(reportJson, Report.class);
+        } catch (Exception e) {
+            log.error("리포트 JSON 파싱 실패: {}", e.getMessage(), e);
+            throw new RuntimeException("리포트 JSON 파싱 실패: " + e.getMessage(), e);
         }
     }
 }

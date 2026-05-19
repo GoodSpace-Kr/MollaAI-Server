@@ -33,6 +33,15 @@
 - 비고: 남은 작업이나 주의사항
 ```
 
+## 2026-05-19 - 피드백 리포트 구조 개편
+
+- 구분: 메인 로직, 엔드포인트, 문서
+- 변경: `FeedbackReport`를 한 줄 총평, 핵심 문장 피드백, 습관 분석, 시험 점수 배열, 약점 배열 중심 구조로 개편하고, OpenAI 리포트 생성도 새 `Report` 객체를 기준으로 파싱하도록 수정했다.
+- 영향: 리포트 상세/요약 응답의 JSON 필드가 `coreSentences`, `habitAnalyses`, `scores`, `weakPoints` 중심으로 바뀐다.
+- 확인: `OpenAiClient`, `CallSessionWorker`, `FeedbackReport`, 응답 DTO, SQL 문서를 함께 수정했다.
+- 관련 파일: `src/main/java/com/molla/domain/feedbackreport/Report.java`, `src/main/java/com/molla/domain/feedbackreport/FeedbackReport.java`, `src/main/java/com/molla/domain/worker/OpenAiClient.java`, `src/main/java/com/molla/domain/worker/CallSessionWorker.java`, `src/main/java/com/molla/controller/dto/feedbackreport/FeedbackReportResponse.java`, `src/main/java/com/molla/controller/dto/feedbackreport/FeedbackReportSummaryResponse.java`, `docs/sql/20260519_restructure_feedback_reports_for_report_object.sql`
+- 비고: 기존 `grammarCorrections`, `vocabularySuggestions`, `habitAnalysis`, `pronunciationNotes`, `overallScore` 컬럼은 SQL 마이그레이션으로 제거 대상이다.
+
 ## 2026-05-19 - 내부 세션 종료 요청 utterances 수신 추가
 
 - 구분: 엔드포인트, 메인 로직, test

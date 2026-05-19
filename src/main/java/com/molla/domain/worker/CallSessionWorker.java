@@ -7,6 +7,7 @@ import com.molla.domain.callsession.CallSessionRepository;
 import com.molla.domain.callsession.SessionEndedEvent;
 import com.molla.domain.feedbackreport.FeedbackReport;
 import com.molla.domain.feedbackreport.FeedbackReportRepository;
+import com.molla.domain.feedbackreport.Report;
 import com.molla.domain.user.UserRepository;
 import com.molla.domain.usermemory.UserMemory;
 import com.molla.domain.usermemory.UserMemoryService;
@@ -49,15 +50,15 @@ public class CallSessionWorker {
         String transcript = session.getTranscript();
 
         // ── Step 1: 리포트 생성 ──────────────────────
-        String reportJson = null;
+        Report reportData = null;
         FeedbackReport savedReport = null;
 
         try {
             if (transcript == null || transcript.isBlank()) {
                 log.warn("통화 전문 없음 — 리포트 생성 스킵, sessionId: {}", sessionId);
             } else {
-                reportJson = openAiClient.generateReport(transcript, session.getSessionType());
-                savedReport = saveReport(sessionId, session.getSessionType(), reportJson);
+                reportData = openAiClient.generateReport(transcript, session.getSessionType());
+                savedReport = saveReport(sessionId, session.getSessionType(), reportData);
                 log.info("Step 1 완료 — 리포트 생성, sessionId: {}", sessionId);
 
                 // level_test 통화 완료 시 english_level 자동 업데이트
@@ -71,12 +72,12 @@ public class CallSessionWorker {
 
         // ── Step 2: user_memories 갱신 ──────────────
         try {
-            if (reportJson != null && userId != null) {
+            if (reportData != null && userId != null) {
                 UserMemory existingMemory = userMemoryService.getMemory(userId);
-                String memorySummaryJson = openAiClient.generateMemorySummary(existingMemory, reportJson);
+                String memorySummaryJson = openAiClient.generateMemorySummary(existingMemory, objectMapper.writeValueAsString(reportData));
                 upsertUserMemory(userId, memorySummaryJson, session.getDurationSeconds());
                 log.info("Step 2 완료 — user_memories 갱신, userId: {}", userId);
-            } else if (reportJson != null) {
+            } else if (reportData != null) {
                 log.info("userId 없음 — user_memories 갱신 스킵, sessionId: {}", sessionId);
             }
         } catch (Exception e) {
@@ -110,25 +111,22 @@ public class CallSessionWorker {
         });
     }
 
-    private FeedbackReport saveReport(String sessionId, String sessionType, String reportJson) throws Exception {
+    private FeedbackReport saveReport(String sessionId, String sessionType, Report reportData) throws Exception {
         FeedbackReport existingReport = feedbackReportRepository.findBySessionId(sessionId).orElse(null);
         if (existingReport != null) {
             log.info("기존 리포트 재사용 — sessionId: {}", sessionId);
             return existingReport;
         }
 
-        JsonNode node = objectMapper.readTree(reportJson);
-
         FeedbackReport report = FeedbackReport.create(
                 sessionId,
                 sessionType,
-                getTextOrNull(node, "oneLineSummary"),
-                toJsonString(node, "grammarCorrections"),
-                toJsonString(node, "vocabularySuggestions"),
-                toJsonString(node, "habitAnalysis"),
-                getTextOrNull(node, "pronunciationNotes"),
-                node.path("overallScore").isNull() ? null : (float) node.path("overallScore").asDouble(),
-                getTextOrNull(node, "levelResult")
+                reportData.oneLineSummary(),
+                toJsonString(reportData.coreSentences()),
+                toJsonString(reportData.habitAnalyses()),
+                toJsonString(reportData.scores()),
+                toJsonString(reportData.weakPoints()),
+                reportData.levelResult()
         );
 
         return feedbackReportRepository.save(report);
@@ -157,6 +155,11 @@ public class CallSessionWorker {
     private String toJsonString(JsonNode node, String field) throws Exception {
         JsonNode value = node.path(field);
         if (value.isNull() || value.isMissingNode()) return null;
+        return objectMapper.writeValueAsString(value);
+    }
+
+    private String toJsonString(Object value) throws Exception {
+        if (value == null) return null;
         return objectMapper.writeValueAsString(value);
     }
 }
