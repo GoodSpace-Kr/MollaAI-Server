@@ -123,6 +123,15 @@
 - 관련 파일: `docs/PROJECT_PLAN.md`
 - 비고: API나 도메인 모델이 변경되면 함께 갱신한다.
 
+## 2026-05-20 - 세션 종료 요청을 turns 기반으로 변경
+
+- 구분: API, DTO, 통화 세션
+- 변경: 내부 종료 API의 `EndSessionRequest`가 `transcript`, `utterances` 대신 `turns` 배열을 받도록 변경했다.
+- 영향: AI 서버는 사용자/어시스턴트 턴이 포함된 `turns` 객체를 보내고, 서버는 이를 기반으로 내부 transcript를 조립해 기존 리포트/Qdrant 흐름을 유지한다.
+- 확인: `EndSessionRequestJsonTest`에서 `turns` 역직렬화와 `renderTranscript()` 결과를 검증했다.
+- 관련 파일: `src/main/java/com/molla/controller/dto/callsession/EndSessionRequest.java`, `src/main/java/com/molla/domain/callsession/CallSessionService.java`, `src/test/java/com/molla/controller/dto/callsession/EndSessionRequestJsonTest.java`
+- 비고: 현재는 `turns`를 영속화하지 않고 transcript만 조립해서 저장한다.
+
 ## 2026-05-19 - 리포트 응답 DTO를 Report 기반 구조로 변경
 
 - 구분: API, DTO, 리포트

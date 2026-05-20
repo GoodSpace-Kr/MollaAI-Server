@@ -71,10 +71,10 @@ public class CallSessionService {
         }
 
         String resolvedStatus = request != null ? request.resolvedStatus() : "completed";
-        String transcript = request != null ? request.transcript() : null;
+        String transcript = request != null ? request.renderTranscript() : null;
 
         if ("completed".equals(resolvedStatus) && (transcript == null || transcript.isBlank())) {
-            throw new CallSessionException(ErrorCode.INVALID_REQUEST, "completed 상태로 종료하려면 transcript가 필요합니다.");
+            throw new CallSessionException(ErrorCode.INVALID_REQUEST, "completed 상태로 종료하려면 turns에 사용자 또는 어시스턴트 발화가 필요합니다.");
         }
 
         if (transcript != null) {
