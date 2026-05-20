@@ -30,6 +30,7 @@ public class CallSessionWorker {
     private final UserRepository userRepository;
     private final OpenAiClient openAiClient;
     private final QdrantClient qdrantClient;
+    private final ReportAudioEnricher reportAudioEnricher;
     private final ObjectMapper objectMapper;
 
     @Async("workerExecutor")
@@ -58,6 +59,7 @@ public class CallSessionWorker {
                 log.warn("통화 턴 없음 — 리포트 생성 스킵, sessionId: {}", sessionId);
             } else {
                 reportData = openAiClient.generateReport(ReportTurnInput.from(turns), session.getSessionType());
+                reportData = reportAudioEnricher.attachTurnAudio(reportData, turns);
                 savedReport = saveReport(sessionId, session.getSessionType(), reportData);
                 log.info("Step 1 완료 — 리포트 생성, sessionId: {}", sessionId);
 

@@ -19,7 +19,7 @@ class FeedbackReportViewMapperTest {
                 "practice",
                 "따듯하고 안정적인 대화였어요.",
                 """
-                [{"sentence":"She go to school","grammarCorrection":"She goes to school","improvedSentence":"She usually goes to school early in the morning."}]
+                [{"sourceTurnIndex":3,"sentence":"She go to school","grammarCorrection":"She goes to school","improvedSentence":"She usually goes to school early in the morning.","sampleRate":16000,"encoding":"pcm16le/base64","audio":"BASE64_AUDIO"}]
                 """,
                 """
                 [{"habit":"짧은 문장 반복","evidence":"I like it. I use it.","suggestion":"문장을 연결해서 말해보세요."}]
@@ -37,6 +37,8 @@ class FeedbackReportViewMapperTest {
 
         assertThat(response.coreSentences()).hasSize(1);
         assertThat(response.coreSentences().get(0).grammarCorrection()).isEqualTo("She goes to school");
+        assertThat(response.coreSentences().get(0).sourceTurnIndex()).isEqualTo(3);
+        assertThat(response.coreSentences().get(0).audio()).isEqualTo("BASE64_AUDIO");
         assertThat(response.habitAnalyses()).hasSize(1);
         assertThat(response.scores()).hasSize(3);
         assertThat(response.weakPoints()).containsExactly("시제 일관성", "3인칭 단수 동사 활용");

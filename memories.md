@@ -123,6 +123,15 @@
 - 관련 파일: `docs/PROJECT_PLAN.md`
 - 비고: API나 도메인 모델이 변경되면 함께 갱신한다.
 
+## 2026-05-20 - 코어 문장에 turn audio 첨부
+
+- 구분: 리포트, 메인 로직, API
+- 변경: OpenAI가 반환한 `sourceTurnIndex`를 기준으로 해당 turn의 사용자 오디오를 `Report.coreSentences`에 붙이도록 변경했다.
+- 영향: 리포트 상세 응답의 각 core sentence는 `sampleRate`, `encoding`, `audio`를 함께 내려주므로 프론트가 바로 재생 기능을 붙일 수 있다.
+- 확인: `ReportAudioEnricherTest`, `ReportJsonTest`, `FeedbackReportViewMapperTest`로 오디오 첨부와 응답 매핑을 검증했다.
+- 관련 파일: `src/main/java/com/molla/domain/worker/ReportAudioEnricher.java`, `src/main/java/com/molla/domain/feedbackreport/Report.java`, `src/main/java/com/molla/domain/worker/CallSessionWorker.java`, `src/main/java/com/molla/controller/dto/feedbackreport/FeedbackReportResponse.java`
+- 비고: 현재는 `audio` 원문(base64)을 그대로 응답하며, 추후 용량 이슈가 있으면 object storage URL 방식으로 전환할 수 있다.
+
 ## 2026-05-20 - 리포트 생성과 Qdrant 적재를 turns 기반으로 전환
 
 - 구분: API, 메인 로직, AI 리포트, Qdrant, 데이터베이스

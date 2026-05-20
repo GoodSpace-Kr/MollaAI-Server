@@ -14,7 +14,10 @@ public record Report(
             Integer sourceTurnIndex,
             String sentence,
             String grammarCorrection,
-            String improvedSentence
+            String improvedSentence,
+            Integer sampleRate,
+            String encoding,
+            String audio
     ) {
     }
 

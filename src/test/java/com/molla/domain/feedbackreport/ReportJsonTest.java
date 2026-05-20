@@ -19,7 +19,10 @@ class ReportJsonTest {
                       "sourceTurnIndex": 3,
                       "sentence": "She go to school",
                       "grammarCorrection": "She goes to school",
-                      "improvedSentence": "She goes to school every morning."
+                      "improvedSentence": "She goes to school every morning.",
+                      "sampleRate": 16000,
+                      "encoding": "pcm16le/base64",
+                      "audio": "BASE64_AUDIO"
                     }
                   ],
                   "habitAnalyses": [
@@ -45,6 +48,8 @@ class ReportJsonTest {
         assertThat(report.coreSentences()).hasSize(1);
         assertThat(report.coreSentences().get(0).sourceTurnIndex()).isEqualTo(3);
         assertThat(report.coreSentences().get(0).grammarCorrection()).isEqualTo("She goes to school");
+        assertThat(report.coreSentences().get(0).sampleRate()).isEqualTo(16000);
+        assertThat(report.coreSentences().get(0).audio()).isEqualTo("BASE64_AUDIO");
         assertThat(report.habitAnalyses()).hasSize(1);
         assertThat(report.scores()).hasSize(3);
         assertThat(report.scores().get(2).exam()).isEqualTo("OPIC");
