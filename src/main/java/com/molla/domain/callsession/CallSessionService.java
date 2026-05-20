@@ -5,9 +5,11 @@ import com.molla.common.response.ErrorCode;
 import com.molla.controller.dto.callsession.CallSessionResponse;
 import com.molla.controller.dto.callsession.EndSessionRequest;
 import com.molla.controller.dto.callsession.StartSessionRequest;
+import com.molla.domain.callsession.CallSessionTurn;
 import com.molla.domain.subscription.SubscriptionRepository;
 import com.molla.domain.user.User;
 import com.molla.domain.user.UserRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -26,6 +28,7 @@ public class CallSessionService {
     private final UserRepository userRepository;
     private final SubscriptionRepository subscriptionRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final ObjectMapper objectMapper;
 
     // ──────────────────────────────────────────────
     // 세션 시작 (내부 API)
@@ -71,14 +74,18 @@ public class CallSessionService {
         }
 
         String resolvedStatus = request != null ? request.resolvedStatus() : "completed";
-        String transcript = request != null ? request.transcript() : null;
+        List<CallSessionTurn> turns = request != null ? request.toCallSessionTurns() : List.of();
 
-        if ("completed".equals(resolvedStatus) && (transcript == null || transcript.isBlank())) {
-            throw new CallSessionException(ErrorCode.INVALID_REQUEST, "completed 상태로 종료하려면 transcript가 필요합니다.");
+        if ("completed".equals(resolvedStatus) && turns.isEmpty()) {
+            throw new CallSessionException(ErrorCode.INVALID_REQUEST, "completed 상태로 종료하려면 turns가 필요합니다.");
         }
 
-        if (transcript != null) {
-            session.updateTranscript(transcript);
+        if (!turns.isEmpty()) {
+            try {
+                session.updateTurnsJson(objectMapper.writeValueAsString(turns));
+            } catch (Exception e) {
+                throw new CallSessionException(ErrorCode.INTERNAL_SERVER_ERROR, "turns 저장 직렬화에 실패했습니다.");
+            }
         }
 
         if ("failed".equals(resolvedStatus)) {
@@ -88,7 +95,7 @@ public class CallSessionService {
         }
 
         // 통화 종료 후 비동기 워커 트리거 (Spring Event)
-        // 리포트 생성 → user_memories 갱신 → Qdrant upsert 순으로 처리
+        // 리포트 생성 → Qdrant upsert 순으로 처리
         if ("completed".equals(session.getStatus())) {
             eventPublisher.publishEvent(new SessionEndedEvent(session.getId(), session.getUserId(), session.isLevelTest()));
         }

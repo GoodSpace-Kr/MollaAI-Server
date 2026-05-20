@@ -1,0 +1,160 @@
+# memories.md
+
+이 파일은 MollaAI Server의 중요한 변경사항을 시간순으로 기록하는 작업 메모리이다. 에이전트와 개발자는 작업 전후로 이 파일을 확인하고, 운영이나 제품 동작에 영향을 주는 변경사항을 반드시 남긴다.
+
+실제 secret 값, 개인키, DB 비밀번호, API key, 인증번호, 토큰, 통화 전문 원문은 기록하지 않는다.
+
+## 기록 대상
+
+다음 변경은 반드시 기록한다.
+
+- 환경변수 추가, 삭제, 이름 변경, 의미 변경
+- API 엔드포인트 추가, 삭제, 경로 변경, 요청/응답 형식 변경
+- 인증, 권한, 보안 정책 변경
+- 핵심 비즈니스 로직 변경
+- 통화 세션, 리포트 생성, 사용자 메모리, 구독/사용량 계산 변경
+- 외부 연동 변경: OpenAI, Naver SENS, Qdrant, MySQL, AWS, GitHub Actions, Docker
+- 배포 방식, 포트, 보안그룹, Nginx, Docker 이미지 변경
+- 데이터베이스 스키마 또는 마이그레이션 변경
+- 운영 장애 대응, 임시 우회, 롤백, hotfix
+
+## 기록 형식
+
+새 기록은 항상 가장 위에 추가한다.
+
+```markdown
+## YYYY-MM-DD - 제목
+
+- 구분: 환경변수 | 엔드포인트 | 메인 로직 | 운영 | 배포 | 보안 | 문서 | 기타
+- 변경: 무엇이 바뀌었는지
+- 영향: 사용자, API, 운영, 데이터에 미치는 영향
+- 확인: 실행한 검증 또는 확인한 파일
+- 관련 파일: `path/to/file`
+- 비고: 남은 작업이나 주의사항
+```
+
+## 2026-05-19 - 리포트 프롬프트에서 핵심 문장 다중 생성 강제
+
+- 구분: 메인 로직, test
+- 변경: `OpenAiClient.generateReport` 프롬프트에 `coreSentences`는 여러 문장이어야 하고 최소 3개 이상이어야 한다는 조건을 명시했다.
+- 영향: OpenAI 리포트 생성 시 핵심 문장 피드백이 단일 문장이 아니라 복수 문장 배열로 생성될 가능성이 높아진다.
+- 확인: 프롬프트 본문과 JSON 예시에 다중 `coreSentences` 구조를 추가했고, 관련 문자열 검증 테스트를 작성했다.
+- 관련 파일: `src/main/java/com/molla/domain/worker/OpenAiClient.java`, `src/test/java/com/molla/domain/worker/OpenAiClientPromptTest.java`
+- 비고: 이 변경은 프롬프트 제약 강화이며, 모델 응답 품질은 실제 샘플 transcript로 추가 검증할 수 있다.
+
+## 2026-05-19 - 채팅 기능 및 user_memories 제거
+
+- 구분: 메인 로직, 엔드포인트, 문서
+- 변경: 채팅 API와 chatmessage 도메인을 제거하고, 통화 후 워커의 Step 2 `user_memories` 갱신을 삭제했다. `usermemory` 도메인도 함께 제거했다.
+- 영향: 비동기 워커는 이제 `FeedbackReport` 생성과 `Qdrant` 업서트만 수행한다. `/api/v1/chat` API는 더 이상 제공되지 않는다.
+- 확인: 채팅 컨트롤러/DTO/도메인, `usermemory` 패키지, 워커 Step 2, 관련 기획 문서와 드롭 SQL 문서를 함께 수정했다.
+- 관련 파일: `src/main/java/com/molla/domain/worker/CallSessionWorker.java`, `src/main/java/com/molla/domain/callsession/CallSessionService.java`, `src/main/java/com/molla/domain/worker/OpenAiClient.java`, `docs/PROJECT_PLAN.md`, `docs/sql/20260519_drop_chat_and_user_memories.sql`
+- 비고: 운영 DB 반영 시 `chat_messages`, `user_memories` 테이블 드롭 SQL을 적용해야 한다.
+
+## 2026-05-19 - 피드백 리포트 구조 개편
+
+- 구분: 메인 로직, 엔드포인트, 문서
+- 변경: `FeedbackReport`를 한 줄 총평, 핵심 문장 피드백, 습관 분석, 시험 점수 배열, 약점 배열 중심 구조로 개편하고, OpenAI 리포트 생성도 새 `Report` 객체를 기준으로 파싱하도록 수정했다.
+- 영향: 리포트 상세/요약 응답의 JSON 필드가 `coreSentences`, `habitAnalyses`, `scores`, `weakPoints` 중심으로 바뀐다.
+- 확인: `OpenAiClient`, `CallSessionWorker`, `FeedbackReport`, 응답 DTO, SQL 문서를 함께 수정했다.
+- 관련 파일: `src/main/java/com/molla/domain/feedbackreport/Report.java`, `src/main/java/com/molla/domain/feedbackreport/FeedbackReport.java`, `src/main/java/com/molla/domain/worker/OpenAiClient.java`, `src/main/java/com/molla/domain/worker/CallSessionWorker.java`, `src/main/java/com/molla/controller/dto/feedbackreport/FeedbackReportResponse.java`, `src/main/java/com/molla/controller/dto/feedbackreport/FeedbackReportSummaryResponse.java`, `docs/sql/20260519_restructure_feedback_reports_for_report_object.sql`
+- 비고: 기존 `grammarCorrections`, `vocabularySuggestions`, `habitAnalysis`, `pronunciationNotes`, `overallScore` 컬럼은 SQL 마이그레이션으로 제거 대상이다.
+
+## 2026-05-19 - 내부 세션 종료 요청 utterances 수신 추가
+
+- 구분: 엔드포인트, 메인 로직, test
+- 변경: 내부 `PATCH /api/v1/internal/sessions/{id}/end` 요청 DTO가 `transcript`와 함께 `utterances` 배열도 받을 수 있도록 확장했다.
+- 영향: AI 서버가 `status`, `transcript`, `utterances`를 함께 보내도 백엔드 요청 바인딩이 깨지지 않는다.
+- 확인: `EndSessionRequest`에 `utterances` 필드를 추가했고, JSON 역직렬화 테스트를 작성했다.
+- 관련 파일: `src/main/java/com/molla/controller/dto/callsession/EndSessionRequest.java`, `src/test/java/com/molla/controller/dto/callsession/EndSessionRequestJsonTest.java`
+- 비고: 현재는 API 연결 호환성 확보가 목적이며, `utterances` 저장/활용 로직은 아직 추가하지 않았다.
+
+## 2026-05-19 - 작업 단위 커밋 규칙 추가
+
+- 구분: 운영, 문서
+- 변경: 모든 작업은 기본적으로 `git add`와 `git commit`까지 완료하고, 커밋 메시지는 `feat`, `fix`, `docs`, `test` 등 전통적인 타입과 명확한 제목을 사용하도록 `AGENTS.md`에 규칙을 추가했다.
+- 영향: 에이전트는 향후 작업마다 변경사항을 스테이징하고 커밋하는 것을 기본 완료 기준으로 삼는다.
+- 확인: `AGENTS.md`의 커밋 전 기준 섹션을 갱신했다.
+- 관련 파일: `AGENTS.md`, `memories.md`
+- 비고: 사용자가 커밋 금지를 명시하거나 검증 실패/요구사항 미확정/충돌이 있으면 커밋하지 않고 이유를 보고한다.
+
+## 2026-05-19 - 운영 환경변수 문서 추가
+
+- 구분: 환경변수, 운영, 문서
+- 변경: 운영 서버의 환경변수는 `docker-compose.yml`이 참조하는 11개 항목으로 정리했다.
+- 영향: 에이전트와 개발자는 운영 환경변수를 확인할 때 `docs/ops/env.md`를 기준으로 본다.
+- 확인: `docker-compose.yml`, `src/main/resources/application.yml`, `docs/ops/env.md`를 대조했다.
+- 관련 파일: `docs/ops/env.md`, `docker-compose.yml`, `src/main/resources/application.yml`
+- 비고: 실제 환경변수 값은 문서에 기록하지 않는다.
+
+## 2026-05-19 - GitHub Actions secrets and variables 문서 추가
+
+- 구분: 운영, 배포, 문서
+- 변경: GitHub Actions에 등록된 secrets and variables 이름을 `docs/ops/Github.md`에 정리했다.
+- 영향: 배포 자동화 관련 작업 시 필요한 secret 이름과 용도를 확인할 수 있다.
+- 확인: 사용자 제공 목록을 문서화했다.
+- 관련 파일: `docs/ops/Github.md`
+- 비고: 실제 secret 값은 GitHub Settings에서만 관리한다.
+
+## 2026-05-19 - AWS 운영 정보 문서화
+
+- 구분: 운영, 보안, 문서
+- 변경: EC2 Public IPv4 `43.202.22.150`과 인바운드 규칙 `443`, `3306`, `22`, `80`을 `docs/ops/AWS.md`에 기록했다.
+- 영향: 운영 서버 접속, 배포, 보안그룹 확인 시 기준 문서로 사용한다.
+- 확인: 사용자 제공 정보를 문서화했다.
+- 관련 파일: `docs/ops/AWS.md`
+- 비고: `22`와 `3306`이 `0.0.0.0/0`에 열려 있으므로 운영 보안상 제한이 필요하다.
+
+## 2026-05-19 - AGENTS.md 하네스 문서 추가
+
+- 구분: 운영, 문서
+- 변경: 작업 시작 전 읽는 에이전트 운영 지침으로 `AGENTS.md`를 추가했다.
+- 영향: 에이전트는 Observe, Plan, Act, Verify, Report 루프와 검증 중심 규칙을 따라 작업한다.
+- 확인: `AGENTS.md` 내용을 읽고 미완성 표식 검색을 수행했다.
+- 관련 파일: `AGENTS.md`
+- 비고: 프로젝트 구조, 검증 명령, 운영 정책이 바뀌면 함께 갱신한다.
+
+## 2026-05-19 - 프로젝트 기획 문서 추가
+
+- 구분: 문서
+- 변경: MollaAI Server의 제품 목표, 사용자 흐름, 기능 범위, 시스템 구성, API 범위, 비기능 요구사항을 정리했다.
+- 영향: 제품/도메인 변경 전 `docs/PROJECT_PLAN.md`를 기준 문서로 확인한다.
+- 확인: 현재 컨트롤러, 도메인, 배포 문서를 읽고 기획 문서를 작성했다.
+- 관련 파일: `docs/PROJECT_PLAN.md`
+- 비고: API나 도메인 모델이 변경되면 함께 갱신한다.
+
+## 2026-05-20 - 코어 문장에 turn audio 첨부
+
+- 구분: 리포트, 메인 로직, API
+- 변경: OpenAI가 반환한 `sourceTurnIndex`를 기준으로 해당 turn의 사용자 오디오를 `Report.coreSentences`에 붙이도록 변경했다.
+- 영향: 리포트 상세 응답의 각 core sentence는 `sampleRate`, `encoding`, `audio`를 함께 내려주므로 프론트가 바로 재생 기능을 붙일 수 있다.
+- 확인: `ReportAudioEnricherTest`, `ReportJsonTest`, `FeedbackReportViewMapperTest`로 오디오 첨부와 응답 매핑을 검증했다.
+- 관련 파일: `src/main/java/com/molla/domain/worker/ReportAudioEnricher.java`, `src/main/java/com/molla/domain/feedbackreport/Report.java`, `src/main/java/com/molla/domain/worker/CallSessionWorker.java`, `src/main/java/com/molla/controller/dto/feedbackreport/FeedbackReportResponse.java`
+- 비고: 현재는 `audio` 원문(base64)을 그대로 응답하며, 추후 용량 이슈가 있으면 object storage URL 방식으로 전환할 수 있다.
+
+## 2026-05-20 - 리포트 생성과 Qdrant 적재를 turns 기반으로 전환
+
+- 구분: API, 메인 로직, AI 리포트, Qdrant, 데이터베이스
+- 변경: 세션 종료 시 transcript를 만들지 않고 `turns` 원본을 `call_sessions.turns_json`에 저장한 뒤, 워커가 이를 읽어 OpenAI 리포트 생성과 Qdrant 적재를 모두 처리하도록 변경했다.
+- 영향: OpenAI에는 `ReportTurnInput(index, userText, assistantText)` DTO를 넘기며, 리포트의 `coreSentences`는 `sourceTurnIndex`를 포함하게 된다.
+- 확인: `EndSessionRequestJsonTest`, `OpenAiClientGenerateReportTest`, `OpenAiClientPromptTest`, `ReportJsonTest`로 turns 직렬화/역직렬화, OpenAI 요청 포맷, 리포트 파싱을 검증한다.
+- 관련 파일: `src/main/java/com/molla/domain/callsession/CallSession.java`, `src/main/java/com/molla/domain/callsession/CallSessionTurn.java`, `src/main/java/com/molla/domain/worker/ReportTurnInput.java`, `src/main/java/com/molla/domain/worker/OpenAiClient.java`, `src/main/java/com/molla/domain/worker/CallSessionWorker.java`, `src/main/java/com/molla/domain/worker/QdrantClient.java`, `docs/sql/20260520_add_turns_json_to_call_sessions.sql`
+- 비고: 운영 DB에는 `docs/sql/20260520_add_turns_json_to_call_sessions.sql`을 반영해야 하며, 기존 `transcript` 컬럼은 더 이상 사용하지 않는다.
+
+## 2026-05-20 - 세션 종료 요청을 turns 기반으로 변경
+
+- 구분: API, DTO, 통화 세션
+- 변경: 내부 종료 API의 `EndSessionRequest`가 `transcript`, `utterances` 대신 `turns` 배열을 받도록 변경했다.
+- 영향: AI 서버는 사용자/어시스턴트 턴이 포함된 `turns` 객체를 보내고, 서버는 이를 기반으로 내부 transcript를 조립해 기존 리포트/Qdrant 흐름을 유지한다.
+- 확인: `EndSessionRequestJsonTest`에서 `turns` 역직렬화와 `renderTranscript()` 결과를 검증했다.
+- 관련 파일: `src/main/java/com/molla/controller/dto/callsession/EndSessionRequest.java`, `src/main/java/com/molla/domain/callsession/CallSessionService.java`, `src/test/java/com/molla/controller/dto/callsession/EndSessionRequestJsonTest.java`
+- 비고: 현재는 `turns`를 영속화하지 않고 transcript만 조립해서 저장한다.
+
+## 2026-05-19 - 리포트 응답 DTO를 Report 기반 구조로 변경
+
+- 구분: API, DTO, 리포트
+- 변경: `FeedbackReportResponse`, `FeedbackReportSummaryResponse`가 JSON 문자열 대신 `Report` 기반의 구조화된 배열과 객체를 반환하도록 변경했다.
+- 영향: 프론트는 `coreSentences`, `habitAnalyses`, `scores`, `weakPoints`를 문자열 파싱 없이 바로 사용할 수 있다.
+- 확인: `FeedbackReportViewMapperTest`, `ReportJsonTest`로 구조화 응답 매핑과 JSON 역직렬화를 검증했다.
+- 관련 파일: `src/main/java/com/molla/controller/dto/feedbackreport/FeedbackReportResponse.java`, `src/main/java/com/molla/controller/dto/feedbackreport/FeedbackReportSummaryResponse.java`, `src/main/java/com/molla/domain/feedbackreport/FeedbackReportViewMapper.java`, `src/main/java/com/molla/domain/feedbackreport/FeedbackReportService.java`
+- 비고: DB 저장 형식은 JSON 문자열 컬럼을 유지하고, API 응답 시점에만 구조화해서 내려준다.

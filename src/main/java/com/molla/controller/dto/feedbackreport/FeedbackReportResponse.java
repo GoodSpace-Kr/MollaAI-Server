@@ -1,9 +1,10 @@
 package com.molla.controller.dto.feedbackreport;
 
-import com.molla.domain.feedbackreport.FeedbackReport;
+import com.molla.domain.feedbackreport.Report;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Schema(description = "리포트 상세 응답")
 public record FeedbackReportResponse(
@@ -21,28 +22,28 @@ public record FeedbackReportResponse(
         String oneLineSummary,
 
         @Schema(
-                description = "문법 교정 목록 (JSON 문자열 — 클라이언트에서 파싱)",
-                example = "[{\"original\":\"She go to school\",\"corrected\":\"She goes to school\",\"explanation\":\"3인칭 단수 주어에는 동사에 -s를 붙입니다.\"}]"
+                description = "핵심 문장 피드백 목록",
+                example = "[{\"sourceTurnIndex\":3,\"sentence\":\"She go to school\",\"grammarCorrection\":\"She goes to school\",\"improvedSentence\":\"She usually goes to school early in the morning.\",\"sampleRate\":16000,\"encoding\":\"pcm16le/base64\",\"audio\":\"BASE64_PCM16_AUDIO\"}]"
         )
-        String grammarCorrections,
+        List<Report.CoreSentenceFeedback> coreSentences,
 
         @Schema(
-                description = "어휘 개선 제안 목록 (JSON 문자열)",
-                example = "[{\"used\":\"big\",\"better\":\"significant\",\"reason\":\"비즈니스 맥락에서 더 격식 있는 표현입니다.\"}]"
+                description = "습관 분석 목록",
+                example = "[{\"habit\":\"문장 끝에 right? 반복\",\"evidence\":\"It's important, right?\",\"suggestion\":\"확인 표현을 다양하게 바꿔보세요.\"}]"
         )
-        String vocabularySuggestions,
+        List<Report.HabitAnalysis> habitAnalyses,
 
         @Schema(
-                description = "습관 분석 목록 (JSON 문자열)",
-                example = "[{\"pattern\":\"문장 끝에 'right?' 반복\",\"example\":\"It's important, right?\",\"suggestion\":\"다양한 확인 표현을 사용해 보세요.\"}]"
+                description = "시험 점수 목록",
+                example = "[{\"exam\":\"IELTS\",\"score\":\"6.0\"},{\"exam\":\"TOEIC\",\"score\":\"780\"},{\"exam\":\"OPIC\",\"score\":\"IM2\"}]"
         )
-        String habitAnalysis,
+        List<Report.ReportScore> scores,
 
-        @Schema(description = "발음 노트", example = "th 발음이 d 발음으로 대체되는 경향이 있습니다.")
-        String pronunciationNotes,
-
-        @Schema(description = "종합 점수 (0~100)", example = "78.5")
-        Float overallScore,
+        @Schema(
+                description = "약점 목록",
+                example = "[\"3인칭 단수 동사 활용\", \"시제 일관성\"]"
+        )
+        List<String> weakPoints,
 
         @Schema(description = "레벨 결과 (level_test 타입만 사용)", example = "상위 23%")
         String levelResult,
@@ -50,19 +51,4 @@ public record FeedbackReportResponse(
         @Schema(description = "리포트 생성 일시")
         LocalDateTime createdAt
 ) {
-    public static FeedbackReportResponse from(FeedbackReport report) {
-        return new FeedbackReportResponse(
-                report.getId(),
-                report.getSessionId(),
-                report.getReportType(),
-                report.getOneLineSummary(),
-                report.getGrammarCorrections(),
-                report.getVocabularySuggestions(),
-                report.getHabitAnalysis(),
-                report.getPronunciationNotes(),
-                report.getOverallScore(),
-                report.getLevelResult(),
-                report.getCreatedAt()
-        );
-    }
 }

@@ -13,6 +13,7 @@ import java.util.List;
 public class FeedbackReportService {
 
     private final FeedbackReportRepository feedbackReportRepository;
+    private final FeedbackReportViewMapper feedbackReportViewMapper;
 
     // ──────────────────────────────────────────────
     // 리포트 목록 조회 (프론트용)
@@ -21,7 +22,7 @@ public class FeedbackReportService {
     public List<FeedbackReportSummaryResponse> getMyReports(String userId) {
         return feedbackReportRepository.findAllByUserId(userId)
                 .stream()
-                .map(FeedbackReportSummaryResponse::from)
+                .map(feedbackReportViewMapper::toSummaryResponse)
                 .toList();
     }
 
@@ -34,6 +35,6 @@ public class FeedbackReportService {
                 .findBySessionIdAndUserId(sessionId, userId)
                 .orElseThrow(() -> new FeedbackReportException(ErrorCode.REPORT_NOT_FOUND));
 
-        return FeedbackReportResponse.from(report);
+        return feedbackReportViewMapper.toDetailResponse(report);
     }
 }

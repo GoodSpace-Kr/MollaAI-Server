@@ -2,7 +2,7 @@ package com.molla.domain.worker;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.molla.domain.usermemory.UserMemory;
+import com.molla.domain.feedbackreport.Report;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,53 +30,53 @@ public class OpenAiClient {
         this.model = model;
     }
 
-    public String generateReport(String transcript, String sessionType) {
+    public Report generateReport(List<ReportTurnInput> turns, String sessionType) {
         String systemPrompt = """
-                당신은 영어 학습 코치입니다. 아래 통화 대화록을 분석해서 반드시 아래 JSON 형식으로만 응답하세요.
+                당신은 영어 학습 코치입니다. 아래 turn 목록을 분석해서 반드시 아래 JSON 형식으로만 응답하세요.
                 다른 텍스트는 절대 포함하지 마세요.
+                coreSentences는 반드시 여러 문장으로 구성하세요. 최소 15개 이상 작성하고, 각 항목은 turns의 userText에서 실제로 중요한 문장을 골라
+                sentence, grammarCorrection, improvedSentence를 1:1:1로 대응시켜 주세요.
+                coreSentences의 각 sentence는 서로 다른 문장이어야 하며, 같은 문장을 중복해서 넣지 마세요.
+                coreSentences의 sentence는 반드시 turns의 userText 원문을 그대로 또는 아주 가깝게 사용하세요.
+                coreSentences의 각 항목에는 반드시 sourceTurnIndex를 포함하고, 이 값은 sentence가 나온 turn의 index여야 합니다.
                 
                 {
                   "oneLineSummary": "한 줄 요약",
-                  "grammarCorrections": [{"original": "", "corrected": "", "explanation": ""}],
-                  "vocabularySuggestions": [{"used": "", "better": "", "reason": ""}],
-                  "habitAnalysis": [{"pattern": "", "example": "", "suggestion": ""}],
-                  "pronunciationNotes": "발음 피드백",
-                  "overallScore": 0.0,
+                  "coreSentences": [
+                    {"sourceTurnIndex": 1, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sourceTurnIndex": 2, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sourceTurnIndex": 3, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sourceTurnIndex": 4, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sourceTurnIndex": 5, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sourceTurnIndex": 6, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sourceTurnIndex": 7, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sourceTurnIndex": 8, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sourceTurnIndex": 9, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sourceTurnIndex": 10, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sourceTurnIndex": 11, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sourceTurnIndex": 12, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sourceTurnIndex": 13, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sourceTurnIndex": 14, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sourceTurnIndex": 15, "sentence": "", "grammarCorrection": "", "improvedSentence": ""}
+                  ],
+                  "habitAnalyses": [{"habit": "", "evidence": "", "suggestion": ""}],
+                  "scores": [{"exam": "IELTS", "score": ""}, {"exam": "TOEIC", "score": ""}, {"exam": "OPIC", "score": ""}],
                   "levelResult": "레벨 테스트일 때만 '상위 N%' 형식으로, 아니면 null",
-                  "weakPoints": ["약점1", "약점2"],
-                  "habitPatterns": ["패턴1", "패턴2"],
-                  "interests": ["관심사1", "관심사2"],
-                  "goals": "대화에서 파악된 학습 목표"
+                  "weakPoints": ["약점1", "약점2"]
                 }
                 """;
 
-        String userPrompt = "세션 타입: " + sessionType + "\n\n대화록:\n" + transcript;
-        return callChatApi(systemPrompt, userPrompt);
-    }
+        String userPrompt;
+        try {
+            userPrompt = objectMapper.writeValueAsString(Map.of(
+                    "sessionType", sessionType,
+                    "turns", turns
+            ));
+        } catch (Exception e) {
+            throw new RuntimeException("OpenAI 리포트 요청 생성 실패: " + e.getMessage(), e);
+        }
 
-    public String generateMemorySummary(UserMemory existingMemory, String reportJson) {
-        String existingMemoryJson = existingMemory != null
-                ? buildExistingMemoryJson(existingMemory)
-                : "{}";
-
-        String systemPrompt = """
-                당신은 영어 학습 코치입니다. 기존 학습자 메모리와 이번 통화 리포트를 합쳐서
-                업데이트된 메모리를 반드시 아래 JSON 형식으로만 응답하세요.
-                다른 텍스트는 절대 포함하지 마세요.
-                
-                {
-                  "summary": "학습자 전체 요약",
-                  "weakPoints": ["약점1", "약점2"],
-                  "habitPatterns": ["패턴1", "패턴2"],
-                  "interests": ["관심사1", "관심사2"],
-                  "goals": "학습 목표"
-                }
-                """;
-
-        String userPrompt = "기존 메모리:\n" + existingMemoryJson
-                + "\n\n이번 통화 리포트:\n" + reportJson;
-
-        return callChatApi(systemPrompt, userPrompt);
+        return parseReport(callChatApi(systemPrompt, userPrompt));
     }
 
     public List<Float> createEmbedding(String text, String embeddingModel) {
@@ -154,17 +154,12 @@ public class OpenAiClient {
         }
     }
 
-    private String buildExistingMemoryJson(UserMemory memory) {
+    private Report parseReport(String reportJson) {
         try {
-            return objectMapper.writeValueAsString(Map.of(
-                    "summary", memory.getSummary() != null ? memory.getSummary() : "",
-                    "weakPoints", memory.getWeakPoints() != null ? memory.getWeakPoints() : "[]",
-                    "habitPatterns", memory.getHabitPatterns() != null ? memory.getHabitPatterns() : "[]",
-                    "interests", memory.getInterests() != null ? memory.getInterests() : "[]",
-                    "goals", memory.getGoals() != null ? memory.getGoals() : ""
-            ));
+            return objectMapper.readValue(reportJson, Report.class);
         } catch (Exception e) {
-            return "{}";
+            log.error("리포트 JSON 파싱 실패: {}", e.getMessage(), e);
+            throw new RuntimeException("리포트 JSON 파싱 실패: " + e.getMessage(), e);
         }
     }
 }
