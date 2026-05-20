@@ -123,6 +123,15 @@
 - 관련 파일: `docs/PROJECT_PLAN.md`
 - 비고: API나 도메인 모델이 변경되면 함께 갱신한다.
 
+## 2026-05-20 - 리포트 생성과 Qdrant 적재를 turns 기반으로 전환
+
+- 구분: API, 메인 로직, AI 리포트, Qdrant, 데이터베이스
+- 변경: 세션 종료 시 transcript를 만들지 않고 `turns` 원본을 `call_sessions.turns_json`에 저장한 뒤, 워커가 이를 읽어 OpenAI 리포트 생성과 Qdrant 적재를 모두 처리하도록 변경했다.
+- 영향: OpenAI에는 `ReportTurnInput(index, userText, assistantText)` DTO를 넘기며, 리포트의 `coreSentences`는 `sourceTurnIndex`를 포함하게 된다.
+- 확인: `EndSessionRequestJsonTest`, `OpenAiClientGenerateReportTest`, `OpenAiClientPromptTest`, `ReportJsonTest`로 turns 직렬화/역직렬화, OpenAI 요청 포맷, 리포트 파싱을 검증한다.
+- 관련 파일: `src/main/java/com/molla/domain/callsession/CallSession.java`, `src/main/java/com/molla/domain/callsession/CallSessionTurn.java`, `src/main/java/com/molla/domain/worker/ReportTurnInput.java`, `src/main/java/com/molla/domain/worker/OpenAiClient.java`, `src/main/java/com/molla/domain/worker/CallSessionWorker.java`, `src/main/java/com/molla/domain/worker/QdrantClient.java`, `docs/sql/20260520_add_turns_json_to_call_sessions.sql`
+- 비고: 운영 DB에는 `docs/sql/20260520_add_turns_json_to_call_sessions.sql`을 반영해야 하며, 기존 `transcript` 컬럼은 더 이상 사용하지 않는다.
+
 ## 2026-05-20 - 세션 종료 요청을 turns 기반으로 변경
 
 - 구분: API, DTO, 통화 세션

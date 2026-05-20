@@ -1,7 +1,10 @@
 package com.molla.domain.worker;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.molla.domain.callsession.CallSession;
 import com.molla.domain.callsession.CallSessionRepository;
+import com.molla.domain.callsession.CallSessionTurn;
 import com.molla.domain.callsession.SessionEndedEvent;
 import com.molla.domain.feedbackreport.FeedbackReport;
 import com.molla.domain.feedbackreport.FeedbackReportRepository;
@@ -15,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import java.util.List;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -25,6 +30,7 @@ public class CallSessionWorker {
     private final UserRepository userRepository;
     private final OpenAiClient openAiClient;
     private final QdrantClient qdrantClient;
+    private final ObjectMapper objectMapper;
 
     @Async("workerExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -41,17 +47,17 @@ public class CallSessionWorker {
             return;
         }
 
-        String transcript = session.getTranscript();
+        List<CallSessionTurn> turns = readTurns(session.getTurnsJson());
 
         // ── Step 1: 리포트 생성 ──────────────────────
         Report reportData = null;
         FeedbackReport savedReport = null;
 
         try {
-            if (transcript == null || transcript.isBlank()) {
-                log.warn("통화 전문 없음 — 리포트 생성 스킵, sessionId: {}", sessionId);
+            if (turns.isEmpty()) {
+                log.warn("통화 턴 없음 — 리포트 생성 스킵, sessionId: {}", sessionId);
             } else {
-                reportData = openAiClient.generateReport(transcript, session.getSessionType());
+                reportData = openAiClient.generateReport(ReportTurnInput.from(turns), session.getSessionType());
                 savedReport = saveReport(sessionId, session.getSessionType(), reportData);
                 log.info("Step 1 완료 — 리포트 생성, sessionId: {}", sessionId);
 
@@ -66,10 +72,10 @@ public class CallSessionWorker {
 
         // ── Step 2: Qdrant upsert ────────────────────
         try {
-            if (transcript == null || transcript.isBlank()) {
-                log.info("통화 전문 없음 — Qdrant upsert 스킵, sessionId: {}", sessionId);
+            if (turns.isEmpty()) {
+                log.info("통화 턴 없음 — Qdrant upsert 스킵, sessionId: {}", sessionId);
             } else {
-                qdrantClient.upsertTranscript(sessionId, userId, session.getPhoneNumber(), transcript);
+                qdrantClient.upsertTurns(sessionId, userId, session.getPhoneNumber(), turns);
                 log.info("Step 2 완료 — Qdrant upsert, sessionId: {}", sessionId);
             }
         } catch (Exception e) {
@@ -113,6 +119,20 @@ public class CallSessionWorker {
     }
 
     private String toJsonString(Object value) throws Exception {
-        return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(value);
+        return objectMapper.writeValueAsString(value);
+    }
+
+    private List<CallSessionTurn> readTurns(String turnsJson) {
+        if (turnsJson == null || turnsJson.isBlank()) {
+            return List.of();
+        }
+
+        try {
+            return objectMapper.readValue(turnsJson, new TypeReference<List<CallSessionTurn>>() {
+            });
+        } catch (Exception e) {
+            log.error("turns JSON 파싱 실패 — error: {}", e.getMessage(), e);
+            return List.of();
+        }
     }
 }

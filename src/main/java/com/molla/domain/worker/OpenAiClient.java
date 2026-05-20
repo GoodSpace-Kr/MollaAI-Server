@@ -30,20 +30,34 @@ public class OpenAiClient {
         this.model = model;
     }
 
-    public Report generateReport(String transcript, String sessionType) {
+    public Report generateReport(List<ReportTurnInput> turns, String sessionType) {
         String systemPrompt = """
-                당신은 영어 학습 코치입니다. 아래 통화 대화록을 분석해서 반드시 아래 JSON 형식으로만 응답하세요.
+                당신은 영어 학습 코치입니다. 아래 turn 목록을 분석해서 반드시 아래 JSON 형식으로만 응답하세요.
                 다른 텍스트는 절대 포함하지 마세요.
-                coreSentences는 반드시 여러 문장으로 구성하세요. 최소 3개 이상 작성하고, 각 항목은 transcript에서 실제로 중요한 문장을 골라
+                coreSentences는 반드시 여러 문장으로 구성하세요. 최소 15개 이상 작성하고, 각 항목은 turns의 userText에서 실제로 중요한 문장을 골라
                 sentence, grammarCorrection, improvedSentence를 1:1:1로 대응시켜 주세요.
                 coreSentences의 각 sentence는 서로 다른 문장이어야 하며, 같은 문장을 중복해서 넣지 마세요.
+                coreSentences의 sentence는 반드시 turns의 userText 원문을 그대로 또는 아주 가깝게 사용하세요.
+                coreSentences의 각 항목에는 반드시 sourceTurnIndex를 포함하고, 이 값은 sentence가 나온 turn의 index여야 합니다.
                 
                 {
                   "oneLineSummary": "한 줄 요약",
                   "coreSentences": [
-                    {"sentence": "", "grammarCorrection": "", "improvedSentence": ""},
-                    {"sentence": "", "grammarCorrection": "", "improvedSentence": ""},
-                    {"sentence": "", "grammarCorrection": "", "improvedSentence": ""}
+                    {"sourceTurnIndex": 1, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sourceTurnIndex": 2, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sourceTurnIndex": 3, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sourceTurnIndex": 4, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sourceTurnIndex": 5, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sourceTurnIndex": 6, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sourceTurnIndex": 7, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sourceTurnIndex": 8, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sourceTurnIndex": 9, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sourceTurnIndex": 10, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sourceTurnIndex": 11, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sourceTurnIndex": 12, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sourceTurnIndex": 13, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sourceTurnIndex": 14, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sourceTurnIndex": 15, "sentence": "", "grammarCorrection": "", "improvedSentence": ""}
                   ],
                   "habitAnalyses": [{"habit": "", "evidence": "", "suggestion": ""}],
                   "scores": [{"exam": "IELTS", "score": ""}, {"exam": "TOEIC", "score": ""}, {"exam": "OPIC", "score": ""}],
@@ -52,7 +66,16 @@ public class OpenAiClient {
                 }
                 """;
 
-        String userPrompt = "세션 타입: " + sessionType + "\n\n대화록:\n" + transcript;
+        String userPrompt;
+        try {
+            userPrompt = objectMapper.writeValueAsString(Map.of(
+                    "sessionType", sessionType,
+                    "turns", turns
+            ));
+        } catch (Exception e) {
+            throw new RuntimeException("OpenAI 리포트 요청 생성 실패: " + e.getMessage(), e);
+        }
+
         return parseReport(callChatApi(systemPrompt, userPrompt));
     }
 

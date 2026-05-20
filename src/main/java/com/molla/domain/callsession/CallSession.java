@@ -43,8 +43,8 @@ public class CallSession {
     private Integer durationSeconds;
 
     @Lob
-    @Column(name = "transcript", columnDefinition = "LONGTEXT")
-    private String transcript;
+    @Column(name = "turns_json", columnDefinition = "LONGTEXT")
+    private String turnsJson;
 
     @Column(nullable = false, length = 20)
     private String status;                       // in_progress / completed / failed
@@ -87,8 +87,8 @@ public class CallSession {
         this.status = "failed";
     }
 
-    public void updateTranscript(String transcript) {
-        this.transcript = transcript;
+    public void updateTurnsJson(String turnsJson) {
+        this.turnsJson = turnsJson;
     }
 
     public boolean isInProgress() {

@@ -11,6 +11,7 @@ public record Report(
         String levelResult
 ) {
     public record CoreSentenceFeedback(
+            Integer sourceTurnIndex,
             String sentence,
             String grammarCorrection,
             String improvedSentence

@@ -16,6 +16,7 @@ class ReportJsonTest {
                   "oneLineSummary": "따듯하고 자연스럽게 대화를 이끌었지만 문장 정확도는 조금 더 다듬을 수 있어요.",
                   "coreSentences": [
                     {
+                      "sourceTurnIndex": 3,
                       "sentence": "She go to school",
                       "grammarCorrection": "She goes to school",
                       "improvedSentence": "She goes to school every morning."
@@ -42,6 +43,7 @@ class ReportJsonTest {
 
         assertThat(report.oneLineSummary()).contains("문장 정확도");
         assertThat(report.coreSentences()).hasSize(1);
+        assertThat(report.coreSentences().get(0).sourceTurnIndex()).isEqualTo(3);
         assertThat(report.coreSentences().get(0).grammarCorrection()).isEqualTo("She goes to school");
         assertThat(report.habitAnalyses()).hasSize(1);
         assertThat(report.scores()).hasSize(3);

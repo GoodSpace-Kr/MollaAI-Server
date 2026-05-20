@@ -1,6 +1,7 @@
 package com.molla.controller.dto.callsession;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.molla.domain.callsession.CallSessionTurn;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,10 +35,10 @@ class EndSessionRequestJsonTest {
                 """;
 
         EndSessionRequest request = objectMapper.readValue(json, EndSessionRequest.class);
+        CallSessionTurn callSessionTurn = request.toCallSessionTurns().get(0);
 
         assertThat(request.status()).isEqualTo("completed");
         assertThat(request.turns()).hasSize(1);
-        assertThat(request.renderTranscript()).isEqualTo("USER: hello\nAI: hi there");
 
         EndSessionRequest.TurnPayload turn = request.turns().get(0);
         assertThat(turn.index()).isEqualTo(1);
@@ -48,10 +49,12 @@ class EndSessionRequestJsonTest {
         assertThat(turn.user().encoding()).isEqualTo("pcm16le/base64");
         assertThat(turn.user().audio()).isEqualTo("aGVsbG8=");
         assertThat(turn.assistant().text()).isEqualTo("hi there");
+        assertThat(callSessionTurn.user().text()).isEqualTo("hello");
+        assertThat(callSessionTurn.assistant().text()).isEqualTo("hi there");
     }
 
     @Test
-    void renderTranscriptSkipsEmptyTurns() throws Exception {
+    void convertsTurnsWithoutDroppingBlankAudioMetadata() throws Exception {
         String json = """
                 {
                   "status": "completed",
@@ -89,10 +92,14 @@ class EndSessionRequestJsonTest {
                 """;
 
         EndSessionRequest request = objectMapper.readValue(json, EndSessionRequest.class);
+        assertThat(request.toCallSessionTurns()).hasSize(2);
 
-        assertThat(request.renderTranscript()).isEqualTo("""
-                USER: I received the wrong item.
-                AI: Understood. I'll help you with that.
-                """.trim());
+        CallSessionTurn firstTurn = request.toCallSessionTurns().get(0);
+        CallSessionTurn secondTurn = request.toCallSessionTurns().get(1);
+
+        assertThat(firstTurn.user().text()).isEqualTo("I received the wrong item.");
+        assertThat(firstTurn.assistant().text()).isEqualTo("Understood. I'll help you with that.");
+        assertThat(secondTurn.user().audio()).isEqualTo("YmFy");
+        assertThat(secondTurn.assistant().text()).isNull();
     }
 }

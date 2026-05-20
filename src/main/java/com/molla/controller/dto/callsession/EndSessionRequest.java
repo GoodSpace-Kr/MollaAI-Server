@@ -1,10 +1,10 @@
 package com.molla.controller.dto.callsession;
 
+import com.molla.domain.callsession.CallSessionTurn;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.StringJoiner;
 
 @Schema(description = "통화 세션 종료 요청 (내부 API — AI 오케스트레이션 서버 전용)")
 public record EndSessionRequest(
@@ -19,33 +19,28 @@ public record EndSessionRequest(
         return (status != null && "failed".equals(status)) ? "failed" : "completed";
     }
 
-    public String renderTranscript() {
-        if (turns == null || turns.isEmpty()) {
-            return null;
+    public List<CallSessionTurn> toCallSessionTurns() {
+        if (turns == null) {
+            return List.of();
         }
 
-        StringJoiner joiner = new StringJoiner("\n");
-
-        for (TurnPayload turn : turns) {
-            if (turn == null) {
-                continue;
-            }
-
-            if (turn.user() != null && hasText(turn.user().text())) {
-                joiner.add("USER: " + turn.user().text().trim());
-            }
-
-            if (turn.assistant() != null && hasText(turn.assistant().text())) {
-                joiner.add("AI: " + turn.assistant().text().trim());
-            }
-        }
-
-        String transcript = joiner.toString().trim();
-        return transcript.isEmpty() ? null : transcript;
-    }
-
-    private boolean hasText(String value) {
-        return value != null && !value.isBlank();
+        return turns.stream()
+                .filter(turn -> turn != null)
+                .map(turn -> new CallSessionTurn(
+                        turn.index(),
+                        turn.createdAt(),
+                        turn.user() != null ? new CallSessionTurn.UserTurn(
+                                turn.user().text(),
+                                turn.user().sampleRate(),
+                                turn.user().encoding(),
+                                turn.user().audio()
+                        ) : null,
+                        turn.assistant() != null ? new CallSessionTurn.AssistantTurn(
+                                turn.assistant().text(),
+                                turn.assistant().createdAt()
+                        ) : null
+                ))
+                .toList();
     }
 
     @Schema(description = "통화 턴 데이터")

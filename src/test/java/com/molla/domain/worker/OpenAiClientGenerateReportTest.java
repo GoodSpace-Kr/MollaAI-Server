@@ -35,11 +35,13 @@ class OpenAiClientGenerateReportTest {
                   "oneLineSummary": "전반적으로 자연스럽지만 시제와 전치사를 더 다듬으면 좋아요.",
                   "coreSentences": [
                     {
+                      "sourceTurnIndex": 1,
                       "sentence": "I go to there yesterday.",
                       "grammarCorrection": "I went there yesterday.",
                       "improvedSentence": "I went there yesterday to meet my friend."
                     },
                     {
+                      "sourceTurnIndex": 3,
                       "sentence": "She don't like spicy food.",
                       "grammarCorrection": "She doesn't like spicy food.",
                       "improvedSentence": "She doesn't like spicy food, so we chose another restaurant."
@@ -92,24 +94,27 @@ class OpenAiClientGenerateReportTest {
                 .build();
         OpenAiClient client = new OpenAiClient(webClient, objectMapper, "gpt-test");
 
-        String transcript = """
-                user: I go to there yesterday.
-                assistant: What did you do there?
-                user: I meet my friend and we talk about work.
-                user: She don't like spicy food.
-                """;
+        var turns = java.util.List.of(
+                new ReportTurnInput(1, "I go to there yesterday.", "What did you do there?"),
+                new ReportTurnInput(2, "I meet my friend and we talk about work.", null),
+                new ReportTurnInput(3, "She don't like spicy food.", "Understood.")
+        );
 
-        Report report = client.generateReport(transcript, "practice");
+        Report report = client.generateReport(turns, "practice");
 
         JsonNode requestRoot = objectMapper.readTree(capturedRequestBody.get());
+        JsonNode userMessageJson = objectMapper.readTree(requestRoot.path("messages").get(1).path("content").asText());
 
         assertThat(requestRoot.path("model").asText()).isEqualTo("gpt-test");
         assertThat(requestRoot.path("response_format").path("type").asText()).isEqualTo("json_object");
-        assertThat(requestRoot.path("messages").get(1).path("content").asText()).contains(transcript);
-        assertThat(requestRoot.path("messages").get(1).path("content").asText()).contains("세션 타입: practice");
+        assertThat(userMessageJson.path("sessionType").asText()).isEqualTo("practice");
+        assertThat(userMessageJson.path("turns")).hasSize(3);
+        assertThat(userMessageJson.path("turns").get(2).path("index").asInt()).isEqualTo(3);
+        assertThat(userMessageJson.path("turns").get(2).path("userText").asText()).isEqualTo("She don't like spicy food.");
 
         assertThat(report.oneLineSummary()).contains("전반적으로 자연스럽지만");
         assertThat(report.coreSentences()).hasSize(2);
+        assertThat(report.coreSentences().get(0).sourceTurnIndex()).isEqualTo(1);
         assertThat(report.coreSentences().get(0).grammarCorrection()).isEqualTo("I went there yesterday.");
         assertThat(report.habitAnalyses()).hasSize(1);
         assertThat(report.scores()).hasSize(3);
