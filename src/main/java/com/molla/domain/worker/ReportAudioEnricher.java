@@ -57,8 +57,8 @@ public class ReportAudioEnricher {
                 coreSentence.grammarCorrection(),
                 coreSentence.improvedSentence(),
                 matchedTurn.user().sampleRate(),
-                matchedTurn.user().encoding(),
-                matchedTurn.user().audio()
+                matchedTurn.user().audioKey(),
+                null
         );
     }
 }

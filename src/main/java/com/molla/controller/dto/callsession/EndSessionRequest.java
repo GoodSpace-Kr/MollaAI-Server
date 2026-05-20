@@ -32,8 +32,7 @@ public record EndSessionRequest(
                         turn.user() != null ? new CallSessionTurn.UserTurn(
                                 turn.user().text(),
                                 turn.user().sampleRate(),
-                                turn.user().encoding(),
-                                turn.user().audio()
+                                turn.user().audioKey()
                         ) : null,
                         turn.assistant() != null ? new CallSessionTurn.AssistantTurn(
                                 turn.assistant().text(),
@@ -67,11 +66,8 @@ public record EndSessionRequest(
             @Schema(description = "오디오 샘플레이트", example = "16000")
             Integer sampleRate,
 
-            @Schema(description = "오디오 인코딩 형식", example = "pcm16le/base64")
-            String encoding,
-
-            @Schema(description = "Base64 인코딩된 오디오 데이터")
-            String audio
+            @Schema(description = "S3에 저장된 오디오 파일 키", example = "calls/CA539d3f817a9f5a5cb8f61487d63ebd22/turns/5.wav")
+            String audioKey
     ) {
     }
 

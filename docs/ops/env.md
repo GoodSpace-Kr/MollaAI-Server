@@ -22,6 +22,9 @@
 | `OPENAI_API_KEY` | 필수 | OpenAI API | AI 리포트 생성, 메모리 요약, AI 코치 응답, 임베딩 생성에 사용하는 API Key |
 | `QDRANT_HOST` | 필수 | Qdrant | Qdrant 서버 호스트. `application.yml`에는 기본값 `localhost`가 있지만 운영 compose에서는 명시 주입한다. |
 | `QDRANT_PORT` | 필수 | Qdrant | Qdrant 서버 포트. `application.yml`에는 기본값 `6333`이 있지만 운영 compose에서는 명시 주입한다. |
+| `AWS_REGION` | 필수 | AWS S3 Presigner | S3 presigned URL 생성에 사용하는 AWS 리전 |
+| `S3_AUDIO_BUCKET` | 필수 | AWS S3 | 통화 turn 오디오 파일이 저장된 S3 버킷 이름 |
+| `S3_AUDIO_PRESIGN_EXPIRATION_MINUTES` | 선택 | AWS S3 Presigner | presigned audio URL 만료 시간(분). 기본값 `60` |
 
 ## 운영 서버 주입 방식
 
@@ -40,6 +43,9 @@ environment:
   OPENAI_API_KEY: ${OPENAI_API_KEY}
   QDRANT_HOST: ${QDRANT_HOST}
   QDRANT_PORT: ${QDRANT_PORT}
+  AWS_REGION: ${AWS_REGION}
+  S3_AUDIO_BUCKET: ${S3_AUDIO_BUCKET}
+  S3_AUDIO_PRESIGN_EXPIRATION_MINUTES: ${S3_AUDIO_PRESIGN_EXPIRATION_MINUTES}
 ```
 
 운영 서버에서 Docker Compose를 실행할 때는 같은 디렉터리의 `.env` 파일 또는 셸 환경변수를 통해 위 값들이 주입되어야 한다.

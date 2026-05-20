@@ -123,6 +123,15 @@
 - 관련 파일: `docs/PROJECT_PLAN.md`
 - 비고: API나 도메인 모델이 변경되면 함께 갱신한다.
 
+## 2026-05-20 - audioKey 기반 S3 audioUrl 응답 전환
+
+- 구분: API, S3, 리포트, 운영 환경변수
+- 변경: 세션 종료 turns와 core sentence 오디오 필드를 base64 `audio`에서 `audioKey` 기반으로 전환하고, 응답 시 S3 presigned `audioUrl`을 생성하도록 변경했다.
+- 영향: 프론트는 리포트 상세 응답에서 `audioUrl`을 받아 바로 음성을 재생할 수 있고, 큰 base64 payload를 end 요청과 응답에서 제거한다.
+- 확인: `EndSessionRequestJsonTest`, `ReportAudioEnricherTest`, `FeedbackReportViewMapperTest`, `ReportJsonTest`로 audioKey 저장과 audioUrl 매핑을 검증한다.
+- 관련 파일: `src/main/java/com/molla/domain/worker/S3AudioUrlService.java`, `src/main/java/com/molla/config/S3Config.java`, `src/main/resources/application.yml`, `src/main/java/com/molla/domain/feedbackreport/Report.java`
+- 비고: 런타임에는 `AWS_REGION`, `S3_AUDIO_BUCKET`, `S3_AUDIO_PRESIGN_EXPIRATION_MINUTES` 환경변수가 필요하다.
+
 ## 2026-05-20 - 코어 문장에 turn audio 첨부
 
 - 구분: 리포트, 메인 로직, API
