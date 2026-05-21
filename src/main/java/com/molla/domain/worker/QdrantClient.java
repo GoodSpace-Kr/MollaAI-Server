@@ -2,7 +2,6 @@ package com.molla.domain.worker;
 
 import com.molla.domain.callsession.CallSessionTurn;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -15,24 +14,21 @@ import java.util.UUID;
 @Component
 public class QdrantClient {
 
+    private static final String MEMORY_POINTS_URI = "/memory/points";
+
     private final WebClient webClient;
     private final OpenAiClient openAiClient;
-    private final String collectionName;
     private final String embeddingModel;
 
     public QdrantClient(
             WebClient.Builder builder,
             OpenAiClient openAiClient,
-            @Value("${qdrant.host}") String host,
-            @Value("${qdrant.port}") int port,
-            @Value("${qdrant.collection-name}") String collectionName,
-            @Value("${openai.embedding-model}") String embeddingModel
+            @org.springframework.beans.factory.annotation.Value("${openai.embedding-model}") String embeddingModel
     ) {
         this.webClient = builder
-                .baseUrl("http://" + host + ":" + port)
+                .baseUrl("https://orch.mollatalk.com")
                 .build();
         this.openAiClient = openAiClient;
-        this.collectionName = collectionName;
         this.embeddingModel = embeddingModel;
     }
 
@@ -45,17 +41,14 @@ public class QdrantClient {
 
         Map<String, Object> body = buildUpsertBody(userId, phoneNumber, turns);
 
-        // AI 서버의 FastAPI 엔드포인트 연결 시 아래 호출을 그쪽 계약에 맞게 되살리면 됩니다.
-        /*
         webClient.put()
-                .uri("/collections/" + collectionName + "/points")
+                .uri(MEMORY_POINTS_URI)
                 .bodyValue(body)
                 .retrieve()
                 .toBodilessEntity()
                 .block();
-        */
 
-        log.info("Qdrant upsert body 준비 완료 — sessionId: {}, 임베딩 수: {}", sessionId, userTurns.size());
+        log.info("메모리 포인트 업로드 완료 — sessionId: {}, 임베딩 수: {}", sessionId, userTurns.size());
     }
 
     Map<String, Object> buildUpsertBody(String userId, String phoneNumber, List<CallSessionTurn> turns) {

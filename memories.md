@@ -123,6 +123,15 @@
 - 관련 파일: `docs/PROJECT_PLAN.md`
 - 비고: API나 도메인 모델이 변경되면 함께 갱신한다.
 
+## 2026-05-21 - 메모리 포인트 업로드 엔드포인트를 AI 서버로 전환
+
+- 구분: AI 메모리, 엔드포인트, 메인 로직
+- 변경: 백엔드의 `QdrantClient`가 직접 Qdrant에 PUT하지 않고 `https://orch.mollatalk.com/memory/points` 엔드포인트로 메모리 포인트 body를 전송하도록 변경했다.
+- 영향: 메모리 적재 책임은 AI 서버가 맡고, 백엔드는 `userText` 임베딩과 payload 조립 후 AI 서버 엔드포인트에 업로드한다.
+- 확인: `QdrantClientTest`로 업로드 body 스키마가 유지되는지 검증했다.
+- 관련 파일: `src/main/java/com/molla/domain/worker/QdrantClient.java`, `src/test/java/com/molla/domain/worker/QdrantClientTest.java`
+- 비고: 이전 직접 Qdrant 호출용 주석 코드는 제거했다.
+
 ## 2026-05-21 - Qdrant turns payload를 대화 문맥 중심으로 단순화
 
 - 구분: Qdrant, AI 메모리, 메인 로직

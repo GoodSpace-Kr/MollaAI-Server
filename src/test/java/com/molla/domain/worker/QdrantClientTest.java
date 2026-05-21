@@ -18,9 +18,6 @@ class QdrantClientTest {
     private final QdrantClient qdrantClient = new QdrantClient(
             WebClient.builder(),
             openAiClient,
-            "localhost",
-            6333,
-            "molla_turns",
             "text-embedding-3-small"
     );
 
