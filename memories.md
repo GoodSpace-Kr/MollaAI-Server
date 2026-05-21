@@ -123,6 +123,15 @@
 - 관련 파일: `docs/PROJECT_PLAN.md`
 - 비고: API나 도메인 모델이 변경되면 함께 갱신한다.
 
+## 2026-05-21 - Qdrant turns payload를 대화 문맥 중심으로 단순화
+
+- 구분: Qdrant, AI 메모리, 메인 로직
+- 변경: `upsertTurns()`가 `userText`만 임베딩하고, payload는 `userId`, `phoneNumber`, `userText`, `assistantText`, `createdAt`, `audioKey`만 담도록 변경했다.
+- 영향: Qdrant 검색 결과는 사용자 발화 의미를 기준으로 찾고, payload의 `userText`와 `assistantText`로 문맥을 복원하는 구조가 된다.
+- 확인: `QdrantClientTest`로 생성되는 point body 스키마와 vector 입력 텍스트를 검증했다.
+- 관련 파일: `src/main/java/com/molla/domain/worker/QdrantClient.java`, `src/test/java/com/molla/domain/worker/QdrantClientTest.java`
+- 비고: 실제 Qdrant PUT 호출은 주석 처리해 두었고, AI 서버 FastAPI 엔드포인트 연결 시 그 부분을 대체하면 된다.
+
 ## 2026-05-20 - audioKey 기반 S3 audioUrl 응답 전환
 
 - 구분: API, S3, 리포트, 운영 환경변수
