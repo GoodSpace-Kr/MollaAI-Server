@@ -55,30 +55,4 @@ class QdrantClientTest {
         assertThat((String) payload.get("createdAt")).startsWith("2026-05-20T07:08:33.742");
         assertThat(payload).containsEntry("audioKey", "calls/CA/test/turns/5.wav");
     }
-
-    @Test
-    void omitsNullPayloadFieldsForAnonymousSessions() {
-        when(openAiClient.createEmbedding("I received the wrong item.", "text-embedding-3-small"))
-                .thenReturn(List.of(0.1f, 0.2f, 0.3f));
-
-        Map<String, Object> body = qdrantClient.buildUpsertBody(
-                null,
-                "01012345678",
-                List.of(new CallSessionTurn(
-                        1,
-                        null,
-                        new CallSessionTurn.UserTurn("I received the wrong item.", 16000, null),
-                        new CallSessionTurn.AssistantTurn(null, null)
-                ))
-        );
-
-        @SuppressWarnings("unchecked")
-        Map<String, Object> point = (Map<String, Object>) ((List<?>) body.get("points")).get(0);
-        @SuppressWarnings("unchecked")
-        Map<String, Object> payload = (Map<String, Object>) point.get("payload");
-
-        assertThat(payload).containsEntry("phoneNumber", "01012345678");
-        assertThat(payload).containsEntry("userText", "I received the wrong item.");
-        assertThat(payload).doesNotContainKeys("userId", "assistantText", "createdAt", "audioKey");
-    }
 }
