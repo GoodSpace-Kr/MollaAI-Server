@@ -123,6 +123,15 @@
 - 관련 파일: `docs/PROJECT_PLAN.md`
 - 비고: API나 도메인 모델이 변경되면 함께 갱신한다.
 
+## 2026-05-21 - 테스트 프로필에 S3 placeholder 추가
+
+- 구분: 테스트, 설정
+- 변경: `application-test.yml`에 `aws.region`, `aws.s3.audio-bucket`, `aws.s3.presign-expiration-minutes` 더미 값을 추가했다.
+- 영향: `MollaApplicationTests.contextLoads()`가 S3 설정 placeholder 누락으로 실패하지 않고 CI에서 정상 기동된다.
+- 확인: `./gradlew test --tests com.molla.MollaApplicationTests`로 검증했다.
+- 관련 파일: `src/test/resources/application-test.yml`
+- 비고: 테스트 전용 값이라 실제 AWS 자격 증명이나 버킷이 필요하지 않다.
+
 ## 2026-05-21 - 메모리 포인트 업로드 메서드를 POST로 변경
 
 - 구분: 엔드포인트, AI 메모리

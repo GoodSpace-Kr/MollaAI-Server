@@ -36,3 +36,9 @@ qdrant:
   host: localhost
   port: 6333
   collection-name: molla_turns_test
+
+aws:
+  region: ap-northeast-2
+  s3:
+    audio-bucket: test-audio-bucket
+    presign-expiration-minutes: 60
