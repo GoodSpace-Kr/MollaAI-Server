@@ -123,6 +123,15 @@
 - 관련 파일: `docs/PROJECT_PLAN.md`
 - 비고: API나 도메인 모델이 변경되면 함께 갱신한다.
 
+## 2026-05-21 - S3 환경변수명을 운영 .env 기준으로 정렬
+
+- 구분: 운영 환경변수, S3, 설정
+- 변경: 백엔드가 기대하는 S3 버킷 환경변수명을 `S3_AUDIO_BUCKET`에서 `ORCH_S3_AUDIO_BUCKET`으로 변경하고 `ORCH_S3_AUDIO_PREFIX`도 설정 키로 반영했다.
+- 영향: 운영 서버 `.env`에 이미 있는 `AWS_REGION`, `ORCH_S3_AUDIO_BUCKET`, `ORCH_S3_AUDIO_PREFIX`를 그대로 사용해 앱이 기동된다.
+- 확인: `application.yml`, `application-test.yml`, `docs/ops/env.md`를 함께 갱신했다.
+- 관련 파일: `src/main/resources/application.yml`, `src/test/resources/application-test.yml`, `docs/ops/env.md`
+- 비고: 현재 prefix 값은 presigned URL 생성에 직접 쓰지 않지만 운영 환경과 이름을 맞추기 위해 유지한다.
+
 ## 2026-05-21 - 테스트 프로필에 S3 placeholder 추가
 
 - 구분: 테스트, 설정
