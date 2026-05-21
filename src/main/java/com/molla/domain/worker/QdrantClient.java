@@ -41,7 +41,7 @@ public class QdrantClient {
 
         Map<String, Object> body = buildUpsertBody(userId, phoneNumber, turns);
 
-        webClient.put()
+        webClient.post()
                 .uri(MEMORY_POINTS_URI)
                 .bodyValue(body)
                 .retrieve()

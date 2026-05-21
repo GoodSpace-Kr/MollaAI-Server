@@ -123,6 +123,15 @@
 - 관련 파일: `docs/PROJECT_PLAN.md`
 - 비고: API나 도메인 모델이 변경되면 함께 갱신한다.
 
+## 2026-05-21 - 메모리 포인트 업로드 메서드를 POST로 변경
+
+- 구분: 엔드포인트, AI 메모리
+- 변경: `https://orch.mollatalk.com/memory/points` 호출 메서드를 `PUT`에서 `POST`로 변경했다.
+- 영향: 백엔드는 AI 서버 FastAPI 계약과 동일하게 POST 요청으로 메모리 포인트를 업로드한다.
+- 확인: `QdrantClient` 호출부를 수정하고 기존 `QdrantClientTest`로 body 생성 로직이 유지되는지 확인한다.
+- 관련 파일: `src/main/java/com/molla/domain/worker/QdrantClient.java`
+- 비고: 요청 body 스키마는 변경하지 않았다.
+
 ## 2026-05-21 - 메모리 포인트 업로드 엔드포인트를 AI 서버로 전환
 
 - 구분: AI 메모리, 엔드포인트, 메인 로직
