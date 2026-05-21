@@ -23,7 +23,8 @@
 | `QDRANT_HOST` | 필수 | Qdrant | Qdrant 서버 호스트. `application.yml`에는 기본값 `localhost`가 있지만 운영 compose에서는 명시 주입한다. |
 | `QDRANT_PORT` | 필수 | Qdrant | Qdrant 서버 포트. `application.yml`에는 기본값 `6333`이 있지만 운영 compose에서는 명시 주입한다. |
 | `AWS_REGION` | 필수 | AWS S3 Presigner | S3 presigned URL 생성에 사용하는 AWS 리전 |
-| `S3_AUDIO_BUCKET` | 필수 | AWS S3 | 통화 turn 오디오 파일이 저장된 S3 버킷 이름 |
+| `ORCH_S3_AUDIO_BUCKET` | 필수 | AWS S3 | AI 오케스트레이션 서버가 저장하는 통화 turn 오디오 파일 S3 버킷 이름 |
+| `ORCH_S3_AUDIO_PREFIX` | 선택 | AWS S3 | AI 오케스트레이션 서버 오디오 파일 공통 prefix. 현재 백엔드는 presigned URL 생성용으로 직접 사용하지 않지만 운영 환경과 이름을 맞춰 유지한다. |
 | `S3_AUDIO_PRESIGN_EXPIRATION_MINUTES` | 선택 | AWS S3 Presigner | presigned audio URL 만료 시간(분). 기본값 `60` |
 
 ## 운영 서버 주입 방식
@@ -44,7 +45,8 @@ environment:
   QDRANT_HOST: ${QDRANT_HOST}
   QDRANT_PORT: ${QDRANT_PORT}
   AWS_REGION: ${AWS_REGION}
-  S3_AUDIO_BUCKET: ${S3_AUDIO_BUCKET}
+  ORCH_S3_AUDIO_BUCKET: ${ORCH_S3_AUDIO_BUCKET}
+  ORCH_S3_AUDIO_PREFIX: ${ORCH_S3_AUDIO_PREFIX}
   S3_AUDIO_PRESIGN_EXPIRATION_MINUTES: ${S3_AUDIO_PRESIGN_EXPIRATION_MINUTES}
 ```
 

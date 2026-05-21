@@ -45,7 +45,8 @@ qdrant:
 aws:
   region: ${AWS_REGION}
   s3:
-    audio-bucket: ${S3_AUDIO_BUCKET}
+    audio-bucket: ${ORCH_S3_AUDIO_BUCKET}
+    audio-prefix: ${ORCH_S3_AUDIO_PREFIX:}
     presign-expiration-minutes: ${S3_AUDIO_PRESIGN_EXPIRATION_MINUTES:60}
 
 springdoc:
