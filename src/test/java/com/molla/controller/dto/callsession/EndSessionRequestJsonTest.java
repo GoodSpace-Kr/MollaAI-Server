@@ -22,8 +22,7 @@ class EndSessionRequestJsonTest {
                       "user": {
                         "text": "hello",
                         "sampleRate": 16000,
-                        "encoding": "pcm16le/base64",
-                        "audio": "aGVsbG8="
+                        "audioKey": "calls/test/turn-1.wav"
                       },
                       "assistant": {
                         "text": "hi there",
@@ -46,8 +45,7 @@ class EndSessionRequestJsonTest {
         assertThat(turn.assistant()).isNotNull();
         assertThat(turn.user().text()).isEqualTo("hello");
         assertThat(turn.user().sampleRate()).isEqualTo(16000);
-        assertThat(turn.user().encoding()).isEqualTo("pcm16le/base64");
-        assertThat(turn.user().audio()).isEqualTo("aGVsbG8=");
+        assertThat(turn.user().audioKey()).isEqualTo("calls/test/turn-1.wav");
         assertThat(turn.assistant().text()).isEqualTo("hi there");
         assertThat(callSessionTurn.user().text()).isEqualTo("hello");
         assertThat(callSessionTurn.assistant().text()).isEqualTo("hi there");
@@ -65,8 +63,7 @@ class EndSessionRequestJsonTest {
                       "user": {
                         "text": "I received the wrong item.",
                         "sampleRate": 16000,
-                        "encoding": "pcm16le/base64",
-                        "audio": "Zm9v"
+                        "audioKey": "calls/test/turn-2.wav"
                       },
                       "assistant": {
                         "text": "Understood. I'll help you with that.",
@@ -79,8 +76,7 @@ class EndSessionRequestJsonTest {
                       "user": {
                         "text": " ",
                         "sampleRate": 16000,
-                        "encoding": "pcm16le/base64",
-                        "audio": "YmFy"
+                        "audioKey": "calls/test/turn-3.wav"
                       },
                       "assistant": {
                         "text": null,
@@ -99,7 +95,7 @@ class EndSessionRequestJsonTest {
 
         assertThat(firstTurn.user().text()).isEqualTo("I received the wrong item.");
         assertThat(firstTurn.assistant().text()).isEqualTo("Understood. I'll help you with that.");
-        assertThat(secondTurn.user().audio()).isEqualTo("YmFy");
+        assertThat(secondTurn.user().audioKey()).isEqualTo("calls/test/turn-3.wav");
         assertThat(secondTurn.assistant().text()).isNull();
     }
 }

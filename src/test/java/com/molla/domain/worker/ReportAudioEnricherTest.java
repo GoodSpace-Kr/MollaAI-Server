@@ -31,13 +31,13 @@ class ReportAudioEnricherTest {
                 new CallSessionTurn(
                         2,
                         OffsetDateTime.parse("2026-05-20T12:00:08.345678+00:00"),
-                        new CallSessionTurn.UserTurn("I received the wrong item.", 16000, "pcm16le/base64", "AUDIO_2"),
+                        new CallSessionTurn.UserTurn("I received the wrong item.", 16000, "calls/test/turn-2.wav"),
                         new CallSessionTurn.AssistantTurn("Understood.", OffsetDateTime.parse("2026-05-20T12:00:09.456789+00:00"))
                 ),
                 new CallSessionTurn(
                         5,
                         OffsetDateTime.parse("2026-05-20T12:00:18.345678+00:00"),
-                        new CallSessionTurn.UserTurn("She don't like spicy food.", 22050, "pcm16le/base64", "AUDIO_5"),
+                        new CallSessionTurn.UserTurn("She don't like spicy food.", 22050, "calls/test/turn-5.wav"),
                         new CallSessionTurn.AssistantTurn("Okay.", OffsetDateTime.parse("2026-05-20T12:00:19.456789+00:00"))
                 )
         );
@@ -45,9 +45,9 @@ class ReportAudioEnricherTest {
         Report enriched = enricher.attachTurnAudio(report, turns);
 
         assertThat(enriched.coreSentences()).hasSize(2);
-        assertThat(enriched.coreSentences().get(0).audio()).isEqualTo("AUDIO_2");
+        assertThat(enriched.coreSentences().get(0).audioKey()).isEqualTo("calls/test/turn-2.wav");
         assertThat(enriched.coreSentences().get(0).sampleRate()).isEqualTo(16000);
-        assertThat(enriched.coreSentences().get(1).audio()).isEqualTo("AUDIO_5");
+        assertThat(enriched.coreSentences().get(1).audioKey()).isEqualTo("calls/test/turn-5.wav");
         assertThat(enriched.coreSentences().get(1).sampleRate()).isEqualTo(22050);
     }
 
@@ -66,7 +66,7 @@ class ReportAudioEnricherTest {
 
         Report enriched = enricher.attachTurnAudio(report, List.of());
 
-        assertThat(enriched.coreSentences().get(0).audio()).isNull();
-        assertThat(enriched.coreSentences().get(0).encoding()).isNull();
+        assertThat(enriched.coreSentences().get(0).audioKey()).isNull();
+        assertThat(enriched.coreSentences().get(0).audioUrl()).isNull();
     }
 }

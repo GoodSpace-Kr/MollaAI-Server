@@ -15,6 +15,7 @@ import java.util.List;
 public class FeedbackReportViewMapper {
 
     private final ObjectMapper objectMapper;
+    private final com.molla.domain.worker.S3AudioUrlService s3AudioUrlService;
 
     public FeedbackReportSummaryResponse toSummaryResponse(FeedbackReport report) {
         return new FeedbackReportSummaryResponse(
@@ -30,13 +31,21 @@ public class FeedbackReportViewMapper {
     }
 
     public FeedbackReportResponse toDetailResponse(FeedbackReport report) {
+        List<Report.CoreSentenceFeedback> coreSentences = readList(
+                report.getCoreSentences(),
+                new TypeReference<List<Report.CoreSentenceFeedback>>() {
+                },
+                "coreSentences"
+        ).stream()
+                .map(this::attachAudioUrl)
+                .toList();
+
         return new FeedbackReportResponse(
                 report.getId(),
                 report.getSessionId(),
                 report.getReportType(),
                 report.getOneLineSummary(),
-                readList(report.getCoreSentences(), new TypeReference<List<Report.CoreSentenceFeedback>>() {
-                }, "coreSentences"),
+                coreSentences,
                 readList(report.getHabitAnalyses(), new TypeReference<List<Report.HabitAnalysis>>() {
                 }, "habitAnalyses"),
                 readList(report.getScores(), new TypeReference<List<Report.ReportScore>>() {
@@ -61,5 +70,21 @@ public class FeedbackReportViewMapper {
                     "리포트 응답 변환 실패: " + fieldName
             );
         }
+    }
+
+    private Report.CoreSentenceFeedback attachAudioUrl(Report.CoreSentenceFeedback coreSentence) {
+        if (coreSentence == null) {
+            return null;
+        }
+
+        return new Report.CoreSentenceFeedback(
+                coreSentence.sourceTurnIndex(),
+                coreSentence.sentence(),
+                coreSentence.grammarCorrection(),
+                coreSentence.improvedSentence(),
+                coreSentence.sampleRate(),
+                coreSentence.audioKey(),
+                s3AudioUrlService.createAudioUrl(coreSentence.audioKey())
+        );
     }
 }

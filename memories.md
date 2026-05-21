@@ -123,6 +123,42 @@
 - 관련 파일: `docs/PROJECT_PLAN.md`
 - 비고: API나 도메인 모델이 변경되면 함께 갱신한다.
 
+## 2026-05-21 - 메모리 포인트 업로드 메서드를 POST로 변경
+
+- 구분: 엔드포인트, AI 메모리
+- 변경: `https://orch.mollatalk.com/memory/points` 호출 메서드를 `PUT`에서 `POST`로 변경했다.
+- 영향: 백엔드는 AI 서버 FastAPI 계약과 동일하게 POST 요청으로 메모리 포인트를 업로드한다.
+- 확인: `QdrantClient` 호출부를 수정하고 기존 `QdrantClientTest`로 body 생성 로직이 유지되는지 확인한다.
+- 관련 파일: `src/main/java/com/molla/domain/worker/QdrantClient.java`
+- 비고: 요청 body 스키마는 변경하지 않았다.
+
+## 2026-05-21 - 메모리 포인트 업로드 엔드포인트를 AI 서버로 전환
+
+- 구분: AI 메모리, 엔드포인트, 메인 로직
+- 변경: 백엔드의 `QdrantClient`가 직접 Qdrant에 PUT하지 않고 `https://orch.mollatalk.com/memory/points` 엔드포인트로 메모리 포인트 body를 전송하도록 변경했다.
+- 영향: 메모리 적재 책임은 AI 서버가 맡고, 백엔드는 `userText` 임베딩과 payload 조립 후 AI 서버 엔드포인트에 업로드한다.
+- 확인: `QdrantClientTest`로 업로드 body 스키마가 유지되는지 검증했다.
+- 관련 파일: `src/main/java/com/molla/domain/worker/QdrantClient.java`, `src/test/java/com/molla/domain/worker/QdrantClientTest.java`
+- 비고: 이전 직접 Qdrant 호출용 주석 코드는 제거했다.
+
+## 2026-05-21 - Qdrant turns payload를 대화 문맥 중심으로 단순화
+
+- 구분: Qdrant, AI 메모리, 메인 로직
+- 변경: `upsertTurns()`가 `userText`만 임베딩하고, payload는 `userId`, `phoneNumber`, `userText`, `assistantText`, `createdAt`, `audioKey`만 담도록 변경했다.
+- 영향: Qdrant 검색 결과는 사용자 발화 의미를 기준으로 찾고, payload의 `userText`와 `assistantText`로 문맥을 복원하는 구조가 된다.
+- 확인: `QdrantClientTest`로 생성되는 point body 스키마와 vector 입력 텍스트를 검증했다.
+- 관련 파일: `src/main/java/com/molla/domain/worker/QdrantClient.java`, `src/test/java/com/molla/domain/worker/QdrantClientTest.java`
+- 비고: 실제 Qdrant PUT 호출은 주석 처리해 두었고, AI 서버 FastAPI 엔드포인트 연결 시 그 부분을 대체하면 된다.
+
+## 2026-05-20 - audioKey 기반 S3 audioUrl 응답 전환
+
+- 구분: API, S3, 리포트, 운영 환경변수
+- 변경: 세션 종료 turns와 core sentence 오디오 필드를 base64 `audio`에서 `audioKey` 기반으로 전환하고, 응답 시 S3 presigned `audioUrl`을 생성하도록 변경했다.
+- 영향: 프론트는 리포트 상세 응답에서 `audioUrl`을 받아 바로 음성을 재생할 수 있고, 큰 base64 payload를 end 요청과 응답에서 제거한다.
+- 확인: `EndSessionRequestJsonTest`, `ReportAudioEnricherTest`, `FeedbackReportViewMapperTest`, `ReportJsonTest`로 audioKey 저장과 audioUrl 매핑을 검증한다.
+- 관련 파일: `src/main/java/com/molla/domain/worker/S3AudioUrlService.java`, `src/main/java/com/molla/config/S3Config.java`, `src/main/resources/application.yml`, `src/main/java/com/molla/domain/feedbackreport/Report.java`
+- 비고: 런타임에는 `AWS_REGION`, `S3_AUDIO_BUCKET`, `S3_AUDIO_PRESIGN_EXPIRATION_MINUTES` 환경변수가 필요하다.
+
 ## 2026-05-20 - 코어 문장에 turn audio 첨부
 
 - 구분: 리포트, 메인 로직, API

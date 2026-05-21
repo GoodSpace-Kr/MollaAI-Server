@@ -42,6 +42,12 @@ qdrant:
   port: ${QDRANT_PORT:6333}
   collection-name: molla_turns
 
+aws:
+  region: ${AWS_REGION}
+  s3:
+    audio-bucket: ${S3_AUDIO_BUCKET}
+    presign-expiration-minutes: ${S3_AUDIO_PRESIGN_EXPIRATION_MINUTES:60}
+
 springdoc:
   api-docs:
     path: /api-docs

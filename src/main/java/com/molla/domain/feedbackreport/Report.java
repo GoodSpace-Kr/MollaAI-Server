@@ -16,8 +16,8 @@ public record Report(
             String grammarCorrection,
             String improvedSentence,
             Integer sampleRate,
-            String encoding,
-            String audio
+            String audioKey,
+            String audioUrl
     ) {
     }
 

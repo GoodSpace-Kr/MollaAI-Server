@@ -11,8 +11,7 @@ public record CallSessionTurn(
     public record UserTurn(
             String text,
             Integer sampleRate,
-            String encoding,
-            String audio
+            String audioKey
     ) {
     }
 

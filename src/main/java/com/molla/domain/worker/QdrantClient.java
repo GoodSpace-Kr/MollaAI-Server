@@ -2,12 +2,10 @@ package com.molla.domain.worker;
 
 import com.molla.domain.callsession.CallSessionTurn;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -16,46 +14,56 @@ import java.util.UUID;
 @Component
 public class QdrantClient {
 
+    private static final String MEMORY_POINTS_URI = "/memory/points";
+
     private final WebClient webClient;
     private final OpenAiClient openAiClient;
-    private final String collectionName;
     private final String embeddingModel;
 
     public QdrantClient(
             WebClient.Builder builder,
             OpenAiClient openAiClient,
-            @Value("${qdrant.host}") String host,
-            @Value("${qdrant.port}") int port,
-            @Value("${qdrant.collection-name}") String collectionName,
-            @Value("${openai.embedding-model}") String embeddingModel
+            @org.springframework.beans.factory.annotation.Value("${openai.embedding-model}") String embeddingModel
     ) {
         this.webClient = builder
-                .baseUrl("http://" + host + ":" + port)
+                .baseUrl("https://orch.mollatalk.com")
                 .build();
         this.openAiClient = openAiClient;
-        this.collectionName = collectionName;
         this.embeddingModel = embeddingModel;
     }
 
     public void upsertTurns(String sessionId, String userId, String phoneNumber, List<CallSessionTurn> turns) {
         List<TranscriptChunk> userTurns = extractUserTurns(turns);
-
         if (userTurns.isEmpty()) {
             log.info("임베딩 대상 발화 없음 — sessionId: {}", sessionId);
             return;
         }
 
+        Map<String, Object> body = buildUpsertBody(userId, phoneNumber, turns);
+
+        webClient.post()
+                .uri(MEMORY_POINTS_URI)
+                .bodyValue(body)
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+
+        log.info("메모리 포인트 업로드 완료 — sessionId: {}, 임베딩 수: {}", sessionId, userTurns.size());
+    }
+
+    Map<String, Object> buildUpsertBody(String userId, String phoneNumber, List<CallSessionTurn> turns) {
+        List<TranscriptChunk> userTurns = extractUserTurns(turns);
+
         List<Map<String, Object>> points = userTurns.stream()
                 .map(turn -> {
-                    List<Float> vector = openAiClient.createEmbedding(turn.content(), embeddingModel);
-                    Map<String, Object> payload = new HashMap<>();
-                    payload.put("sessionId", sessionId);
+                    List<Float> vector = openAiClient.createEmbedding(turn.userText(), embeddingModel);
+                    Map<String, Object> payload = new java.util.LinkedHashMap<>();
+                    payload.put("userId", userId);
                     payload.put("phoneNumber", phoneNumber);
-                    payload.put("content", turn.content());
-                    payload.put("sequenceOrder", turn.sequenceOrder());
-                    if (userId != null) {
-                        payload.put("userId", userId);
-                    }
+                    payload.put("userText", turn.userText());
+                    payload.put("assistantText", turn.assistantText());
+                    payload.put("createdAt", turn.createdAt());
+                    payload.put("audioKey", turn.audioKey());
 
                     return Map.<String, Object>of(
                             "id", UUID.randomUUID().toString(),
@@ -65,16 +73,7 @@ public class QdrantClient {
                 })
                 .toList();
 
-        Map<String, Object> body = Map.of("points", points);
-
-        webClient.put()
-                .uri("/collections/" + collectionName + "/points")
-                .bodyValue(body)
-                .retrieve()
-                .toBodilessEntity()
-                .block();
-
-        log.info("Qdrant upsert 완료 — sessionId: {}, 임베딩 수: {}", sessionId, points.size());
+        return Map.of("points", points);
     }
 
     private List<TranscriptChunk> extractUserTurns(List<CallSessionTurn> turns) {
@@ -94,17 +93,30 @@ public class QdrantClient {
             }
 
             chunks.add(new TranscriptChunk(
-                    turn.index() != null ? turn.index() : chunks.size() + 1,
-                    content
+                    content,
+                    turn.assistant() != null ? trimToNull(turn.assistant().text()) : null,
+                    turn.createdAt() != null ? turn.createdAt().toString() : null,
+                    turn.user().audioKey()
             ));
         }
 
         return chunks;
     }
 
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
     private record TranscriptChunk(
-            int sequenceOrder,
-            String content
+            String userText,
+            String assistantText,
+            String createdAt,
+            String audioKey
     ) {
     }
 }

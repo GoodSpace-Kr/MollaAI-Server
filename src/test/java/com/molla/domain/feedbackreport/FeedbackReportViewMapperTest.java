@@ -6,20 +6,25 @@ import com.molla.controller.dto.feedbackreport.FeedbackReportSummaryResponse;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class FeedbackReportViewMapperTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final FeedbackReportViewMapper mapper = new FeedbackReportViewMapper(objectMapper);
+    private final com.molla.domain.worker.S3AudioUrlService s3AudioUrlService = mock(com.molla.domain.worker.S3AudioUrlService.class);
+    private final FeedbackReportViewMapper mapper = new FeedbackReportViewMapper(objectMapper, s3AudioUrlService);
 
     @Test
     void mapsStructuredDetailResponse() {
+        when(s3AudioUrlService.createAudioUrl("calls/test/turn-3.wav")).thenReturn("https://signed-url");
+
         FeedbackReport report = FeedbackReport.create(
                 "session-1",
                 "practice",
                 "따듯하고 안정적인 대화였어요.",
                 """
-                [{"sourceTurnIndex":3,"sentence":"She go to school","grammarCorrection":"She goes to school","improvedSentence":"She usually goes to school early in the morning.","sampleRate":16000,"encoding":"pcm16le/base64","audio":"BASE64_AUDIO"}]
+                [{"sourceTurnIndex":3,"sentence":"She go to school","grammarCorrection":"She goes to school","improvedSentence":"She usually goes to school early in the morning.","sampleRate":16000,"audioKey":"calls/test/turn-3.wav"}]
                 """,
                 """
                 [{"habit":"짧은 문장 반복","evidence":"I like it. I use it.","suggestion":"문장을 연결해서 말해보세요."}]
@@ -38,7 +43,8 @@ class FeedbackReportViewMapperTest {
         assertThat(response.coreSentences()).hasSize(1);
         assertThat(response.coreSentences().get(0).grammarCorrection()).isEqualTo("She goes to school");
         assertThat(response.coreSentences().get(0).sourceTurnIndex()).isEqualTo(3);
-        assertThat(response.coreSentences().get(0).audio()).isEqualTo("BASE64_AUDIO");
+        assertThat(response.coreSentences().get(0).audioKey()).isEqualTo("calls/test/turn-3.wav");
+        assertThat(response.coreSentences().get(0).audioUrl()).isEqualTo("https://signed-url");
         assertThat(response.habitAnalyses()).hasSize(1);
         assertThat(response.scores()).hasSize(3);
         assertThat(response.weakPoints()).containsExactly("시제 일관성", "3인칭 단수 동사 활용");
