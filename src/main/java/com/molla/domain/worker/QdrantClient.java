@@ -3,9 +3,11 @@ package com.molla.domain.worker;
 import com.molla.domain.callsession.CallSessionTurn;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -41,12 +43,22 @@ public class QdrantClient {
 
         Map<String, Object> body = buildUpsertBody(userId, phoneNumber, turns);
 
-        webClient.post()
-                .uri(MEMORY_POINTS_URI)
-                .bodyValue(body)
-                .retrieve()
-                .toBodilessEntity()
-                .block();
+        try {
+            webClient.post()
+                    .uri(MEMORY_POINTS_URI)
+                    .bodyValue(body)
+                    .retrieve()
+                    .toBodilessEntity()
+                    .block();
+        } catch (WebClientResponseException e) {
+            throw new IllegalStateException(
+                    "memory points upload failed status=%s body=%s".formatted(
+                            e.getStatusCode(),
+                            e.getResponseBodyAsString()
+                    ),
+                    e
+            );
+        }
 
         log.info("메모리 포인트 업로드 완료 — sessionId: {}, 임베딩 수: {}", sessionId, userTurns.size());
     }
@@ -57,13 +69,13 @@ public class QdrantClient {
         List<Map<String, Object>> points = userTurns.stream()
                 .map(turn -> {
                     List<Float> vector = openAiClient.createEmbedding(turn.userText(), embeddingModel);
-                    Map<String, Object> payload = new java.util.LinkedHashMap<>();
-                    payload.put("userId", userId);
-                    payload.put("phoneNumber", phoneNumber);
-                    payload.put("userText", turn.userText());
-                    payload.put("assistantText", turn.assistantText());
-                    payload.put("createdAt", turn.createdAt());
-                    payload.put("audioKey", turn.audioKey());
+                    Map<String, Object> payload = new LinkedHashMap<>();
+                    putIfNotBlank(payload, "userId", userId);
+                    putIfNotBlank(payload, "phoneNumber", phoneNumber);
+                    putIfNotBlank(payload, "userText", turn.userText());
+                    putIfNotBlank(payload, "assistantText", turn.assistantText());
+                    putIfNotBlank(payload, "createdAt", turn.createdAt());
+                    putIfNotBlank(payload, "audioKey", turn.audioKey());
 
                     return Map.<String, Object>of(
                             "id", UUID.randomUUID().toString(),
@@ -110,6 +122,12 @@ public class QdrantClient {
 
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private void putIfNotBlank(Map<String, Object> payload, String key, String value) {
+        if (value != null && !value.isBlank()) {
+            payload.put(key, value);
+        }
     }
 
     private record TranscriptChunk(

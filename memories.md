@@ -33,6 +33,15 @@
 - 비고: 남은 작업이나 주의사항
 ```
 
+## 2026-05-21 - 메모리 포인트 업로드에서 null 필드 제거 및 422 응답 본문 로깅 추가
+
+- 구분: AI 메모리, 메인 로직, 운영
+- 변경: `QdrantClient`가 `userId`, `assistantText`, `createdAt`, `audioKey` 같은 null/blank payload 필드를 AI 서버로 보내지 않도록 변경하고, `POST /memory/points`가 실패하면 상태코드와 응답 본문을 예외 메시지에 포함하도록 수정했다.
+- 영향: 익명 세션(`userId == null`)에서도 FastAPI/Pydantic 스키마가 비선택 필드를 요구할 때 발생할 수 있는 422 가능성을 줄이고, 다시 실패해도 어떤 필드가 문제인지 로그에서 바로 확인할 수 있다.
+- 확인: `QdrantClientTest`에 익명 세션 payload에서 null 필드가 생략되는 테스트를 추가한다.
+- 관련 파일: `src/main/java/com/molla/domain/worker/QdrantClient.java`, `src/test/java/com/molla/domain/worker/QdrantClientTest.java`
+- 비고: AI 서버가 여전히 422를 반환하면 이제 응답 본문에 기대 스키마가 찍히므로 그 계약에 맞춰 추가 조정하면 된다.
+
 ## 2026-05-19 - 리포트 프롬프트에서 핵심 문장 다중 생성 강제
 
 - 구분: 메인 로직, test
