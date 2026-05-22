@@ -33,6 +33,15 @@
 - 비고: 남은 작업이나 주의사항
 ```
 
+## 2026-05-21 - 메모리 포인트 nullable payload 계약으로 복귀
+
+- 구분: AI 메모리, 메인 로직, 운영
+- 변경: `QdrantClient`의 최근 null 필드 생략 로직과 422 응답 본문 예외 래핑을 롤백하고, `userId`, `assistantText`, `createdAt`, `audioKey`를 다시 payload 키 고정 + nullable 값 형태로 전송하도록 복귀했다.
+- 영향: AI 서버는 payload 키 존재를 전제로 로직을 짤 수 있고, null 허용 스키마로 계약을 맞추면 조회 시 필드 부재 문제 없이 일관된 shape를 유지할 수 있다.
+- 확인: `QdrantClientTest` 기본 payload 생성 테스트로 `assistantText`, `createdAt`, `audioKey` 필드 shape가 유지되는지 검증한다.
+- 관련 파일: `src/main/java/com/molla/domain/worker/QdrantClient.java`, `src/test/java/com/molla/domain/worker/QdrantClientTest.java`
+- 비고: `/memory/points` 422 원인은 이제 AI 서버 request model에서 nullable 필드를 허용하도록 맞춰 해결하는 방향이다.
+
 ## 2026-05-19 - 리포트 프롬프트에서 핵심 문장 다중 생성 강제
 
 - 구분: 메인 로직, test
