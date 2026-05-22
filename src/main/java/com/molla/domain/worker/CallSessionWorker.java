@@ -25,7 +25,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CallSessionWorker {
 
-    private static final int MINIMUM_REPORTABLE_DURATION_SECONDS = 180;
+    private static final int MINIMUM_REPORTABLE_DURATION_SECONDS = 60;
 
     private final CallSessionRepository callSessionRepository;
     private final FeedbackReportRepository feedbackReportRepository;
