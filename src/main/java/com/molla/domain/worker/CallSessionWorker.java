@@ -25,6 +25,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CallSessionWorker {
 
+    private static final int MINIMUM_REPORTABLE_DURATION_SECONDS = 180;
+
     private final CallSessionRepository callSessionRepository;
     private final FeedbackReportRepository feedbackReportRepository;
     private final UserRepository userRepository;
@@ -45,6 +47,16 @@ public class CallSessionWorker {
         CallSession session = callSessionRepository.findById(sessionId).orElse(null);
         if (session == null) {
             log.error("세션 없음 — 워커 종료, sessionId: {}", sessionId);
+            return;
+        }
+
+        if (isShortCompletedSession(session)) {
+            log.info(
+                    "짧은 통화 세션 스킵 — sessionId: {}, duration: {}초, threshold: {}초",
+                    sessionId,
+                    session.getDurationSeconds(),
+                    MINIMUM_REPORTABLE_DURATION_SECONDS
+            );
             return;
         }
 
@@ -136,5 +148,10 @@ public class CallSessionWorker {
             log.error("turns JSON 파싱 실패 — error: {}", e.getMessage(), e);
             return List.of();
         }
+    }
+
+    private boolean isShortCompletedSession(CallSession session) {
+        Integer durationSeconds = session.getDurationSeconds();
+        return durationSeconds != null && durationSeconds < MINIMUM_REPORTABLE_DURATION_SECONDS;
     }
 }
