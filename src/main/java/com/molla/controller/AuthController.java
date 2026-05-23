@@ -58,8 +58,8 @@ public class AuthController {
             summary = "인증번호 확인 + JWT 발급",
             description = """
                     인증번호를 확인하고 JWT를 발급합니다.
-                    - 신규 유저: `isNewUser: true` → 프론트에서 이름 입력창 표시 → `/api/v1/auth/register` 호출
-                    - 기존 유저: `isNewUser: false` → 바로 로그인 완료
+                    - 신규 유저: `isNewUser: true` → 해당 phoneNumber로 기존 유저가 없음 → 프론트에서 이름 입력창 표시 → `/api/v1/auth/register` 호출
+                    - 기존 유저: `isNewUser: false` → 해당 phoneNumber의 유저가 이미 존재함 → 추가 가입 없이 바로 로그인 완료
                     """
     )
     @ApiResponses({

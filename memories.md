@@ -33,6 +33,24 @@
 - 비고: 남은 작업이나 주의사항
 ```
 
+## 2026-05-23 - 로그인 응답 isNewUser Swagger 설명 보강
+
+- 구분: 문서, 엔드포인트
+- 변경: 인증번호 확인 API와 `TokenResponse`의 Swagger 설명을 보강해 `isNewUser: false`가 해당 phoneNumber의 기존 유저가 이미 존재해서 추가 가입 없이 바로 로그인 완료되는 경우임을 명시했다.
+- 영향: 프론트와 QA가 `isNewUser` 의미를 혼동하지 않고 로그인/회원가입 분기 기준을 더 명확하게 이해할 수 있다.
+- 확인: `AuthController`, `TokenResponse`의 OpenAPI 설명 문구를 점검했다.
+- 관련 파일: `src/main/java/com/molla/controller/AuthController.java`, `src/main/java/com/molla/controller/dto/auth/TokenResponse.java`
+- 비고: 동작 로직 변경은 없고 Swagger 설명만 수정했다.
+
+## 2026-05-22 - 3분 미만 completed 통화의 워커 후처리 스킵
+
+- 구분: 메인 로직, 운영, test
+- 변경: `CallSessionWorker`가 `durationSeconds < 180` 인 completed 세션이면 리포트 생성과 메모리 포인트 업로드를 모두 건너뛰고 즉시 종료하도록 변경했다.
+- 영향: 3분 미만의 짧은 통화는 `feedback_reports` 생성과 `POST /memory/points` 호출이 발생하지 않는다. 180초 이상 세션만 기존 후처리를 계속 수행한다.
+- 확인: `CallSessionWorkerTest`에서 179초는 스킵되고 180초는 리포트 생성 및 메모리 업로드가 수행되는지 검증했다.
+- 관련 파일: `src/main/java/com/molla/domain/worker/CallSessionWorker.java`, `src/test/java/com/molla/domain/worker/CallSessionWorkerTest.java`
+- 비고: 기준 시간은 워커 내부 상수 `180초`로 관리한다.
+
 ## 2026-05-21 - 메모리 포인트 nullable payload 계약으로 복귀
 
 - 구분: AI 메모리, 메인 로직, 운영

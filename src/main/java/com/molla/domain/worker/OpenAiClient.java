@@ -37,13 +37,13 @@ public class OpenAiClient {
                 coreSentences는 반드시 여러 문장으로 구성하세요. 최소 15개 이상 작성하고, 각 항목은 turns의 userText에서 실제로 중요한 문장을 골라
                 sentence, grammarCorrection, improvedSentence를 1:1:1로 대응시켜 주세요.
                 coreSentences의 각 sentence는 서로 다른 문장이어야 하며, 같은 문장을 중복해서 넣지 마세요.
-                coreSentences의 sentence는 반드시 turns의 userText 원문을 그대로 또는 아주 가깝게 사용하세요.
+                coreSentences의 sentence는 반드시 turns의 userText 원문을 그대로 사용하세요.
                 coreSentences의 각 항목에는 반드시 sourceTurnIndex를 포함하고, 이 값은 sentence가 나온 turn의 index여야 합니다.
                 
                 {
                   "oneLineSummary": "한 줄 요약",
                   "coreSentences": [
-                    {"sourceTurnIndex": 1, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
+                    {"sourceTurnIndex": 1, "sentence": "", "improvedSentence": "", "coreExpression": ""},
                     {"sourceTurnIndex": 2, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
                     {"sourceTurnIndex": 3, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},
                     {"sourceTurnIndex": 4, "sentence": "", "grammarCorrection": "", "improvedSentence": ""},

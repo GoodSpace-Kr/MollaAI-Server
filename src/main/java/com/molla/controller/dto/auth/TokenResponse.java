@@ -11,7 +11,10 @@ public record TokenResponse(
         @Schema(description = "Refresh Token (만료: 30일)", example = "eyJhbGciOiJIUzI1NiJ9...")
         String refreshToken,
 
-        @Schema(description = "신규 유저 여부. true면 앱 가입 플로우로 이동", example = "true")
+        @Schema(
+                description = "신규 유저 여부. true면 해당 phoneNumber로 기존 유저가 없어 가입 플로우로 이동합니다. false면 기존 유저이므로 추가 가입 없이 바로 로그인 완료입니다.",
+                example = "false"
+        )
         boolean isNewUser
 ) {
     public static TokenResponse of(String accessToken, String refreshToken, boolean isNewUser) {
