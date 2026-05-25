@@ -51,8 +51,8 @@ public record FeedbackReportResponse(
         @Schema(description = "해당 통화 세션 시작 일시", example = "2026-05-20T12:00:00")
         LocalDateTime sessionStartedAt,
 
-        @Schema(description = "해당 통화 세션 통화 시간(초)", example = "180")
-        Integer sessionDurationSeconds,
+        @Schema(description = "해당 통화 세션 통화 시간(분)", example = "3")
+        Integer sessionDurationMinutes,
 
         @Schema(description = "리포트 생성 일시")
         LocalDateTime createdAt

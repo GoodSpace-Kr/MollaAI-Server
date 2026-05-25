@@ -56,7 +56,7 @@ class FeedbackReportViewMapperTest {
         assertThat(response.scores()).hasSize(3);
         assertThat(response.weakPoints()).containsExactly("시제 일관성", "3인칭 단수 동사 활용");
         assertThat(response.sessionStartedAt()).isEqualTo(LocalDateTime.of(2026, 5, 20, 12, 0));
-        assertThat(response.sessionDurationSeconds()).isEqualTo(180);
+        assertThat(response.sessionDurationMinutes()).isEqualTo(3);
     }
 
     @Test

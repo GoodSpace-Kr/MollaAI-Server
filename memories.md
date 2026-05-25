@@ -33,6 +33,15 @@
 - 비고: 남은 작업이나 주의사항
 ```
 
+## 2026-05-25 - 리포트 상세 응답의 통화 시간을 분 단위로 변경
+
+- 구분: 엔드포인트, 메인 로직, test
+- 변경: `FeedbackReportResponse`의 세션 통화 시간 필드를 `sessionDurationSeconds`에서 `sessionDurationMinutes`로 변경하고, 리포트 상세 응답 생성 시 `CallSession.durationSeconds`를 분 단위로 변환해 내려주도록 수정했다.
+- 영향: 프론트는 리포트 상세에서 통화 시간을 초가 아니라 분 기준으로 바로 표시할 수 있다.
+- 확인: `./gradlew test --tests com.molla.domain.feedbackreport.FeedbackReportViewMapperTest --tests com.molla.domain.feedbackreport.FeedbackReportServiceTest`
+- 관련 파일: `src/main/java/com/molla/controller/dto/feedbackreport/FeedbackReportResponse.java`, `src/main/java/com/molla/domain/feedbackreport/FeedbackReportViewMapper.java`, `src/test/java/com/molla/domain/feedbackreport/FeedbackReportViewMapperTest.java`, `src/test/java/com/molla/domain/feedbackreport/FeedbackReportServiceTest.java`
+- 비고: 현재 변환은 `durationSeconds / 60` 정수 나눗셈 기준이다.
+
 ## 2026-05-25 - 리포트 상세 응답에 통화 세션 날짜와 통화 시간 추가
 
 - 구분: 엔드포인트, 메인 로직, 문서, test
