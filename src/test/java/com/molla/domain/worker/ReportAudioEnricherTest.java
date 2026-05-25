@@ -17,9 +17,11 @@ class ReportAudioEnricherTest {
     void attachesMatchedTurnAudioToCoreSentences() {
         Report report = new Report(
                 "좋은 대화였어요.",
+                42,
+                "표현은 자연스럽지만 정확도를 조금 더 보완하면 좋아요.",
                 List.of(
-                        new Report.CoreSentenceFeedback(2, "I received the wrong item.", "I received the wrong item.", "I received the wrong item, so I'd like an exchange.", null, null, null),
-                        new Report.CoreSentenceFeedback(5, "She don't like spicy food.", "She doesn't like spicy food.", "She doesn't like spicy food, so we chose another place.", null, null, null)
+                        new Report.CoreSentenceFeedback(2, "I received the wrong item.", "I received the wrong item, so I'd like an exchange.", "wrong item", null, null, null),
+                        new Report.CoreSentenceFeedback(5, "She don't like spicy food.", "She doesn't like spicy food, so we chose another place.", "doesn't like", null, null, null)
                 ),
                 List.of(),
                 List.of(),
@@ -55,8 +57,10 @@ class ReportAudioEnricherTest {
     void keepsCoreSentenceWhenMatchingTurnIsMissing() {
         Report report = new Report(
                 "좋은 대화였어요.",
+                42,
+                "표현은 자연스럽지만 정확도를 조금 더 보완하면 좋아요.",
                 List.of(
-                        new Report.CoreSentenceFeedback(9, "Hello there.", "Hello there.", "Hello there. Nice to meet you.", null, null, null)
+                        new Report.CoreSentenceFeedback(9, "Hello there.", "Hello there. Nice to meet you.", "nice to meet you", null, null, null)
                 ),
                 List.of(),
                 List.of(),

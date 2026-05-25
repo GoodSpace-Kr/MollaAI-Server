@@ -79,9 +79,9 @@ public class FeedbackReportViewMapper {
 
         return new Report.CoreSentenceFeedback(
                 coreSentence.sourceTurnIndex(),
-                coreSentence.sentence(),
-                coreSentence.grammarCorrection(),
+                coreSentence.originSentence(),
                 coreSentence.improvedSentence(),
+                coreSentence.keyExpression(),
                 coreSentence.sampleRate(),
                 coreSentence.audioKey(),
                 s3AudioUrlService.createAudioUrl(coreSentence.audioKey())

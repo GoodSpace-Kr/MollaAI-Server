@@ -33,6 +33,15 @@
 - 비고: 남은 작업이나 주의사항
 ```
 
+## 2026-05-25 - OpenAI 리포트 프롬프트를 새 Report 스키마에 맞게 갱신
+
+- 구분: 메인 로직, AI, test
+- 변경: `OpenAiClient.generateReport`의 시스템 프롬프트와 예시 JSON을 새 `Report` 스키마에 맞게 수정했다. `levelPercentage`, `levelAnalysis`, `originSentence`, `keyExpression`를 요구하도록 바꾸고, `weakPoints`는 1~3개 태그형 문구로 제한했다. 함께 `ReportAudioEnricher`, `FeedbackReportViewMapper`, 관련 테스트도 새 필드명에 맞게 정리했다.
+- 영향: OpenAI 리포트 생성 결과가 현재 `Report` 레코드 구조와 일치하게 파싱되며, core sentence 오디오 보강과 리포트 응답 매핑도 새 필드 기준으로 동작한다.
+- 확인: `./gradlew test --tests com.molla.domain.worker.OpenAiClientGenerateReportTest --tests com.molla.domain.worker.OpenAiClientPromptTest --tests com.molla.domain.feedbackreport.ReportJsonTest --tests com.molla.domain.worker.ReportAudioEnricherTest --tests com.molla.domain.feedbackreport.FeedbackReportViewMapperTest --tests com.molla.domain.worker.CallSessionWorkerTest`
+- 관련 파일: `src/main/java/com/molla/domain/worker/OpenAiClient.java`, `src/main/java/com/molla/domain/worker/ReportAudioEnricher.java`, `src/main/java/com/molla/domain/feedbackreport/FeedbackReportViewMapper.java`, `src/test/java/com/molla/domain/worker/OpenAiClientGenerateReportTest.java`, `src/test/java/com/molla/domain/worker/OpenAiClientPromptTest.java`, `src/test/java/com/molla/domain/feedbackreport/ReportJsonTest.java`, `src/test/java/com/molla/domain/worker/ReportAudioEnricherTest.java`, `src/test/java/com/molla/domain/feedbackreport/FeedbackReportViewMapperTest.java`, `src/test/java/com/molla/domain/worker/CallSessionWorkerTest.java`
+- 비고: `Report.java` 자체는 이미 별도 변경되어 있었고, 이번 작업은 그 계약에 맞춰 프롬프트와 연동 코드만 따라갔다.
+
 ## 2026-05-25 - 데모 premium 기본 구독 한도를 300분으로 조정
 
 - 구분: 메인 로직, 구독, 문서, test

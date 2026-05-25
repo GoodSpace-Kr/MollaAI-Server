@@ -24,7 +24,7 @@ class FeedbackReportViewMapperTest {
                 "practice",
                 "따듯하고 안정적인 대화였어요.",
                 """
-                [{"sourceTurnIndex":3,"sentence":"She go to school","grammarCorrection":"She goes to school","improvedSentence":"She usually goes to school early in the morning.","sampleRate":16000,"audioKey":"calls/test/turn-3.wav"}]
+                [{"sourceTurnIndex":3,"originSentence":"She go to school","improvedSentence":"She usually goes to school early in the morning.","keyExpression":"goes to school","sampleRate":16000,"audioKey":"calls/test/turn-3.wav"}]
                 """,
                 """
                 [{"habit":"짧은 문장 반복","evidence":"I like it. I use it.","suggestion":"문장을 연결해서 말해보세요."}]
@@ -41,7 +41,8 @@ class FeedbackReportViewMapperTest {
         FeedbackReportResponse response = mapper.toDetailResponse(report);
 
         assertThat(response.coreSentences()).hasSize(1);
-        assertThat(response.coreSentences().get(0).grammarCorrection()).isEqualTo("She goes to school");
+        assertThat(response.coreSentences().get(0).originSentence()).isEqualTo("She go to school");
+        assertThat(response.coreSentences().get(0).keyExpression()).isEqualTo("goes to school");
         assertThat(response.coreSentences().get(0).sourceTurnIndex()).isEqualTo(3);
         assertThat(response.coreSentences().get(0).audioKey()).isEqualTo("calls/test/turn-3.wav");
         assertThat(response.coreSentences().get(0).audioUrl()).isEqualTo("https://signed-url");

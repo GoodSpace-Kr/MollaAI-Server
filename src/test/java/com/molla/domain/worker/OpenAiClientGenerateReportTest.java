@@ -33,18 +33,20 @@ class OpenAiClientGenerateReportTest {
         String reportJson = """
                 {
                   "oneLineSummary": "전반적으로 자연스럽지만 시제와 전치사를 더 다듬으면 좋아요.",
+                  "levelPercentage": 38,
+                  "levelAnalysis": "중상위권 표현력은 보이지만 문장 정확도와 확장성이 더 필요합니다.",
                   "coreSentences": [
                     {
                       "sourceTurnIndex": 1,
-                      "sentence": "I go to there yesterday.",
-                      "grammarCorrection": "I went there yesterday.",
-                      "improvedSentence": "I went there yesterday to meet my friend."
+                      "originSentence": "I go to there yesterday.",
+                      "improvedSentence": "I went there yesterday to meet my friend.",
+                      "keyExpression": "went there yesterday"
                     },
                     {
                       "sourceTurnIndex": 3,
-                      "sentence": "She don't like spicy food.",
-                      "grammarCorrection": "She doesn't like spicy food.",
-                      "improvedSentence": "She doesn't like spicy food, so we chose another restaurant."
+                      "originSentence": "She don't like spicy food.",
+                      "improvedSentence": "She doesn't like spicy food, so we chose another restaurant.",
+                      "keyExpression": "doesn't like"
                     }
                   ],
                   "habitAnalyses": [
@@ -113,9 +115,13 @@ class OpenAiClientGenerateReportTest {
         assertThat(userMessageJson.path("turns").get(2).path("userText").asText()).isEqualTo("She don't like spicy food.");
 
         assertThat(report.oneLineSummary()).contains("전반적으로 자연스럽지만");
+        assertThat(report.levelPercentage()).isEqualTo(38);
+        assertThat(report.levelAnalysis()).contains("중상위권");
         assertThat(report.coreSentences()).hasSize(2);
         assertThat(report.coreSentences().get(0).sourceTurnIndex()).isEqualTo(1);
-        assertThat(report.coreSentences().get(0).grammarCorrection()).isEqualTo("I went there yesterday.");
+        assertThat(report.coreSentences().get(0).originSentence()).isEqualTo("I go to there yesterday.");
+        assertThat(report.coreSentences().get(0).improvedSentence()).isEqualTo("I went there yesterday to meet my friend.");
+        assertThat(report.coreSentences().get(0).keyExpression()).isEqualTo("went there yesterday");
         assertThat(report.habitAnalyses()).hasSize(1);
         assertThat(report.scores()).hasSize(3);
         assertThat(report.weakPoints()).contains("시제 정확도", "전치사 선택");
