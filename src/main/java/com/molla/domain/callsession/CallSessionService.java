@@ -36,9 +36,9 @@ public class CallSessionService {
 
     @Transactional
     public CallSessionResponse startSession(StartSessionRequest request) {
-        Optional<User> userOptional = userRepository.findByPhoneNumber(request.phoneNumber());
-        User user = userOptional.orElse(null);
-        String resolvedUserId = user != null ? user.getId() : null;
+        User user = userRepository.findByPhoneNumber(request.phoneNumber())
+                .orElseGet(() -> userRepository.save(User.createByPhone(request.phoneNumber())));
+        String resolvedUserId = user.getId();
         String sessionType = resolveSessionType(request.phoneNumber());
 
         // 통화 시점의 유저 상태 스냅샷

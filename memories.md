@@ -33,6 +33,15 @@
 - 비고: 남은 작업이나 주의사항
 ```
 
+## 2026-05-25 - 통화 시작 시 phoneNumber 기준 유저 자동 생성
+
+- 구분: 메인 로직, 통화 세션, test
+- 변경: `startSession`이 들어올 때 `phoneNumber`로 기존 유저가 없으면 `User.createByPhone(...)`로 미가입 유저를 먼저 생성한 뒤, 그 유저 ID를 세션에 연결하도록 변경했다.
+- 영향: 이제 단순 통화 시작만으로도 `users` 테이블에 phoneNumber 기반 유저가 생성될 수 있으며, `call_sessions.user_id`는 신규 번호에서도 null이 아니라 생성된 유저 ID를 가지게 된다.
+- 확인: `CallSessionServiceTest`에서 phoneNumber가 없을 때 유저를 생성하고, 있을 때는 기존 유저를 재사용하는지 검증했다.
+- 관련 파일: `src/main/java/com/molla/domain/callsession/CallSessionService.java`, `src/test/java/com/molla/domain/callsession/CallSessionServiceTest.java`
+- 비고: 생성되는 유저는 `registered = false`, `status = active` 상태의 미가입 유저다.
+
 ## 2026-05-23 - 로그인 응답 isNewUser Swagger 설명 보강
 
 - 구분: 문서, 엔드포인트
