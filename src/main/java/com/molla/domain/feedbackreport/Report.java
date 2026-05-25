@@ -4,6 +4,8 @@ import java.util.List;
 
 public record Report(
         String oneLineSummary,
+        int levelPercentage,
+        String levelAnalysis,
         List<CoreSentenceFeedback> coreSentences,
         List<HabitAnalysis> habitAnalyses,
         List<ReportScore> scores,
@@ -12,9 +14,9 @@ public record Report(
 ) {
     public record CoreSentenceFeedback(
             Integer sourceTurnIndex,
-            String sentence,
-            String grammarCorrection,
+            String originSentence,
             String improvedSentence,
+            String keyExpression,
             Integer sampleRate,
             String audioKey,
             String audioUrl
