@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 public class SubscriptionService {
 
     private static final String DEMO_DEFAULT_PLAN_TYPE = "premium";
-    private static final int DEMO_PREMIUM_DAILY_LIMIT_MINUTES = Integer.MAX_VALUE;
+    private static final int DEMO_PREMIUM_DAILY_LIMIT_MINUTES = 300;
 
     private final SubscriptionRepository subscriptionRepository;
     private final UserRepository userRepository;

@@ -54,7 +54,7 @@ public class SubscriptionController {
             description = """
                     새 구독을 생성합니다.
                     - 이미 활성 구독이 있으면 409 반환
-                    - planType: `free` (30분/일) / `premium` (직접 설정)
+                    - planType: `free` (30분/일) / `premium` (현재 데모 기본값 300분/일, 수동 생성 시 직접 설정 가능)
                     - durationDays가 null이면 무기한 구독
                     """
     )

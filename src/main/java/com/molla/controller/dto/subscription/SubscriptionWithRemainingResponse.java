@@ -14,10 +14,10 @@ public record SubscriptionWithRemainingResponse(
         @Schema(description = "플랜 타입 (free / premium)", example = "premium")
         String planType,
 
-        @Schema(description = "하루 통화 가능 분. 데모 premium 구독은 매우 큰 값으로 내려와 사실상 무제한처럼 동작합니다.", example = "2147483647")
+        @Schema(description = "하루 통화 가능 분. 현재 데모 premium 기본 구독은 300분으로 생성됩니다.", example = "300")
         int dailyLimitMinutes,
 
-        @Schema(description = "오늘 잔여 통화 가능 분", example = "2147483527")
+        @Schema(description = "오늘 잔여 통화 가능 분", example = "275")
         int remainingMinutesToday,
 
         @Schema(description = "구독 시작 일시")
