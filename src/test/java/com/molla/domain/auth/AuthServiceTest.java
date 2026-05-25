@@ -65,6 +65,7 @@ class AuthServiceTest {
                 .expiresAt(LocalDateTime.now().plusMinutes(5))
                 .build();
         User existingUser = User.createByPhone(phoneNumber);
+        existingUser.register("existing-user");
 
         when(authCodeRepository.findLatestUnverifiedByPhoneNumber(phoneNumber)).thenReturn(Optional.of(authCode));
         when(userRepository.existsByPhoneNumber(phoneNumber)).thenReturn(true);
