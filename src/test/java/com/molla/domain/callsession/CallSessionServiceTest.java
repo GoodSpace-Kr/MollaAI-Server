@@ -47,8 +47,8 @@ class CallSessionServiceTest {
         SubscriptionWithRemainingResponse subscription = new SubscriptionWithRemainingResponse(
                 "sub-1",
                 "premium",
-                Integer.MAX_VALUE,
-                Integer.MAX_VALUE,
+                300,
+                300,
                 null,
                 null,
                 "active"
@@ -82,8 +82,8 @@ class CallSessionServiceTest {
         SubscriptionWithRemainingResponse subscription = new SubscriptionWithRemainingResponse(
                 "sub-2",
                 "premium",
-                Integer.MAX_VALUE,
-                Integer.MAX_VALUE,
+                300,
+                300,
                 null,
                 null,
                 "active"
@@ -115,8 +115,8 @@ class CallSessionServiceTest {
         when(subscriptionService.getMySubscription(existingUser.getId())).thenReturn(new SubscriptionWithRemainingResponse(
                 "sub-3",
                 "premium",
-                Integer.MAX_VALUE,
-                Integer.MAX_VALUE,
+                300,
+                300,
                 null,
                 null,
                 "active"
