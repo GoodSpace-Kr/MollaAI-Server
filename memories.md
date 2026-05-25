@@ -33,6 +33,15 @@
 - 비고: 남은 작업이나 주의사항
 ```
 
+## 2026-05-25 - 신규 유저 생성 시 데모 premium 구독 자동 부여
+
+- 구분: 메인 로직, 구독, 인증, 통화 세션, test
+- 변경: `SubscriptionService`에 활성 구독이 없을 때 `premium` / `expiresAt = null` / `dailyLimitMinutes = Integer.MAX_VALUE`인 데모 기본 구독을 보장하는 메서드를 추가하고, `startSession` 및 `verifyCode`에서 새 유저를 생성할 때 이를 자동 호출하도록 변경했다.
+- 영향: 통화 시작이나 인증 로그인으로 새 유저가 생성되면 즉시 활성 premium 구독도 함께 생성된다. 기존 활성 구독이 있는 유저는 중복 생성되지 않는다.
+- 확인: `CallSessionServiceTest`, `AuthServiceTest`, `SubscriptionServiceTest`에서 각각 startSession 경로, verifyCode 경로, 구독 보장 서비스의 생성/스킵 동작을 검증했다.
+- 관련 파일: `src/main/java/com/molla/domain/subscription/SubscriptionService.java`, `src/main/java/com/molla/domain/callsession/CallSessionService.java`, `src/main/java/com/molla/domain/auth/AuthService.java`, `src/test/java/com/molla/domain/subscription/SubscriptionServiceTest.java`, `src/test/java/com/molla/domain/auth/AuthServiceTest.java`, `src/test/java/com/molla/domain/callsession/CallSessionServiceTest.java`
+- 비고: 현재는 데모 정책으로 모든 신규 유저를 premium으로 생성하며, free(10분)/premium(무제한) 정책을 정식 반영할 때 별도 플랜 규칙으로 대체할 수 있다.
+
 ## 2026-05-25 - 통화 시작 시 phoneNumber 기준 유저 자동 생성
 
 - 구분: 메인 로직, 통화 세션, test

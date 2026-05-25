@@ -7,6 +7,7 @@ import com.molla.controller.dto.callsession.EndSessionRequest;
 import com.molla.controller.dto.callsession.StartSessionRequest;
 import com.molla.domain.callsession.CallSessionTurn;
 import com.molla.domain.subscription.SubscriptionRepository;
+import com.molla.domain.subscription.SubscriptionService;
 import com.molla.domain.user.User;
 import com.molla.domain.user.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,6 +28,7 @@ public class CallSessionService {
     private final CallSessionRepository callSessionRepository;
     private final UserRepository userRepository;
     private final SubscriptionRepository subscriptionRepository;
+    private final SubscriptionService subscriptionService;
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
 
@@ -37,7 +39,7 @@ public class CallSessionService {
     @Transactional
     public CallSessionResponse startSession(StartSessionRequest request) {
         User user = userRepository.findByPhoneNumber(request.phoneNumber())
-                .orElseGet(() -> userRepository.save(User.createByPhone(request.phoneNumber())));
+                .orElseGet(() -> createUserWithDemoSubscription(request.phoneNumber()));
         String resolvedUserId = user.getId();
         String sessionType = resolveSessionType(request.phoneNumber());
 
@@ -148,5 +150,11 @@ public class CallSessionService {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new GlobalException(ErrorCode.USER_NOT_FOUND))
                 .getPhoneNumber();
+    }
+
+    private User createUserWithDemoSubscription(String phoneNumber) {
+        User savedUser = userRepository.save(User.createByPhone(phoneNumber));
+        subscriptionService.ensureDemoPremiumSubscription(savedUser.getId());
+        return savedUser;
     }
 }

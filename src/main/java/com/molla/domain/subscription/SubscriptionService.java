@@ -18,6 +18,9 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class SubscriptionService {
 
+    private static final String DEMO_DEFAULT_PLAN_TYPE = "premium";
+    private static final int DEMO_PREMIUM_DAILY_LIMIT_MINUTES = Integer.MAX_VALUE;
+
     private final SubscriptionRepository subscriptionRepository;
     private final UserRepository userRepository;
     private final DailyUsageCalculator dailyUsageCalculator;
@@ -63,6 +66,27 @@ public class SubscriptionService {
 
         log.info("구독 생성 완료 — userId: {}, planType: {}", userId, request.planType());
         return SubscriptionResponse.from(subscription);
+    }
+
+    @Transactional
+    public void ensureDemoPremiumSubscription(String userId) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new GlobalException(ErrorCode.USER_NOT_FOUND));
+
+        if (subscriptionRepository.existsActiveByUserId(userId)) {
+            log.info("기존 활성 구독 재사용 — userId: {}", userId);
+            return;
+        }
+
+        Subscription subscription = Subscription.create(
+                userId,
+                DEMO_DEFAULT_PLAN_TYPE,
+                DEMO_PREMIUM_DAILY_LIMIT_MINUTES,
+                null
+        );
+        subscriptionRepository.save(subscription);
+
+        log.info("데모 기본 구독 생성 완료 — userId: {}, planType: {}", userId, DEMO_DEFAULT_PLAN_TYPE);
     }
 
     // ──────────────────────────────────────────────

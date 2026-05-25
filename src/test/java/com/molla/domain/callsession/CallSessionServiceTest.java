@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.molla.controller.dto.callsession.CallSessionResponse;
 import com.molla.controller.dto.callsession.StartSessionRequest;
 import com.molla.domain.subscription.SubscriptionRepository;
+import com.molla.domain.subscription.SubscriptionService;
 import com.molla.domain.user.User;
 import com.molla.domain.user.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,7 @@ class CallSessionServiceTest {
     private final CallSessionRepository callSessionRepository = mock(CallSessionRepository.class);
     private final UserRepository userRepository = mock(UserRepository.class);
     private final SubscriptionRepository subscriptionRepository = mock(SubscriptionRepository.class);
+    private final SubscriptionService subscriptionService = mock(SubscriptionService.class);
     private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
     private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
@@ -29,6 +31,7 @@ class CallSessionServiceTest {
             callSessionRepository,
             userRepository,
             subscriptionRepository,
+            subscriptionService,
             eventPublisher,
             objectMapper
     );
@@ -46,6 +49,7 @@ class CallSessionServiceTest {
 
         ArgumentCaptor<CallSession> sessionCaptor = ArgumentCaptor.forClass(CallSession.class);
         verify(userRepository).save(org.mockito.ArgumentMatchers.any(User.class));
+        verify(subscriptionService).ensureDemoPremiumSubscription(newUser.getId());
         verify(callSessionRepository).save(sessionCaptor.capture());
 
         CallSession savedSession = sessionCaptor.getValue();
@@ -68,6 +72,8 @@ class CallSessionServiceTest {
 
         ArgumentCaptor<CallSession> sessionCaptor = ArgumentCaptor.forClass(CallSession.class);
         verify(callSessionRepository).save(sessionCaptor.capture());
+        verify(userRepository, org.mockito.Mockito.never()).save(org.mockito.ArgumentMatchers.any(User.class));
+        verify(subscriptionService, org.mockito.Mockito.never()).ensureDemoPremiumSubscription(org.mockito.ArgumentMatchers.any());
 
         CallSession savedSession = sessionCaptor.getValue();
         assertThat(savedSession.getUserId()).isEqualTo(existingUser.getId());
