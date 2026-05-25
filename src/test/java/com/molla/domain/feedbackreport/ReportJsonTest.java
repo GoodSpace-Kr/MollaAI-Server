@@ -22,6 +22,7 @@ class ReportJsonTest {
                       "originSentence": "She go to school",
                       "improvedSentence": "She goes to school every morning.",
                       "keyExpression": "goes to school",
+                      "keyExpressionKorean": "학교에 다니다",
                       "sampleRate": 16000,
                       "audioKey": "calls/test/turn-3.wav",
                       "audioUrl": "https://signed-url"
@@ -53,6 +54,7 @@ class ReportJsonTest {
         assertThat(report.coreSentences().get(0).sourceTurnIndex()).isEqualTo(3);
         assertThat(report.coreSentences().get(0).originSentence()).isEqualTo("She go to school");
         assertThat(report.coreSentences().get(0).keyExpression()).isEqualTo("goes to school");
+        assertThat(report.coreSentences().get(0).keyExpressionKorean()).isEqualTo("학교에 다니다");
         assertThat(report.coreSentences().get(0).sampleRate()).isEqualTo(16000);
         assertThat(report.coreSentences().get(0).audioKey()).isEqualTo("calls/test/turn-3.wav");
         assertThat(report.coreSentences().get(0).audioUrl()).isEqualTo("https://signed-url");

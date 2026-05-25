@@ -23,7 +23,7 @@ public record FeedbackReportResponse(
 
         @Schema(
                 description = "핵심 문장 피드백 목록",
-                example = "[{\"sourceTurnIndex\":3,\"originSentence\":\"She go to school\",\"improvedSentence\":\"She usually goes to school early in the morning.\",\"keyExpression\":\"goes to school\",\"sampleRate\":16000,\"audioKey\":\"calls/CA.../turns/5.wav\",\"audioUrl\":\"https://signed-url\"}]"
+                example = "[{\"sourceTurnIndex\":3,\"originSentence\":\"She go to school\",\"improvedSentence\":\"She usually goes to school early in the morning.\",\"keyExpression\":\"goes to school\",\"keyExpressionKorean\":\"학교에 다니다\",\"sampleRate\":16000,\"audioKey\":\"calls/CA.../turns/5.wav\",\"audioUrl\":\"https://signed-url\"}]"
         )
         List<Report.CoreSentenceFeedback> coreSentences,
 

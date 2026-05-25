@@ -58,6 +58,7 @@ public class ReportAudioEnricher {
                 coreSentence.originSentence(),
                 coreSentence.improvedSentence(),
                 coreSentence.keyExpression(),
+                coreSentence.keyExpressionKorean(),
                 matchedTurn.user().sampleRate(),
                 matchedTurn.user().audioKey(),
                 null

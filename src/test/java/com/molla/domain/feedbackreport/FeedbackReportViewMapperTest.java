@@ -32,7 +32,7 @@ class FeedbackReportViewMapperTest {
                 27,
                 "표현 의도는 잘 전달되지만 문장 구조 안정성이 조금 더 필요합니다.",
                 """
-                [{"sourceTurnIndex":3,"originSentence":"She go to school","improvedSentence":"She usually goes to school early in the morning.","keyExpression":"goes to school","sampleRate":16000,"audioKey":"calls/test/turn-3.wav"}]
+                [{"sourceTurnIndex":3,"originSentence":"She go to school","improvedSentence":"She usually goes to school early in the morning.","keyExpression":"goes to school","keyExpressionKorean":"학교에 다니다","sampleRate":16000,"audioKey":"calls/test/turn-3.wav"}]
                 """,
                 """
                 [{"habit":"짧은 문장 반복","evidence":"I like it. I use it.","suggestion":"문장을 연결해서 말해보세요."}]
@@ -51,6 +51,7 @@ class FeedbackReportViewMapperTest {
         assertThat(response.coreSentences()).hasSize(1);
         assertThat(response.coreSentences().get(0).originSentence()).isEqualTo("She go to school");
         assertThat(response.coreSentences().get(0).keyExpression()).isEqualTo("goes to school");
+        assertThat(response.coreSentences().get(0).keyExpressionKorean()).isEqualTo("학교에 다니다");
         assertThat(response.coreSentences().get(0).sourceTurnIndex()).isEqualTo(3);
         assertThat(response.coreSentences().get(0).audioKey()).isEqualTo("calls/test/turn-3.wav");
         assertThat(response.coreSentences().get(0).audioUrl()).isEqualTo("https://signed-url");

@@ -33,6 +33,15 @@
 - 비고: 남은 작업이나 주의사항
 ```
 
+## 2026-05-25 - 리포트 핵심 표현에 한글 뜻 필드 추가
+
+- 구분: 메인 로직, 엔드포인트, AI, 문서, test
+- 변경: `Report.CoreSentenceFeedback`에 `keyExpressionKorean` 필드를 추가하고, OpenAI 프롬프트가 핵심 표현의 자연스러운 한글 뜻을 함께 생성하도록 수정했다. `core_sentences` JSON 파싱, 오디오 보강, 리포트 상세 응답 반환, Swagger 예시/필드 설명도 모두 새 필드 기준으로 맞췄다.
+- 영향: 프론트는 리포트 상세의 `coreSentences`에서 영어 핵심 표현과 한글 뜻을 함께 받아 바로 표시할 수 있다. 별도 DB 컬럼 추가 없이 기존 `core_sentences` JSON 안에 함께 저장된다.
+- 확인: `./gradlew test --tests com.molla.domain.feedbackreport.ReportJsonTest --tests com.molla.domain.worker.OpenAiClientGenerateReportTest --tests com.molla.domain.feedbackreport.FeedbackReportViewMapperTest --tests com.molla.domain.worker.ReportAudioEnricherTest --tests com.molla.domain.worker.OpenAiClientPromptTest`
+- 관련 파일: `src/main/java/com/molla/domain/feedbackreport/Report.java`, `src/main/java/com/molla/domain/worker/OpenAiClient.java`, `src/main/java/com/molla/domain/worker/ReportAudioEnricher.java`, `src/main/java/com/molla/domain/feedbackreport/FeedbackReportViewMapper.java`, `src/main/java/com/molla/controller/dto/feedbackreport/FeedbackReportResponse.java`, `src/test/java/com/molla/domain/feedbackreport/ReportJsonTest.java`, `src/test/java/com/molla/domain/worker/OpenAiClientGenerateReportTest.java`, `src/test/java/com/molla/domain/feedbackreport/FeedbackReportViewMapperTest.java`, `src/test/java/com/molla/domain/worker/ReportAudioEnricherTest.java`, `src/test/java/com/molla/domain/worker/OpenAiClientPromptTest.java`
+- 비고: 기존 수동 SQL로 넣은 `core_sentences` JSON에도 `keyExpressionKorean`을 같이 넣어야 프론트에서 해당 값이 보인다.
+
 ## 2026-05-25 - feedback_reports에 levelPercentage, levelAnalysis 저장 및 응답 노출 추가
 
 - 구분: 메인 로직, 엔드포인트, 데이터베이스, AI, test

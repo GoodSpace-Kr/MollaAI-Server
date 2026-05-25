@@ -89,6 +89,7 @@ public class FeedbackReportViewMapper {
                 coreSentence.originSentence(),
                 coreSentence.improvedSentence(),
                 coreSentence.keyExpression(),
+                coreSentence.keyExpressionKorean(),
                 coreSentence.sampleRate(),
                 coreSentence.audioKey(),
                 s3AudioUrlService.createAudioUrl(coreSentence.audioKey())
