@@ -33,6 +33,15 @@
 - 비고: 남은 작업이나 주의사항
 ```
 
+## 2026-05-25 - 통화 세션 Swagger 문구를 최신 start/end 계약에 맞게 정리
+
+- 구분: 문서, 엔드포인트
+- 변경: `CallSessionController`, `CallSessionResponse`, `EndSessionRequest`, `SubscriptionWithRemainingResponse`의 Swagger 설명을 최신 계약에 맞게 갱신했다. start 응답의 구독 정보 포함, end 요청의 `durationMinutes` 사용, 잔여 통화 시간 반영, 3분 미만 워커 스킵 조건을 문서에 반영했다.
+- 영향: 내부 AI 오케스트레이션 서버와 프론트가 Swagger만 보고도 start/end 세션의 최신 요청/응답 의미를 더 정확하게 이해할 수 있다.
+- 확인: 관련 컨트롤러/DTO의 OpenAPI 어노테이션 문구를 점검하고 `./gradlew testClasses`로 컴파일 검증한다.
+- 관련 파일: `src/main/java/com/molla/controller/CallSessionController.java`, `src/main/java/com/molla/controller/dto/callsession/CallSessionResponse.java`, `src/main/java/com/molla/controller/dto/callsession/EndSessionRequest.java`, `src/main/java/com/molla/controller/dto/subscription/SubscriptionWithRemainingResponse.java`
+- 비고: 동작 로직 변경 없이 Swagger 문구와 예시만 최신화했다.
+
 ## 2026-05-25 - end 세션 요청의 durationMinutes를 통화 시간 집계에 반영
 
 - 구분: 엔드포인트, 메인 로직, 구독, test

@@ -57,8 +57,10 @@ public class CallSessionController {
             summary = "[내부] 통화 세션 종료",
             description = """
                     AI 오케스트레이션 서버가 통화 종료 시 호출합니다.
-                    - duration_seconds를 자동 계산합니다.
-                    - completed 상태면 비동기 워커(리포트 생성)를 트리거합니다.
+                    - 요청 본문의 durationMinutes를 실제 통화 시간(분)으로 받아 초 단위로 변환해 저장합니다.
+                    - 저장된 통화 시간은 이후 구독의 오늘 잔여 통화 시간 계산에도 반영됩니다.
+                    - completed 상태면 비동기 워커(리포트 생성, 메모리 업로드)를 트리거합니다.
+                    - 3분 미만 completed 세션은 워커 후처리를 건너뜁니다.
                     - 이 API는 JWT 인증 없이 호출됩니다 (내부망 전용).
                     """
     )

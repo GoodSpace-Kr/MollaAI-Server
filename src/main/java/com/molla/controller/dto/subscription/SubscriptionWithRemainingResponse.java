@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
 
-@Schema(description = "구독 + 잔여 통화 시간 응답")
+@Schema(description = "구독 + 오늘 잔여 통화 시간 응답")
 public record SubscriptionWithRemainingResponse(
 
         @Schema(description = "구독 ID", example = "550e8400-e29b-41d4-a716-446655440000")
@@ -14,10 +14,10 @@ public record SubscriptionWithRemainingResponse(
         @Schema(description = "플랜 타입 (free / premium)", example = "premium")
         String planType,
 
-        @Schema(description = "하루 통화 가능 분", example = "60")
+        @Schema(description = "하루 통화 가능 분. 데모 premium 구독은 매우 큰 값으로 내려와 사실상 무제한처럼 동작합니다.", example = "2147483647")
         int dailyLimitMinutes,
 
-        @Schema(description = "오늘 잔여 통화 가능 분", example = "45")
+        @Schema(description = "오늘 잔여 통화 가능 분", example = "2147483527")
         int remainingMinutesToday,
 
         @Schema(description = "구독 시작 일시")
