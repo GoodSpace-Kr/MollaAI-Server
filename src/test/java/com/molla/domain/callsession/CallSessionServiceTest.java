@@ -3,6 +3,7 @@ package com.molla.domain.callsession;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.molla.controller.dto.callsession.CallSessionResponse;
 import com.molla.controller.dto.callsession.StartSessionRequest;
+import com.molla.controller.dto.subscription.SubscriptionWithRemainingResponse;
 import com.molla.domain.subscription.SubscriptionRepository;
 import com.molla.domain.subscription.SubscriptionService;
 import com.molla.domain.user.User;
@@ -40,10 +41,20 @@ class CallSessionServiceTest {
     void startSessionCreatesUserWhenPhoneNumberDoesNotExist() {
         String phoneNumber = "01012345678";
         User newUser = User.createByPhone(phoneNumber);
+        SubscriptionWithRemainingResponse subscription = new SubscriptionWithRemainingResponse(
+                "sub-1",
+                "premium",
+                Integer.MAX_VALUE,
+                Integer.MAX_VALUE,
+                null,
+                null,
+                "active"
+        );
 
         when(userRepository.findByPhoneNumber(phoneNumber)).thenReturn(Optional.empty());
         when(userRepository.save(org.mockito.ArgumentMatchers.any(User.class))).thenReturn(newUser);
         when(callSessionRepository.existsByPhoneNumber(phoneNumber)).thenReturn(false);
+        when(subscriptionService.getMySubscription(newUser.getId())).thenReturn(subscription);
 
         CallSessionResponse response = callSessionService.startSession(new StartSessionRequest(phoneNumber, "CA1234"));
 
@@ -58,15 +69,26 @@ class CallSessionServiceTest {
         assertThat(savedSession.getUserStateAtCall()).isEqualTo("unregistered");
         assertThat(response.userStateAtCall()).isEqualTo("unregistered");
         assertThat(response.sessionType()).isEqualTo("level_test");
+        assertThat(response.subscription()).isEqualTo(subscription);
     }
 
     @Test
     void startSessionReusesExistingUserWhenPhoneNumberExists() {
         String phoneNumber = "01012345678";
         User existingUser = User.createByPhone(phoneNumber);
+        SubscriptionWithRemainingResponse subscription = new SubscriptionWithRemainingResponse(
+                "sub-2",
+                "premium",
+                Integer.MAX_VALUE,
+                Integer.MAX_VALUE,
+                null,
+                null,
+                "active"
+        );
 
         when(userRepository.findByPhoneNumber(phoneNumber)).thenReturn(Optional.of(existingUser));
         when(callSessionRepository.existsByPhoneNumber(phoneNumber)).thenReturn(true);
+        when(subscriptionService.getMySubscription(existingUser.getId())).thenReturn(subscription);
 
         CallSessionResponse response = callSessionService.startSession(new StartSessionRequest(phoneNumber, "CA5678"));
 
@@ -79,5 +101,6 @@ class CallSessionServiceTest {
         assertThat(savedSession.getUserId()).isEqualTo(existingUser.getId());
         assertThat(savedSession.getPhoneNumber()).isEqualTo(phoneNumber);
         assertThat(response.sessionType()).isEqualTo("practice");
+        assertThat(response.subscription()).isEqualTo(subscription);
     }
 }

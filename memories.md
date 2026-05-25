@@ -42,6 +42,15 @@
 - 관련 파일: `src/main/java/com/molla/domain/subscription/SubscriptionService.java`, `src/main/java/com/molla/domain/callsession/CallSessionService.java`, `src/main/java/com/molla/domain/auth/AuthService.java`, `src/test/java/com/molla/domain/subscription/SubscriptionServiceTest.java`, `src/test/java/com/molla/domain/auth/AuthServiceTest.java`, `src/test/java/com/molla/domain/callsession/CallSessionServiceTest.java`
 - 비고: 현재는 데모 정책으로 모든 신규 유저를 premium으로 생성하며, free(10분)/premium(무제한) 정책을 정식 반영할 때 별도 플랜 규칙으로 대체할 수 있다.
 
+## 2026-05-25 - start 세션 응답에 활성 구독과 오늘 잔여 시간 포함
+
+- 구분: 엔드포인트, 메인 로직, test
+- 변경: `CallSessionResponse`에 구독 정보를 추가하고, `startSession` 응답에서 현재 활성 구독과 `remainingMinutesToday`를 함께 내려주도록 변경했다.
+- 영향: AI 오케스트레이션 서버는 start 응답만으로 현재 플랜과 오늘 남은 통화 가능 시간을 바로 확인할 수 있다. 다른 세션 응답 경로는 기존처럼 구독 필드가 null일 수 있다.
+- 확인: `CallSessionServiceTest`에서 신규/기존 유저 모두 start 응답의 `subscription` 필드가 채워지는지 검증했다.
+- 관련 파일: `src/main/java/com/molla/controller/dto/callsession/CallSessionResponse.java`, `src/main/java/com/molla/domain/callsession/CallSessionService.java`, `src/test/java/com/molla/domain/callsession/CallSessionServiceTest.java`, `src/main/java/com/molla/controller/CallSessionController.java`
+- 비고: 현재는 start 응답에만 실구독 정보 주입을 보장하고, 목록/상세/종료 응답은 null을 유지한다.
+
 ## 2026-05-25 - 통화 시작 시 phoneNumber 기준 유저 자동 생성
 
 - 구분: 메인 로직, 통화 세션, test

@@ -5,6 +5,7 @@ import com.molla.common.response.ErrorCode;
 import com.molla.controller.dto.callsession.CallSessionResponse;
 import com.molla.controller.dto.callsession.EndSessionRequest;
 import com.molla.controller.dto.callsession.StartSessionRequest;
+import com.molla.controller.dto.subscription.SubscriptionWithRemainingResponse;
 import com.molla.domain.callsession.CallSessionTurn;
 import com.molla.domain.subscription.SubscriptionRepository;
 import com.molla.domain.subscription.SubscriptionService;
@@ -55,11 +56,12 @@ public class CallSessionService {
         );
 
         callSessionRepository.save(session);
+        SubscriptionWithRemainingResponse subscription = subscriptionService.getMySubscription(resolvedUserId);
 
         log.info("통화 세션 시작 — sessionId: {}, userId: {}, type: {}",
                 session.getId(), session.getUserId(), sessionType);
 
-        return CallSessionResponse.from(session);
+        return CallSessionResponse.from(session, subscription);
     }
 
     // ──────────────────────────────────────────────

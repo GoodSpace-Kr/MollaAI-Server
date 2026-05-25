@@ -1,6 +1,7 @@
 package com.molla.controller.dto.callsession;
 
 import com.molla.domain.callsession.CallSession;
+import com.molla.controller.dto.subscription.SubscriptionWithRemainingResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
@@ -26,10 +27,20 @@ public record CallSessionResponse(
         @Schema(description = "통화 시간 (초)", example = "183")
         Integer durationSeconds,
 
+        @Schema(description = "현재 활성 구독 정보와 오늘 잔여 통화 시간. start 세션 응답에서 주로 사용됩니다.")
+        SubscriptionWithRemainingResponse subscription,
+
         @Schema(description = "세션 상태 (in_progress / completed / failed)", example = "completed")
         String status
 ) {
     public static CallSessionResponse from(CallSession session) {
+        return from(session, null);
+    }
+
+    public static CallSessionResponse from(
+            CallSession session,
+            SubscriptionWithRemainingResponse subscription
+    ) {
         return new CallSessionResponse(
                 session.getId(),
                 session.getSessionType(),
@@ -37,6 +48,7 @@ public record CallSessionResponse(
                 session.getStartedAt(),
                 session.getEndedAt(),
                 session.getDurationSeconds(),
+                subscription,
                 session.getStatus()
         );
     }
