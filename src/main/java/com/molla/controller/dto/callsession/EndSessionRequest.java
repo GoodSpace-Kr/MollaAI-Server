@@ -12,6 +12,9 @@ public record EndSessionRequest(
         @Schema(description = "종료 상태 (completed / failed). 기본값: completed", example = "completed")
         String status,
 
+        @Schema(description = "실제 통화 시간(초). 전달되면 서버 계산값 대신 이 값을 저장합니다.", example = "183")
+        Integer durationSeconds,
+
         @Schema(description = "통화 턴 목록")
         List<TurnPayload> turns
 ) {

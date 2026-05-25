@@ -2,6 +2,7 @@ package com.molla.domain.callsession;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.molla.controller.dto.callsession.CallSessionResponse;
+import com.molla.controller.dto.callsession.EndSessionRequest;
 import com.molla.controller.dto.callsession.StartSessionRequest;
 import com.molla.controller.dto.subscription.SubscriptionWithRemainingResponse;
 import com.molla.domain.subscription.SubscriptionRepository;
@@ -12,6 +13,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.context.ApplicationEventPublisher;
 
+import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -102,5 +105,45 @@ class CallSessionServiceTest {
         assertThat(savedSession.getPhoneNumber()).isEqualTo(phoneNumber);
         assertThat(response.sessionType()).isEqualTo("practice");
         assertThat(response.subscription()).isEqualTo(subscription);
+    }
+
+    @Test
+    void endSessionStoresProvidedDurationSecondsFromRequest() {
+        User existingUser = User.createByPhone("01012345678");
+        when(userRepository.findByPhoneNumber(existingUser.getPhoneNumber())).thenReturn(Optional.of(existingUser));
+        when(callSessionRepository.existsByPhoneNumber(existingUser.getPhoneNumber())).thenReturn(false);
+        when(subscriptionService.getMySubscription(existingUser.getId())).thenReturn(new SubscriptionWithRemainingResponse(
+                "sub-3",
+                "premium",
+                Integer.MAX_VALUE,
+                Integer.MAX_VALUE,
+                null,
+                null,
+                "active"
+        ));
+
+        CallSessionResponse started = callSessionService.startSession(new StartSessionRequest(existingUser.getPhoneNumber(), "CA9999"));
+        ArgumentCaptor<CallSession> startSessionCaptor = ArgumentCaptor.forClass(CallSession.class);
+        verify(callSessionRepository).save(startSessionCaptor.capture());
+        CallSession session = startSessionCaptor.getValue();
+
+        when(callSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+
+        EndSessionRequest request = new EndSessionRequest(
+                "completed",
+                125,
+                List.of(new EndSessionRequest.TurnPayload(
+                        1,
+                        OffsetDateTime.parse("2026-05-20T12:00:01.123456+00:00"),
+                        new EndSessionRequest.UserTurnPayload("hello", 16000, "calls/test/turn-1.wav"),
+                        new EndSessionRequest.AssistantTurnPayload("hi", OffsetDateTime.parse("2026-05-20T12:00:02.234567+00:00"))
+                ))
+        );
+
+        CallSessionResponse ended = callSessionService.endSession(session.getId(), request);
+
+        assertThat(ended.durationSeconds()).isEqualTo(125);
+        assertThat(session.getDurationSeconds()).isEqualTo(125);
+        assertThat(session.getStatus()).isEqualTo("completed");
     }
 }

@@ -82,6 +82,14 @@ public class CallSession {
         this.status = "completed";
     }
 
+    public void end(Integer durationSeconds) {
+        this.endedAt = LocalDateTime.now();
+        this.durationSeconds = durationSeconds != null
+                ? Math.max(durationSeconds, 0)
+                : (int) java.time.Duration.between(this.startedAt, this.endedAt).getSeconds();
+        this.status = "completed";
+    }
+
     public void fail() {
         this.endedAt = LocalDateTime.now();
         this.status = "failed";
