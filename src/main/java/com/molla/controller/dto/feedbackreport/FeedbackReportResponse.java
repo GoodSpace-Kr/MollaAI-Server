@@ -23,7 +23,7 @@ public record FeedbackReportResponse(
 
         @Schema(
                 description = "핵심 문장 피드백 목록",
-                example = "[{\"sourceTurnIndex\":3,\"originSentence\":\"She go to school\",\"improvedSentence\":\"She usually goes to school early in the morning.\",\"keyExpression\":\"goes to school\",\"sampleRate\":16000,\"audioKey\":\"calls/CA.../turns/5.wav\",\"audioUrl\":\"https://signed-url\"}]"
+                example = "[{\"sourceTurnIndex\":3,\"originSentence\":\"She go to school\",\"improvedSentence\":\"She usually goes to school early in the morning.\",\"keyExpression\":\"goes to school\",\"keyExpressionKorean\":\"학교에 다니다\",\"sampleRate\":16000,\"audioKey\":\"calls/CA.../turns/5.wav\",\"audioUrl\":\"https://signed-url\"}]"
         )
         List<Report.CoreSentenceFeedback> coreSentences,
 
@@ -44,6 +44,12 @@ public record FeedbackReportResponse(
                 example = "[\"3인칭 단수 동사 활용\", \"시제 일관성\"]"
         )
         List<String> weakPoints,
+
+        @Schema(description = "레벨 퍼센트", example = "27")
+        Integer levelPercentage,
+
+        @Schema(description = "현재 영어 수준 분석", example = "표현 의도는 잘 전달되지만 문장 구조 안정성이 조금 더 필요합니다.")
+        String levelAnalysis,
 
         @Schema(description = "레벨 결과 (level_test 타입만 사용)", example = "상위 23%")
         String levelResult,

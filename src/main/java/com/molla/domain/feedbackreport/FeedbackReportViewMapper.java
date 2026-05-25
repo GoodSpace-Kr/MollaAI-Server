@@ -26,6 +26,8 @@ public class FeedbackReportViewMapper {
                 report.getOneLineSummary(),
                 readList(report.getScores(), new TypeReference<List<Report.ReportScore>>() {
                 }, "scores"),
+                report.getLevelPercentage(),
+                report.getLevelAnalysis(),
                 report.getLevelResult(),
                 report.getCreatedAt()
         );
@@ -53,6 +55,8 @@ public class FeedbackReportViewMapper {
                 }, "scores"),
                 readList(report.getWeakPoints(), new TypeReference<List<String>>() {
                 }, "weakPoints"),
+                report.getLevelPercentage(),
+                report.getLevelAnalysis(),
                 report.getLevelResult(),
                 session != null ? session.getStartedAt() : null,
                 toDurationMinutes(session),
@@ -85,6 +89,7 @@ public class FeedbackReportViewMapper {
                 coreSentence.originSentence(),
                 coreSentence.improvedSentence(),
                 coreSentence.keyExpression(),
+                coreSentence.keyExpressionKorean(),
                 coreSentence.sampleRate(),
                 coreSentence.audioKey(),
                 s3AudioUrlService.createAudioUrl(coreSentence.audioKey())

@@ -15,7 +15,9 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -88,7 +90,10 @@ class CallSessionWorkerTest {
 
         verify(openAiClient).generateReport(any(), any());
         verify(qdrantClient).upsertTurns("session-2", null, "01012345678", turns);
-        verify(feedbackReportRepository).save(any());
+        verify(feedbackReportRepository).save(argThat(feedbackReport ->
+                feedbackReport.getLevelPercentage() == 35
+                        && "문장 정확도를 조금 더 다듬으면 좋습니다.".equals(feedbackReport.getLevelAnalysis())
+        ));
         verify(userRepository, never()).findById(any());
     }
 }

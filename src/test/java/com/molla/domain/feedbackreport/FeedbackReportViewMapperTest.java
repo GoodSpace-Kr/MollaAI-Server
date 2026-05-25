@@ -29,8 +29,10 @@ class FeedbackReportViewMapperTest {
                 "session-1",
                 "practice",
                 "따듯하고 안정적인 대화였어요.",
+                27,
+                "표현 의도는 잘 전달되지만 문장 구조 안정성이 조금 더 필요합니다.",
                 """
-                [{"sourceTurnIndex":3,"originSentence":"She go to school","improvedSentence":"She usually goes to school early in the morning.","keyExpression":"goes to school","sampleRate":16000,"audioKey":"calls/test/turn-3.wav"}]
+                [{"sourceTurnIndex":3,"originSentence":"She go to school","improvedSentence":"She usually goes to school early in the morning.","keyExpression":"goes to school","keyExpressionKorean":"학교에 다니다","sampleRate":16000,"audioKey":"calls/test/turn-3.wav"}]
                 """,
                 """
                 [{"habit":"짧은 문장 반복","evidence":"I like it. I use it.","suggestion":"문장을 연결해서 말해보세요."}]
@@ -49,12 +51,15 @@ class FeedbackReportViewMapperTest {
         assertThat(response.coreSentences()).hasSize(1);
         assertThat(response.coreSentences().get(0).originSentence()).isEqualTo("She go to school");
         assertThat(response.coreSentences().get(0).keyExpression()).isEqualTo("goes to school");
+        assertThat(response.coreSentences().get(0).keyExpressionKorean()).isEqualTo("학교에 다니다");
         assertThat(response.coreSentences().get(0).sourceTurnIndex()).isEqualTo(3);
         assertThat(response.coreSentences().get(0).audioKey()).isEqualTo("calls/test/turn-3.wav");
         assertThat(response.coreSentences().get(0).audioUrl()).isEqualTo("https://signed-url");
         assertThat(response.habitAnalyses()).hasSize(1);
         assertThat(response.scores()).hasSize(3);
         assertThat(response.weakPoints()).containsExactly("시제 일관성", "3인칭 단수 동사 활용");
+        assertThat(response.levelPercentage()).isEqualTo(27);
+        assertThat(response.levelAnalysis()).contains("문장 구조 안정성");
         assertThat(response.sessionStartedAt()).isEqualTo(LocalDateTime.of(2026, 5, 20, 12, 0));
         assertThat(response.sessionDurationMinutes()).isEqualTo(3);
     }
@@ -65,6 +70,8 @@ class FeedbackReportViewMapperTest {
                 "session-2",
                 "level_test",
                 "전반적으로 자신감이 좋아요.",
+                41,
+                "상위권 진입 직전 단계로, 답변 확장과 정확도 보완이 필요합니다.",
                 "[]",
                 "[]",
                 """
@@ -79,5 +86,7 @@ class FeedbackReportViewMapperTest {
         assertThat(response.scores()).hasSize(3);
         assertThat(response.scores().get(2).exam()).isEqualTo("OPIC");
         assertThat(response.levelResult()).isEqualTo("상위 20%");
+        assertThat(response.levelPercentage()).isEqualTo(41);
+        assertThat(response.levelAnalysis()).contains("상위권 진입 직전");
     }
 }

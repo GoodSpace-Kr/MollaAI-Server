@@ -33,6 +33,24 @@
 - 비고: 남은 작업이나 주의사항
 ```
 
+## 2026-05-25 - 리포트 핵심 표현에 한글 뜻 필드 추가
+
+- 구분: 메인 로직, 엔드포인트, AI, 문서, test
+- 변경: `Report.CoreSentenceFeedback`에 `keyExpressionKorean` 필드를 추가하고, OpenAI 프롬프트가 핵심 표현의 자연스러운 한글 뜻을 함께 생성하도록 수정했다. `core_sentences` JSON 파싱, 오디오 보강, 리포트 상세 응답 반환, Swagger 예시/필드 설명도 모두 새 필드 기준으로 맞췄다.
+- 영향: 프론트는 리포트 상세의 `coreSentences`에서 영어 핵심 표현과 한글 뜻을 함께 받아 바로 표시할 수 있다. 별도 DB 컬럼 추가 없이 기존 `core_sentences` JSON 안에 함께 저장된다.
+- 확인: `./gradlew test --tests com.molla.domain.feedbackreport.ReportJsonTest --tests com.molla.domain.worker.OpenAiClientGenerateReportTest --tests com.molla.domain.feedbackreport.FeedbackReportViewMapperTest --tests com.molla.domain.worker.ReportAudioEnricherTest --tests com.molla.domain.worker.OpenAiClientPromptTest`
+- 관련 파일: `src/main/java/com/molla/domain/feedbackreport/Report.java`, `src/main/java/com/molla/domain/worker/OpenAiClient.java`, `src/main/java/com/molla/domain/worker/ReportAudioEnricher.java`, `src/main/java/com/molla/domain/feedbackreport/FeedbackReportViewMapper.java`, `src/main/java/com/molla/controller/dto/feedbackreport/FeedbackReportResponse.java`, `src/test/java/com/molla/domain/feedbackreport/ReportJsonTest.java`, `src/test/java/com/molla/domain/worker/OpenAiClientGenerateReportTest.java`, `src/test/java/com/molla/domain/feedbackreport/FeedbackReportViewMapperTest.java`, `src/test/java/com/molla/domain/worker/ReportAudioEnricherTest.java`, `src/test/java/com/molla/domain/worker/OpenAiClientPromptTest.java`
+- 비고: 기존 수동 SQL로 넣은 `core_sentences` JSON에도 `keyExpressionKorean`을 같이 넣어야 프론트에서 해당 값이 보인다.
+
+## 2026-05-25 - feedback_reports에 levelPercentage, levelAnalysis 저장 및 응답 노출 추가
+
+- 구분: 메인 로직, 엔드포인트, 데이터베이스, AI, test
+- 변경: `feedback_reports`에 `level_percentage`, `level_analysis` 컬럼을 추가하는 SQL을 마련하고, `FeedbackReport` 엔티티/팩토리와 `CallSessionWorker` 저장 로직이 `Report.levelPercentage`, `Report.levelAnalysis`를 실제 DB에 저장하도록 연결했다. 또한 리포트 상세/요약 응답 DTO와 `FeedbackReportViewMapper`가 두 필드를 프론트에 내려주도록 확장했다.
+- 영향: OpenAI가 생성한 레벨 퍼센트와 수준 분석이 DB에 보존되며, 프론트는 리포트 목록/상세 응답에서 해당 값을 직접 표시할 수 있다.
+- 확인: `./gradlew test --tests com.molla.domain.feedbackreport.FeedbackReportViewMapperTest --tests com.molla.domain.feedbackreport.FeedbackReportServiceTest --tests com.molla.domain.worker.CallSessionWorkerTest`
+- 관련 파일: `src/main/java/com/molla/domain/feedbackreport/FeedbackReport.java`, `src/main/java/com/molla/domain/worker/CallSessionWorker.java`, `src/main/java/com/molla/controller/dto/feedbackreport/FeedbackReportResponse.java`, `src/main/java/com/molla/controller/dto/feedbackreport/FeedbackReportSummaryResponse.java`, `src/main/java/com/molla/domain/feedbackreport/FeedbackReportViewMapper.java`, `src/test/java/com/molla/domain/feedbackreport/FeedbackReportViewMapperTest.java`, `src/test/java/com/molla/domain/feedbackreport/FeedbackReportServiceTest.java`, `src/test/java/com/molla/domain/worker/CallSessionWorkerTest.java`, `docs/sql/20260525_add_level_metrics_to_feedback_reports.sql`
+- 비고: 운영 DB에는 SQL을 먼저 적용해야 저장이 정상 동작한다.
+
 ## 2026-05-25 - 리포트 상세 응답의 통화 시간을 분 단위로 변경
 
 - 구분: 엔드포인트, 메인 로직, test

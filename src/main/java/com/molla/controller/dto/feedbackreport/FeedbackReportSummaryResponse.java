@@ -27,6 +27,12 @@ public record FeedbackReportSummaryResponse(
         )
         List<Report.ReportScore> scores,
 
+        @Schema(description = "레벨 퍼센트", example = "27")
+        Integer levelPercentage,
+
+        @Schema(description = "현재 영어 수준 분석", example = "표현 의도는 잘 전달되지만 문장 구조 안정성이 조금 더 필요합니다.")
+        String levelAnalysis,
+
         @Schema(description = "레벨 결과 (level_test 타입만 사용)", example = "상위 23%")
         String levelResult,
 

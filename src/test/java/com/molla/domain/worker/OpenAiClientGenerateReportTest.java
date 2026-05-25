@@ -40,13 +40,15 @@ class OpenAiClientGenerateReportTest {
                       "sourceTurnIndex": 1,
                       "originSentence": "I go to there yesterday.",
                       "improvedSentence": "I went there yesterday to meet my friend.",
-                      "keyExpression": "went there yesterday"
+                      "keyExpression": "went there yesterday",
+                      "keyExpressionKorean": "어제 거기에 갔다"
                     },
                     {
                       "sourceTurnIndex": 3,
                       "originSentence": "She don't like spicy food.",
                       "improvedSentence": "She doesn't like spicy food, so we chose another restaurant.",
-                      "keyExpression": "doesn't like"
+                      "keyExpression": "doesn't like",
+                      "keyExpressionKorean": "좋아하지 않는다"
                     }
                   ],
                   "habitAnalyses": [
@@ -122,6 +124,7 @@ class OpenAiClientGenerateReportTest {
         assertThat(report.coreSentences().get(0).originSentence()).isEqualTo("I go to there yesterday.");
         assertThat(report.coreSentences().get(0).improvedSentence()).isEqualTo("I went there yesterday to meet my friend.");
         assertThat(report.coreSentences().get(0).keyExpression()).isEqualTo("went there yesterday");
+        assertThat(report.coreSentences().get(0).keyExpressionKorean()).isEqualTo("어제 거기에 갔다");
         assertThat(report.habitAnalyses()).hasSize(1);
         assertThat(report.scores()).hasSize(3);
         assertThat(report.weakPoints()).contains("시제 정확도", "전치사 선택");

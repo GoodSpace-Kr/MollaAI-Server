@@ -36,11 +36,12 @@ public class OpenAiClient {
                 다른 텍스트는 절대 포함하지 마세요.
                 oneLineSummary는 절대 20자를 넘지 말아야 합니다.
                 coreSentences는 반드시 여러 문장으로 구성하세요. 최소 15개 이상 작성하세요.
-                각 항목은 turns의 userText에서 실제로 중요한 문장을 골라 originSentence, improvedSentence, keyExpression을 1:1:1로 대응시켜 주세요.
+                각 항목은 turns의 userText에서 실제로 중요한 문장을 골라 originSentence, improvedSentence, keyExpression, keyExpressionKorean을 1:1:1:1로 대응시켜 주세요.
                 coreSentences의 각 originSentence는 서로 다른 문장이어야 하며, 같은 문장을 중복해서 넣지 마세요.
                 coreSentences의 originSentence는 반드시 turns의 userText 원문을 그대로 사용하세요.
                 coreSentences의 각 항목에는 반드시 sourceTurnIndex를 포함하고, 이 값은 originSentence가 나온 turn의 index여야 합니다.
                 keyExpression은 해당 ImprovedSentence문장에서 꼭 익혀야 할 핵심 표현 한 가지를 짧게 추출하세요.
+                keyExpressionKorean은 keyExpression의 자연스러운 한글 뜻을 15자 이내로 짧게 설명하세요.
                 habitAnalysis의 habit은 13자 이내로 작성하고, 해당 habit의 근거를 전달한 통화 내용에서 추출해야합니다. 해당 습관과 근거에 맞게 Suggestion또한 작성하세요.
                 levelPercentage는 정수 퍼센트 값으로 작성하세요.
                 levelAnalysis는 현재 영어 수준에 대한 짧은 해설을 작성하세요.
@@ -55,21 +56,21 @@ public class OpenAiClient {
                   "levelPercentage": 35,
                   "levelAnalysis": "현재 영어 수준에 대한 간단한 해설",
                   "coreSentences": [
-                    {"sourceTurnIndex": 1, "originSentence": "", "improvedSentence": "", "keyExpression": ""},
-                    {"sourceTurnIndex": 2, "originSentence": "", "improvedSentence": "", "keyExpression": ""},
-                    {"sourceTurnIndex": 3, "originSentence": "", "improvedSentence": "", "keyExpression": ""},
-                    {"sourceTurnIndex": 4, "originSentence": "", "improvedSentence": "", "keyExpression": ""},
-                    {"sourceTurnIndex": 5, "originSentence": "", "improvedSentence": "", "keyExpression": ""},
-                    {"sourceTurnIndex": 6, "originSentence": "", "improvedSentence": "", "keyExpression": ""},
-                    {"sourceTurnIndex": 7, "originSentence": "", "improvedSentence": "", "keyExpression": ""},
-                    {"sourceTurnIndex": 8, "originSentence": "", "improvedSentence": "", "keyExpression": ""},
-                    {"sourceTurnIndex": 9, "originSentence": "", "improvedSentence": "", "keyExpression": ""},
-                    {"sourceTurnIndex": 10, "originSentence": "", "improvedSentence": "", "keyExpression": ""},
-                    {"sourceTurnIndex": 11, "originSentence": "", "improvedSentence": "", "keyExpression": ""},
-                    {"sourceTurnIndex": 12, "originSentence": "", "improvedSentence": "", "keyExpression": ""},
-                    {"sourceTurnIndex": 13, "originSentence": "", "improvedSentence": "", "keyExpression": ""},
-                    {"sourceTurnIndex": 14, "originSentence": "", "improvedSentence": "", "keyExpression": ""},
-                    {"sourceTurnIndex": 15, "originSentence": "", "improvedSentence": "", "keyExpression": ""}
+                    {"sourceTurnIndex": 1, "originSentence": "", "improvedSentence": "", "keyExpression": "", "keyExpressionKorean": ""},
+                    {"sourceTurnIndex": 2, "originSentence": "", "improvedSentence": "", "keyExpression": "", "keyExpressionKorean": ""},
+                    {"sourceTurnIndex": 3, "originSentence": "", "improvedSentence": "", "keyExpression": "", "keyExpressionKorean": ""},
+                    {"sourceTurnIndex": 4, "originSentence": "", "improvedSentence": "", "keyExpression": "", "keyExpressionKorean": ""},
+                    {"sourceTurnIndex": 5, "originSentence": "", "improvedSentence": "", "keyExpression": "", "keyExpressionKorean": ""},
+                    {"sourceTurnIndex": 6, "originSentence": "", "improvedSentence": "", "keyExpression": "", "keyExpressionKorean": ""},
+                    {"sourceTurnIndex": 7, "originSentence": "", "improvedSentence": "", "keyExpression": "", "keyExpressionKorean": ""},
+                    {"sourceTurnIndex": 8, "originSentence": "", "improvedSentence": "", "keyExpression": "", "keyExpressionKorean": ""},
+                    {"sourceTurnIndex": 9, "originSentence": "", "improvedSentence": "", "keyExpression": "", "keyExpressionKorean": ""},
+                    {"sourceTurnIndex": 10, "originSentence": "", "improvedSentence": "", "keyExpression": "", "keyExpressionKorean": ""},
+                    {"sourceTurnIndex": 11, "originSentence": "", "improvedSentence": "", "keyExpression": "", "keyExpressionKorean": ""},
+                    {"sourceTurnIndex": 12, "originSentence": "", "improvedSentence": "", "keyExpression": "", "keyExpressionKorean": ""},
+                    {"sourceTurnIndex": 13, "originSentence": "", "improvedSentence": "", "keyExpression": "", "keyExpressionKorean": ""},
+                    {"sourceTurnIndex": 14, "originSentence": "", "improvedSentence": "", "keyExpression": "", "keyExpressionKorean": ""},
+                    {"sourceTurnIndex": 15, "originSentence": "", "improvedSentence": "", "keyExpression": "", "keyExpressionKorean": ""}
                   ],
                   "habitAnalyses": [{"habit": "", "evidence": "", "suggestion": ""}],
                   "scores": [{"exam": "IELTS", "score": ""}, {"exam": "TOEIC", "score": ""}, {"exam": "OPIC", "score": ""}],
