@@ -108,7 +108,7 @@ class CallSessionServiceTest {
     }
 
     @Test
-    void endSessionStoresProvidedDurationSecondsFromRequest() {
+    void endSessionStoresProvidedDurationMinutesFromRequestAsSeconds() {
         User existingUser = User.createByPhone("01012345678");
         when(userRepository.findByPhoneNumber(existingUser.getPhoneNumber())).thenReturn(Optional.of(existingUser));
         when(callSessionRepository.existsByPhoneNumber(existingUser.getPhoneNumber())).thenReturn(false);
@@ -131,7 +131,7 @@ class CallSessionServiceTest {
 
         EndSessionRequest request = new EndSessionRequest(
                 "completed",
-                125,
+                3,
                 List.of(new EndSessionRequest.TurnPayload(
                         1,
                         OffsetDateTime.parse("2026-05-20T12:00:01.123456+00:00"),
@@ -142,8 +142,8 @@ class CallSessionServiceTest {
 
         CallSessionResponse ended = callSessionService.endSession(session.getId(), request);
 
-        assertThat(ended.durationSeconds()).isEqualTo(125);
-        assertThat(session.getDurationSeconds()).isEqualTo(125);
+        assertThat(ended.durationSeconds()).isEqualTo(180);
+        assertThat(session.getDurationSeconds()).isEqualTo(180);
         assertThat(session.getStatus()).isEqualTo("completed");
     }
 }

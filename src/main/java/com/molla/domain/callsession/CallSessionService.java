@@ -78,15 +78,15 @@ public class CallSessionService {
         }
 
         String resolvedStatus = request != null ? request.resolvedStatus() : "completed";
-        Integer requestedDurationSeconds = request != null ? request.durationSeconds() : null;
+        Integer requestedDurationMinutes = request != null ? request.durationMinutes() : null;
         List<CallSessionTurn> turns = request != null ? request.toCallSessionTurns() : List.of();
 
         if ("completed".equals(resolvedStatus) && turns.isEmpty()) {
             throw new CallSessionException(ErrorCode.INVALID_REQUEST, "completed 상태로 종료하려면 turns가 필요합니다.");
         }
 
-        if (requestedDurationSeconds != null && requestedDurationSeconds < 0) {
-            throw new CallSessionException(ErrorCode.INVALID_REQUEST, "durationSeconds는 0 이상이어야 합니다.");
+        if (requestedDurationMinutes != null && requestedDurationMinutes < 0) {
+            throw new CallSessionException(ErrorCode.INVALID_REQUEST, "durationMinutes는 0 이상이어야 합니다.");
         }
 
         if (!turns.isEmpty()) {
@@ -100,7 +100,7 @@ public class CallSessionService {
         if ("failed".equals(resolvedStatus)) {
             session.fail();
         } else {
-            session.end(requestedDurationSeconds);
+            session.end(toDurationSeconds(requestedDurationMinutes));
         }
 
         // 통화 종료 후 비동기 워커 트리거 (Spring Event)
@@ -163,5 +163,12 @@ public class CallSessionService {
         User savedUser = userRepository.save(User.createByPhone(phoneNumber));
         subscriptionService.ensureDemoPremiumSubscription(savedUser.getId());
         return savedUser;
+    }
+
+    private Integer toDurationSeconds(Integer durationMinutes) {
+        if (durationMinutes == null) {
+            return null;
+        }
+        return durationMinutes * 60;
     }
 }

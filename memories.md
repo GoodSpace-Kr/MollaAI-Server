@@ -33,14 +33,14 @@
 - 비고: 남은 작업이나 주의사항
 ```
 
-## 2026-05-25 - end 세션 요청의 durationSeconds를 통화 시간 집계에 반영
+## 2026-05-25 - end 세션 요청의 durationMinutes를 통화 시간 집계에 반영
 
 - 구분: 엔드포인트, 메인 로직, 구독, test
-- 변경: 내부 `end` 요청 DTO에 `durationSeconds`를 추가하고, completed 세션 종료 시 서버 계산값 대신 이 값을 `call_sessions.duration_seconds`에 저장하도록 변경했다.
-- 영향: 구독 잔여시간은 `call_sessions.duration_seconds` 합계를 기준으로 계산되므로, AI 서버가 보내는 실제 통화시간이 저장되면 이후 구독의 오늘 잔여 통화 시간도 그 값 기준으로 정확히 차감된다.
-- 확인: `EndSessionRequestJsonTest`에서 `durationSeconds` 역직렬화를 검증했고, `CallSessionServiceTest`에서 end 요청의 `durationSeconds=125`가 세션과 응답에 반영되는지 검증했다.
+- 변경: 내부 `end` 요청 DTO의 통화 시간 필드를 `durationMinutes`로 변경하고, completed 세션 종료 시 서버 계산값 대신 이 분 값을 초 단위로 환산해 `call_sessions.duration_seconds`에 저장하도록 변경했다.
+- 영향: 구독 잔여시간은 `call_sessions.duration_seconds` 합계를 기준으로 계산되므로, AI 서버가 보내는 실제 통화 분이 저장되면 이후 구독의 오늘 잔여 통화 시간도 그 값 기준으로 정확히 차감된다.
+- 확인: `EndSessionRequestJsonTest`에서 `durationMinutes` 역직렬화를 검증했고, `CallSessionServiceTest`에서 end 요청의 `durationMinutes=3`이 세션과 응답에 `180초`로 반영되는지 검증했다.
 - 관련 파일: `src/main/java/com/molla/controller/dto/callsession/EndSessionRequest.java`, `src/main/java/com/molla/domain/callsession/CallSession.java`, `src/main/java/com/molla/domain/callsession/CallSessionService.java`, `src/test/java/com/molla/controller/dto/callsession/EndSessionRequestJsonTest.java`, `src/test/java/com/molla/domain/callsession/CallSessionServiceTest.java`
-- 비고: 음수 duration은 `INVALID_REQUEST`로 거부한다.
+- 비고: 음수 `durationMinutes`는 `INVALID_REQUEST`로 거부한다.
 
 ## 2026-05-25 - 신규 유저 생성 시 데모 premium 구독 자동 부여
 
