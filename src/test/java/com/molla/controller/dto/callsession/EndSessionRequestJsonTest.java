@@ -15,6 +15,7 @@ class EndSessionRequestJsonTest {
         String json = """
                 {
                   "status": "completed",
+                  "durationMinutes": 3,
                   "turns": [
                     {
                       "index": 1,
@@ -37,6 +38,7 @@ class EndSessionRequestJsonTest {
         CallSessionTurn callSessionTurn = request.toCallSessionTurns().get(0);
 
         assertThat(request.status()).isEqualTo("completed");
+        assertThat(request.durationMinutes()).isEqualTo(3);
         assertThat(request.turns()).hasSize(1);
 
         EndSessionRequest.TurnPayload turn = request.turns().get(0);
@@ -56,6 +58,7 @@ class EndSessionRequestJsonTest {
         String json = """
                 {
                   "status": "completed",
+                  "durationMinutes": 2,
                   "turns": [
                     {
                       "index": 1,
@@ -88,6 +91,7 @@ class EndSessionRequestJsonTest {
                 """;
 
         EndSessionRequest request = objectMapper.readValue(json, EndSessionRequest.class);
+        assertThat(request.durationMinutes()).isEqualTo(2);
         assertThat(request.toCallSessionTurns()).hasSize(2);
 
         CallSessionTurn firstTurn = request.toCallSessionTurns().get(0);

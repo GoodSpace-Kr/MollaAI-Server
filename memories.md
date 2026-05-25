@@ -33,6 +33,51 @@
 - 비고: 남은 작업이나 주의사항
 ```
 
+## 2026-05-25 - 통화 세션 Swagger 문구를 최신 start/end 계약에 맞게 정리
+
+- 구분: 문서, 엔드포인트
+- 변경: `CallSessionController`, `CallSessionResponse`, `EndSessionRequest`, `SubscriptionWithRemainingResponse`의 Swagger 설명을 최신 계약에 맞게 갱신했다. start 응답의 구독 정보 포함, end 요청의 `durationMinutes` 사용, 잔여 통화 시간 반영, 3분 미만 워커 스킵 조건을 문서에 반영했다.
+- 영향: 내부 AI 오케스트레이션 서버와 프론트가 Swagger만 보고도 start/end 세션의 최신 요청/응답 의미를 더 정확하게 이해할 수 있다.
+- 확인: 관련 컨트롤러/DTO의 OpenAPI 어노테이션 문구를 점검하고 `./gradlew testClasses`로 컴파일 검증한다.
+- 관련 파일: `src/main/java/com/molla/controller/CallSessionController.java`, `src/main/java/com/molla/controller/dto/callsession/CallSessionResponse.java`, `src/main/java/com/molla/controller/dto/callsession/EndSessionRequest.java`, `src/main/java/com/molla/controller/dto/subscription/SubscriptionWithRemainingResponse.java`
+- 비고: 동작 로직 변경 없이 Swagger 문구와 예시만 최신화했다.
+
+## 2026-05-25 - end 세션 요청의 durationMinutes를 통화 시간 집계에 반영
+
+- 구분: 엔드포인트, 메인 로직, 구독, test
+- 변경: 내부 `end` 요청 DTO의 통화 시간 필드를 `durationMinutes`로 변경하고, completed 세션 종료 시 서버 계산값 대신 이 분 값을 초 단위로 환산해 `call_sessions.duration_seconds`에 저장하도록 변경했다.
+- 영향: 구독 잔여시간은 `call_sessions.duration_seconds` 합계를 기준으로 계산되므로, AI 서버가 보내는 실제 통화 분이 저장되면 이후 구독의 오늘 잔여 통화 시간도 그 값 기준으로 정확히 차감된다.
+- 확인: `EndSessionRequestJsonTest`에서 `durationMinutes` 역직렬화를 검증했고, `CallSessionServiceTest`에서 end 요청의 `durationMinutes=3`이 세션과 응답에 `180초`로 반영되는지 검증했다.
+- 관련 파일: `src/main/java/com/molla/controller/dto/callsession/EndSessionRequest.java`, `src/main/java/com/molla/domain/callsession/CallSession.java`, `src/main/java/com/molla/domain/callsession/CallSessionService.java`, `src/test/java/com/molla/controller/dto/callsession/EndSessionRequestJsonTest.java`, `src/test/java/com/molla/domain/callsession/CallSessionServiceTest.java`
+- 비고: 음수 `durationMinutes`는 `INVALID_REQUEST`로 거부한다.
+
+## 2026-05-25 - 신규 유저 생성 시 데모 premium 구독 자동 부여
+
+- 구분: 메인 로직, 구독, 인증, 통화 세션, test
+- 변경: `SubscriptionService`에 활성 구독이 없을 때 `premium` / `expiresAt = null` / `dailyLimitMinutes = Integer.MAX_VALUE`인 데모 기본 구독을 보장하는 메서드를 추가하고, `startSession` 및 `verifyCode`에서 새 유저를 생성할 때 이를 자동 호출하도록 변경했다.
+- 영향: 통화 시작이나 인증 로그인으로 새 유저가 생성되면 즉시 활성 premium 구독도 함께 생성된다. 기존 활성 구독이 있는 유저는 중복 생성되지 않는다.
+- 확인: `CallSessionServiceTest`, `AuthServiceTest`, `SubscriptionServiceTest`에서 각각 startSession 경로, verifyCode 경로, 구독 보장 서비스의 생성/스킵 동작을 검증했다.
+- 관련 파일: `src/main/java/com/molla/domain/subscription/SubscriptionService.java`, `src/main/java/com/molla/domain/callsession/CallSessionService.java`, `src/main/java/com/molla/domain/auth/AuthService.java`, `src/test/java/com/molla/domain/subscription/SubscriptionServiceTest.java`, `src/test/java/com/molla/domain/auth/AuthServiceTest.java`, `src/test/java/com/molla/domain/callsession/CallSessionServiceTest.java`
+- 비고: 현재는 데모 정책으로 모든 신규 유저를 premium으로 생성하며, free(10분)/premium(무제한) 정책을 정식 반영할 때 별도 플랜 규칙으로 대체할 수 있다.
+
+## 2026-05-25 - start 세션 응답에 활성 구독과 오늘 잔여 시간 포함
+
+- 구분: 엔드포인트, 메인 로직, test
+- 변경: `CallSessionResponse`에 구독 정보를 추가하고, `startSession` 응답에서 현재 활성 구독과 `remainingMinutesToday`를 함께 내려주도록 변경했다.
+- 영향: AI 오케스트레이션 서버는 start 응답만으로 현재 플랜과 오늘 남은 통화 가능 시간을 바로 확인할 수 있다. 다른 세션 응답 경로는 기존처럼 구독 필드가 null일 수 있다.
+- 확인: `CallSessionServiceTest`에서 신규/기존 유저 모두 start 응답의 `subscription` 필드가 채워지는지 검증했다.
+- 관련 파일: `src/main/java/com/molla/controller/dto/callsession/CallSessionResponse.java`, `src/main/java/com/molla/domain/callsession/CallSessionService.java`, `src/test/java/com/molla/domain/callsession/CallSessionServiceTest.java`, `src/main/java/com/molla/controller/CallSessionController.java`
+- 비고: 현재는 start 응답에만 실구독 정보 주입을 보장하고, 목록/상세/종료 응답은 null을 유지한다.
+
+## 2026-05-25 - 통화 시작 시 phoneNumber 기준 유저 자동 생성
+
+- 구분: 메인 로직, 통화 세션, test
+- 변경: `startSession`이 들어올 때 `phoneNumber`로 기존 유저가 없으면 `User.createByPhone(...)`로 미가입 유저를 먼저 생성한 뒤, 그 유저 ID를 세션에 연결하도록 변경했다.
+- 영향: 이제 단순 통화 시작만으로도 `users` 테이블에 phoneNumber 기반 유저가 생성될 수 있으며, `call_sessions.user_id`는 신규 번호에서도 null이 아니라 생성된 유저 ID를 가지게 된다.
+- 확인: `CallSessionServiceTest`에서 phoneNumber가 없을 때 유저를 생성하고, 있을 때는 기존 유저를 재사용하는지 검증했다.
+- 관련 파일: `src/main/java/com/molla/domain/callsession/CallSessionService.java`, `src/test/java/com/molla/domain/callsession/CallSessionServiceTest.java`
+- 비고: 생성되는 유저는 `registered = false`, `status = active` 상태의 미가입 유저다.
+
 ## 2026-05-23 - 로그인 응답 isNewUser Swagger 설명 보강
 
 - 구분: 문서, 엔드포인트

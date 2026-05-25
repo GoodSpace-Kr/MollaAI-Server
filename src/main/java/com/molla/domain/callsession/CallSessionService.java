@@ -5,8 +5,10 @@ import com.molla.common.response.ErrorCode;
 import com.molla.controller.dto.callsession.CallSessionResponse;
 import com.molla.controller.dto.callsession.EndSessionRequest;
 import com.molla.controller.dto.callsession.StartSessionRequest;
+import com.molla.controller.dto.subscription.SubscriptionWithRemainingResponse;
 import com.molla.domain.callsession.CallSessionTurn;
 import com.molla.domain.subscription.SubscriptionRepository;
+import com.molla.domain.subscription.SubscriptionService;
 import com.molla.domain.user.User;
 import com.molla.domain.user.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,6 +29,7 @@ public class CallSessionService {
     private final CallSessionRepository callSessionRepository;
     private final UserRepository userRepository;
     private final SubscriptionRepository subscriptionRepository;
+    private final SubscriptionService subscriptionService;
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
 
@@ -36,9 +39,9 @@ public class CallSessionService {
 
     @Transactional
     public CallSessionResponse startSession(StartSessionRequest request) {
-        Optional<User> userOptional = userRepository.findByPhoneNumber(request.phoneNumber());
-        User user = userOptional.orElse(null);
-        String resolvedUserId = user != null ? user.getId() : null;
+        User user = userRepository.findByPhoneNumber(request.phoneNumber())
+                .orElseGet(() -> createUserWithDemoSubscription(request.phoneNumber()));
+        String resolvedUserId = user.getId();
         String sessionType = resolveSessionType(request.phoneNumber());
 
         // 통화 시점의 유저 상태 스냅샷
@@ -53,11 +56,12 @@ public class CallSessionService {
         );
 
         callSessionRepository.save(session);
+        SubscriptionWithRemainingResponse subscription = subscriptionService.getMySubscription(resolvedUserId);
 
         log.info("통화 세션 시작 — sessionId: {}, userId: {}, type: {}",
                 session.getId(), session.getUserId(), sessionType);
 
-        return CallSessionResponse.from(session);
+        return CallSessionResponse.from(session, subscription);
     }
 
     // ──────────────────────────────────────────────
@@ -74,10 +78,15 @@ public class CallSessionService {
         }
 
         String resolvedStatus = request != null ? request.resolvedStatus() : "completed";
+        Integer requestedDurationMinutes = request != null ? request.durationMinutes() : null;
         List<CallSessionTurn> turns = request != null ? request.toCallSessionTurns() : List.of();
 
         if ("completed".equals(resolvedStatus) && turns.isEmpty()) {
             throw new CallSessionException(ErrorCode.INVALID_REQUEST, "completed 상태로 종료하려면 turns가 필요합니다.");
+        }
+
+        if (requestedDurationMinutes != null && requestedDurationMinutes < 0) {
+            throw new CallSessionException(ErrorCode.INVALID_REQUEST, "durationMinutes는 0 이상이어야 합니다.");
         }
 
         if (!turns.isEmpty()) {
@@ -91,7 +100,7 @@ public class CallSessionService {
         if ("failed".equals(resolvedStatus)) {
             session.fail();
         } else {
-            session.end();
+            session.end(toDurationSeconds(requestedDurationMinutes));
         }
 
         // 통화 종료 후 비동기 워커 트리거 (Spring Event)
@@ -148,5 +157,18 @@ public class CallSessionService {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new GlobalException(ErrorCode.USER_NOT_FOUND))
                 .getPhoneNumber();
+    }
+
+    private User createUserWithDemoSubscription(String phoneNumber) {
+        User savedUser = userRepository.save(User.createByPhone(phoneNumber));
+        subscriptionService.ensureDemoPremiumSubscription(savedUser.getId());
+        return savedUser;
+    }
+
+    private Integer toDurationSeconds(Integer durationMinutes) {
+        if (durationMinutes == null) {
+            return null;
+        }
+        return durationMinutes * 60;
     }
 }
