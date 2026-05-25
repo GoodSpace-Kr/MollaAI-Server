@@ -33,6 +33,15 @@
 - 비고: 남은 작업이나 주의사항
 ```
 
+## 2026-05-25 - 리포트 상세 응답에 통화 세션 날짜와 통화 시간 추가
+
+- 구분: 엔드포인트, 메인 로직, 문서, test
+- 변경: `FeedbackReportResponse`에 해당 통화 세션의 `sessionStartedAt`, `sessionDurationSeconds`를 추가했다. 리포트 상세 조회 시 `FeedbackReportService`가 `sessionId`로 `CallSession`을 함께 조회하고, `FeedbackReportViewMapper`가 세션 메타데이터를 응답에 포함하도록 변경했다.
+- 영향: 프론트는 리포트 상세 응답만으로 해당 리포트가 생성된 통화의 날짜와 통화 시간을 함께 표시할 수 있다.
+- 확인: `./gradlew test --tests com.molla.domain.feedbackreport.FeedbackReportViewMapperTest --tests com.molla.domain.feedbackreport.FeedbackReportServiceTest`
+- 관련 파일: `src/main/java/com/molla/controller/dto/feedbackreport/FeedbackReportResponse.java`, `src/main/java/com/molla/domain/feedbackreport/FeedbackReportService.java`, `src/main/java/com/molla/domain/feedbackreport/FeedbackReportViewMapper.java`, `src/test/java/com/molla/domain/feedbackreport/FeedbackReportViewMapperTest.java`, `src/test/java/com/molla/domain/feedbackreport/FeedbackReportServiceTest.java`
+- 비고: 세션 상세 조회 실패 시 리포트 상세도 `SESSION_NOT_FOUND`로 실패한다.
+
 ## 2026-05-25 - OpenAI 리포트 프롬프트를 새 Report 스키마에 맞게 갱신
 
 - 구분: 메인 로직, AI, test

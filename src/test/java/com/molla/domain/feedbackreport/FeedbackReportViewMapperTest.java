@@ -3,7 +3,10 @@ package com.molla.domain.feedbackreport;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.molla.controller.dto.feedbackreport.FeedbackReportResponse;
 import com.molla.controller.dto.feedbackreport.FeedbackReportSummaryResponse;
+import com.molla.domain.callsession.CallSession;
 import org.junit.jupiter.api.Test;
+
+import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -18,6 +21,9 @@ class FeedbackReportViewMapperTest {
     @Test
     void mapsStructuredDetailResponse() {
         when(s3AudioUrlService.createAudioUrl("calls/test/turn-3.wav")).thenReturn("https://signed-url");
+        CallSession session = mock(CallSession.class);
+        when(session.getStartedAt()).thenReturn(LocalDateTime.of(2026, 5, 20, 12, 0));
+        when(session.getDurationSeconds()).thenReturn(180);
 
         FeedbackReport report = FeedbackReport.create(
                 "session-1",
@@ -38,7 +44,7 @@ class FeedbackReportViewMapperTest {
                 null
         );
 
-        FeedbackReportResponse response = mapper.toDetailResponse(report);
+        FeedbackReportResponse response = mapper.toDetailResponse(report, session);
 
         assertThat(response.coreSentences()).hasSize(1);
         assertThat(response.coreSentences().get(0).originSentence()).isEqualTo("She go to school");
@@ -49,6 +55,8 @@ class FeedbackReportViewMapperTest {
         assertThat(response.habitAnalyses()).hasSize(1);
         assertThat(response.scores()).hasSize(3);
         assertThat(response.weakPoints()).containsExactly("시제 일관성", "3인칭 단수 동사 활용");
+        assertThat(response.sessionStartedAt()).isEqualTo(LocalDateTime.of(2026, 5, 20, 12, 0));
+        assertThat(response.sessionDurationSeconds()).isEqualTo(180);
     }
 
     @Test

@@ -23,7 +23,7 @@ public record FeedbackReportResponse(
 
         @Schema(
                 description = "핵심 문장 피드백 목록",
-                example = "[{\"sourceTurnIndex\":3,\"sentence\":\"She go to school\",\"grammarCorrection\":\"She goes to school\",\"improvedSentence\":\"She usually goes to school early in the morning.\",\"sampleRate\":16000,\"audioKey\":\"calls/CA.../turns/5.wav\",\"audioUrl\":\"https://signed-url\"}]"
+                example = "[{\"sourceTurnIndex\":3,\"originSentence\":\"She go to school\",\"improvedSentence\":\"She usually goes to school early in the morning.\",\"keyExpression\":\"goes to school\",\"sampleRate\":16000,\"audioKey\":\"calls/CA.../turns/5.wav\",\"audioUrl\":\"https://signed-url\"}]"
         )
         List<Report.CoreSentenceFeedback> coreSentences,
 
@@ -47,6 +47,12 @@ public record FeedbackReportResponse(
 
         @Schema(description = "레벨 결과 (level_test 타입만 사용)", example = "상위 23%")
         String levelResult,
+
+        @Schema(description = "해당 통화 세션 시작 일시", example = "2026-05-20T12:00:00")
+        LocalDateTime sessionStartedAt,
+
+        @Schema(description = "해당 통화 세션 통화 시간(초)", example = "180")
+        Integer sessionDurationSeconds,
 
         @Schema(description = "리포트 생성 일시")
         LocalDateTime createdAt

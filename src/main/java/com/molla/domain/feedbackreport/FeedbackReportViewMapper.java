@@ -3,6 +3,7 @@ package com.molla.domain.feedbackreport;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.molla.common.response.ErrorCode;
+import com.molla.domain.callsession.CallSession;
 import com.molla.controller.dto.feedbackreport.FeedbackReportResponse;
 import com.molla.controller.dto.feedbackreport.FeedbackReportSummaryResponse;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +31,7 @@ public class FeedbackReportViewMapper {
         );
     }
 
-    public FeedbackReportResponse toDetailResponse(FeedbackReport report) {
+    public FeedbackReportResponse toDetailResponse(FeedbackReport report, CallSession session) {
         List<Report.CoreSentenceFeedback> coreSentences = readList(
                 report.getCoreSentences(),
                 new TypeReference<List<Report.CoreSentenceFeedback>>() {
@@ -53,6 +54,8 @@ public class FeedbackReportViewMapper {
                 readList(report.getWeakPoints(), new TypeReference<List<String>>() {
                 }, "weakPoints"),
                 report.getLevelResult(),
+                session != null ? session.getStartedAt() : null,
+                session != null ? session.getDurationSeconds() : null,
                 report.getCreatedAt()
         );
     }
