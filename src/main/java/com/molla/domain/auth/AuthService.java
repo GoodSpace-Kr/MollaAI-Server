@@ -78,6 +78,10 @@ public class AuthService {
         User user = userRepository.findByPhoneNumber(phoneNumber)
                 .orElseGet(() -> createUserWithDemoSubscription(phoneNumber));
 
+        if (!user.isRegistered()){
+            isNewUser = true;
+        }
+
         String accessToken = jwtProvider.generateAccessToken(user.getId(), phoneNumber);
         String refreshToken = jwtProvider.generateRefreshToken(user.getId());
 
