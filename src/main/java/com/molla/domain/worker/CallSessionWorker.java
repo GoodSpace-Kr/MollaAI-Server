@@ -122,6 +122,8 @@ public class CallSessionWorker {
                 sessionId,
                 sessionType,
                 reportData.oneLineSummary(),
+                reportData.levelPercentage(),
+                reportData.levelAnalysis(),
                 toJsonString(reportData.coreSentences()),
                 toJsonString(reportData.habitAnalyses()),
                 toJsonString(reportData.scores()),

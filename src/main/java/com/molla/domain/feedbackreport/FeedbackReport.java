@@ -27,6 +27,12 @@ public class FeedbackReport {
     @Column(name = "one_line_summary", columnDefinition = "TEXT")
     private String oneLineSummary;
 
+    @Column(name = "level_percentage")
+    private Integer levelPercentage;
+
+    @Column(name = "level_analysis", columnDefinition = "TEXT")
+    private String levelAnalysis;
+
     @Column(name = "core_sentences", columnDefinition = "JSON")
     private String coreSentences;            // [{sentence, grammarCorrection, improvedSentence}]
 
@@ -53,6 +59,8 @@ public class FeedbackReport {
             String sessionId,
             String reportType,
             String oneLineSummary,
+            Integer levelPercentage,
+            String levelAnalysis,
             String coreSentences,
             String habitAnalyses,
             String scores,
@@ -64,6 +72,8 @@ public class FeedbackReport {
         report.sessionId = sessionId;
         report.reportType = reportType;
         report.oneLineSummary = oneLineSummary;
+        report.levelPercentage = levelPercentage;
+        report.levelAnalysis = levelAnalysis;
         report.coreSentences = coreSentences;
         report.habitAnalyses = habitAnalyses;
         report.scores = scores;
