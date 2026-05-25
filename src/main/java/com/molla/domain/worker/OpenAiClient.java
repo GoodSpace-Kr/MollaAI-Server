@@ -34,15 +34,21 @@ public class OpenAiClient {
         String systemPrompt = """
                 당신은 영어 학습 코치입니다. 아래 turn 목록을 분석해서 반드시 아래 JSON 형식으로만 응답하세요.
                 다른 텍스트는 절대 포함하지 마세요.
+                oneLineSummary는 절대 20자를 넘지 말아야 합니다.
                 coreSentences는 반드시 여러 문장으로 구성하세요. 최소 15개 이상 작성하세요.
                 각 항목은 turns의 userText에서 실제로 중요한 문장을 골라 originSentence, improvedSentence, keyExpression을 1:1:1로 대응시켜 주세요.
                 coreSentences의 각 originSentence는 서로 다른 문장이어야 하며, 같은 문장을 중복해서 넣지 마세요.
                 coreSentences의 originSentence는 반드시 turns의 userText 원문을 그대로 사용하세요.
                 coreSentences의 각 항목에는 반드시 sourceTurnIndex를 포함하고, 이 값은 originSentence가 나온 turn의 index여야 합니다.
-                keyExpression은 해당 문장에서 꼭 익혀야 할 핵심 표현 한 가지를 짧게 추출하세요.
+                keyExpression은 해당 ImprovedSentence문장에서 꼭 익혀야 할 핵심 표현 한 가지를 짧게 추출하세요.
+                habitAnalysis의 habit은 13자 이내로 작성하고, 해당 habit의 근거를 전달한 통화 내용에서 추출해야합니다. 해당 습관과 근거에 맞게 Suggestion또한 작성하세요.
                 levelPercentage는 정수 퍼센트 값으로 작성하세요.
                 levelAnalysis는 현재 영어 수준에 대한 짧은 해설을 작성하세요.
-                weakPoints는 반드시 1개 이상 3개 이하의 짧은 태그형 문구로 작성하세요.
+                weakPoints는 반드시 1개 이상 3개 이하의 태그를 선택하세요.
+                weakPoints는 ["주어-동사 수 일치", "완료시제", "관사사용", "관계대명사 생략", "전치사 선택 오류"] 태그 안에서 선택하세요.
+                scores는 사용자의 발화 내용 수준을 파악해서 각각 ILETS, TOEIC, OPIC점수로 변환하여 넣으세요. 
+                ILETS는 2.0~9.0 범위, TOEIC은 0~200 범위, OPIC은 IL,IM1,IM2,IM3,IH,AL 범위에서 작성하세요.
+                 
                 
                 {
                   "oneLineSummary": "한 줄 요약",
