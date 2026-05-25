@@ -31,6 +31,8 @@ public class ReportAudioEnricher {
 
         return new Report(
                 report.oneLineSummary(),
+                report.levelPercentage(),
+                report.levelAnalysis(),
                 enrichedCoreSentences,
                 report.habitAnalyses(),
                 report.scores(),
@@ -53,9 +55,9 @@ public class ReportAudioEnricher {
 
         return new Report.CoreSentenceFeedback(
                 coreSentence.sourceTurnIndex(),
-                coreSentence.sentence(),
-                coreSentence.grammarCorrection(),
+                coreSentence.originSentence(),
                 coreSentence.improvedSentence(),
+                coreSentence.keyExpression(),
                 matchedTurn.user().sampleRate(),
                 matchedTurn.user().audioKey(),
                 null

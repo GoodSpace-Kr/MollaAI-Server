@@ -64,6 +64,8 @@ class CallSessionWorkerTest {
         ));
         Report report = new Report(
                 "summary",
+                35,
+                "문장 정확도를 조금 더 다듬으면 좋습니다.",
                 List.of(),
                 List.of(),
                 List.of(),

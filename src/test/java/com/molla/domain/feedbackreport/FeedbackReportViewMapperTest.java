@@ -3,7 +3,10 @@ package com.molla.domain.feedbackreport;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.molla.controller.dto.feedbackreport.FeedbackReportResponse;
 import com.molla.controller.dto.feedbackreport.FeedbackReportSummaryResponse;
+import com.molla.domain.callsession.CallSession;
 import org.junit.jupiter.api.Test;
+
+import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -18,13 +21,16 @@ class FeedbackReportViewMapperTest {
     @Test
     void mapsStructuredDetailResponse() {
         when(s3AudioUrlService.createAudioUrl("calls/test/turn-3.wav")).thenReturn("https://signed-url");
+        CallSession session = mock(CallSession.class);
+        when(session.getStartedAt()).thenReturn(LocalDateTime.of(2026, 5, 20, 12, 0));
+        when(session.getDurationSeconds()).thenReturn(180);
 
         FeedbackReport report = FeedbackReport.create(
                 "session-1",
                 "practice",
                 "따듯하고 안정적인 대화였어요.",
                 """
-                [{"sourceTurnIndex":3,"sentence":"She go to school","grammarCorrection":"She goes to school","improvedSentence":"She usually goes to school early in the morning.","sampleRate":16000,"audioKey":"calls/test/turn-3.wav"}]
+                [{"sourceTurnIndex":3,"originSentence":"She go to school","improvedSentence":"She usually goes to school early in the morning.","keyExpression":"goes to school","sampleRate":16000,"audioKey":"calls/test/turn-3.wav"}]
                 """,
                 """
                 [{"habit":"짧은 문장 반복","evidence":"I like it. I use it.","suggestion":"문장을 연결해서 말해보세요."}]
@@ -38,16 +44,19 @@ class FeedbackReportViewMapperTest {
                 null
         );
 
-        FeedbackReportResponse response = mapper.toDetailResponse(report);
+        FeedbackReportResponse response = mapper.toDetailResponse(report, session);
 
         assertThat(response.coreSentences()).hasSize(1);
-        assertThat(response.coreSentences().get(0).grammarCorrection()).isEqualTo("She goes to school");
+        assertThat(response.coreSentences().get(0).originSentence()).isEqualTo("She go to school");
+        assertThat(response.coreSentences().get(0).keyExpression()).isEqualTo("goes to school");
         assertThat(response.coreSentences().get(0).sourceTurnIndex()).isEqualTo(3);
         assertThat(response.coreSentences().get(0).audioKey()).isEqualTo("calls/test/turn-3.wav");
         assertThat(response.coreSentences().get(0).audioUrl()).isEqualTo("https://signed-url");
         assertThat(response.habitAnalyses()).hasSize(1);
         assertThat(response.scores()).hasSize(3);
         assertThat(response.weakPoints()).containsExactly("시제 일관성", "3인칭 단수 동사 활용");
+        assertThat(response.sessionStartedAt()).isEqualTo(LocalDateTime.of(2026, 5, 20, 12, 0));
+        assertThat(response.sessionDurationSeconds()).isEqualTo(180);
     }
 
     @Test

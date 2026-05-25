@@ -3,6 +3,8 @@ package com.molla.domain.feedbackreport;
 import com.molla.common.response.ErrorCode;
 import com.molla.controller.dto.feedbackreport.FeedbackReportResponse;
 import com.molla.controller.dto.feedbackreport.FeedbackReportSummaryResponse;
+import com.molla.domain.callsession.CallSession;
+import com.molla.domain.callsession.CallSessionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +15,7 @@ import java.util.List;
 public class FeedbackReportService {
 
     private final FeedbackReportRepository feedbackReportRepository;
+    private final CallSessionRepository callSessionRepository;
     private final FeedbackReportViewMapper feedbackReportViewMapper;
 
     // ──────────────────────────────────────────────
@@ -35,6 +38,9 @@ public class FeedbackReportService {
                 .findBySessionIdAndUserId(sessionId, userId)
                 .orElseThrow(() -> new FeedbackReportException(ErrorCode.REPORT_NOT_FOUND));
 
-        return feedbackReportViewMapper.toDetailResponse(report);
+        CallSession session = callSessionRepository.findById(report.getSessionId())
+                .orElseThrow(() -> new FeedbackReportException(ErrorCode.SESSION_NOT_FOUND));
+
+        return feedbackReportViewMapper.toDetailResponse(report, session);
     }
 }
