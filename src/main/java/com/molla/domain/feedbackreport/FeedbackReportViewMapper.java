@@ -55,7 +55,7 @@ public class FeedbackReportViewMapper {
                 }, "weakPoints"),
                 report.getLevelResult(),
                 session != null ? session.getStartedAt() : null,
-                session != null ? session.getDurationSeconds() : null,
+                toDurationMinutes(session),
                 report.getCreatedAt()
         );
     }
@@ -89,5 +89,12 @@ public class FeedbackReportViewMapper {
                 coreSentence.audioKey(),
                 s3AudioUrlService.createAudioUrl(coreSentence.audioKey())
         );
+    }
+
+    private Integer toDurationMinutes(CallSession session) {
+        if (session == null || session.getDurationSeconds() == null) {
+            return null;
+        }
+        return session.getDurationSeconds() / 60;
     }
 }

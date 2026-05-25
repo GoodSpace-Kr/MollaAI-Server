@@ -51,7 +51,7 @@ class FeedbackReportServiceTest {
                 java.util.List.of(),
                 null,
                 LocalDateTime.of(2026, 5, 25, 15, 0),
-                180,
+                3,
                 LocalDateTime.of(2026, 5, 25, 15, 10)
         );
 
