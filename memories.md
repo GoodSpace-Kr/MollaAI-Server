@@ -33,6 +33,15 @@
 - 비고: 남은 작업이나 주의사항
 ```
 
+## 2026-05-26 - S3 presign AWS 자격증명 fallback 및 배포 주입 경로 보강
+
+- 구분: 운영, 환경변수, 메인 로직, 배포, test
+- 변경: `S3Config`가 표준 AWS env(`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`)를 우선 사용하고, 비어 있으면 `AWS_S3_ACCESS_KEY`, `AWS_S3_SECRET_KEY`를 fallback으로 읽어 `S3Presigner`에 명시 자격증명을 주입하도록 수정했다. `docker-compose.yml`은 다섯 개 AWS 관련 env를 모두 컨테이너로 전달하고, 배포 워크플로우는 GitHub Secrets 값을 서버의 `.env`에 반영한 뒤 `docker compose up -d`를 수행하도록 보강했다.
+- 영향: 리포트 상세 조회 시 S3 presigned URL 생성이 GitHub/서버에 등록된 AWS credential 이름 차이 때문에 실패하던 문제를 줄인다. 표준 AWS 이름과 기존 S3 전용 별칭 이름을 모두 운영에서 사용할 수 있다.
+- 확인: `./gradlew test --tests com.molla.config.S3ConfigTest`
+- 관련 파일: `src/main/java/com/molla/config/S3Config.java`, `src/main/resources/application.yml`, `docker-compose.yml`, `.github/workflows/deploy.yml`, `src/test/java/com/molla/config/S3ConfigTest.java`, `docs/ops/env.md`, `docs/ops/Github.md`
+- 비고: 배포 후 서버 `.env`에 다른 필수 변수들이 유지되는지와 GitHub Organization Secret 접근 범위가 이 저장소에 허용되어 있는지는 별도 확인이 필요하다.
+
 ## 2026-05-25 - 리포트 핵심 표현에 한글 뜻 필드 추가
 
 - 구분: 메인 로직, 엔드포인트, AI, 문서, test
