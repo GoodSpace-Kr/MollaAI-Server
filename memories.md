@@ -33,6 +33,15 @@
 - 비고: 남은 작업이나 주의사항
 ```
 
+## 2026-05-26 - 개발용 로그인도 데모 기본 구독을 보장하도록 수정
+
+- 구분: 메인 로직, 엔드포인트, test
+- 변경: `POST /api/v1/dev/login` 이 새 유저를 자동 생성할 때뿐 아니라, 기존 유저로 로그인할 때도 `SubscriptionService.ensureDemoPremiumSubscription(userId)` 를 호출하도록 변경했다. 이제 Swagger의 개발용 로그인으로 발급한 JWT도 일반 인증/통화 생성 유저와 같은 기준으로 구독 조회가 가능하다.
+- 영향: `devLogin` 으로 만든 테스트 계정이나 과거에 구독 없이 남아 있던 개발용 계정도 로그인 시 활성 데모 구독이 보장된다.
+- 확인: `./gradlew test --tests com.molla.controller.DevControllerTest --tests com.molla.domain.auth.AuthServiceTest --tests com.molla.domain.subscription.SubscriptionServiceTest`
+- 관련 파일: `src/main/java/com/molla/controller/DevController.java`, `src/test/java/com/molla/controller/DevControllerTest.java`
+- 비고: prod 프로파일에서는 `DevController` 자체가 비활성화되어 운영 동작에는 영향이 없다.
+
 ## 2026-05-26 - S3 presign AWS 자격증명 fallback 및 배포 주입 경로 보강
 
 - 구분: 운영, 환경변수, 메인 로직, 배포, test

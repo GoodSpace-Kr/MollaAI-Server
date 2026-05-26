@@ -3,6 +3,7 @@ package com.molla.controller;
 import com.molla.common.response.ApiResponse;
 import com.molla.config.JwtProvider;
 import com.molla.controller.dto.auth.TokenResponse;
+import com.molla.domain.subscription.SubscriptionService;
 import com.molla.domain.user.User;
 import com.molla.domain.user.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,7 +15,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,7 +31,7 @@ public class DevController {
 
     private final UserRepository userRepository;
     private final JwtProvider jwtProvider;
-    private final PasswordEncoder passwordEncoder;
+    private final SubscriptionService subscriptionService;
 
     @Operation(
             summary = "[개발 전용] SMS 인증 없이 바로 로그인",
@@ -45,6 +45,8 @@ public class DevController {
         // 유저 없으면 자동 생성
         User user = userRepository.findByPhoneNumber(request.phoneNumber())
                 .orElseGet(() -> userRepository.save(User.createByPhone(request.phoneNumber())));
+
+        subscriptionService.ensureDemoPremiumSubscription(user.getId());
 
         String accessToken = jwtProvider.generateAccessToken(user.getId(), user.getPhoneNumber());
         String refreshToken = jwtProvider.generateRefreshToken(user.getId());
