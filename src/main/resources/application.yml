@@ -54,8 +54,6 @@ aws:
     presign-expiration-minutes: ${S3_AUDIO_PRESIGN_EXPIRATION_MINUTES:60}
 
 springdoc:
-  api-docs:
-    path: /api-docs
   swagger-ui:
     path: /swagger-ui.html
     operations-sorter: method
