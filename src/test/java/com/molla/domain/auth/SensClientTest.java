@@ -3,8 +3,6 @@ package com.molla.domain.auth;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.net.URI;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 class SensClientTest {
@@ -20,9 +18,9 @@ class SensClientTest {
                 "01057807344"
         );
 
-        URI uri = sensClient.buildMessageUri();
+        String path = sensClient.buildMessagePath();
 
-        assertThat(uri.getRawPath())
+        assertThat(path)
                 .isEqualTo("/sms/v2/services/ncp%3Asms%3Akr%3A370221810170%3Amolla-sms/messages");
     }
 }
