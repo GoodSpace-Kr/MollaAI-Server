@@ -43,7 +43,8 @@ public class SensClient {
     }
 
     public void sendSms(String toNumber, String content) {
-        URI uri = buildMessageUri();
+        String encodedServiceId = serviceId.replace(":", "%3A");
+        String url = "/sms/v2/services/" + encodedServiceId + "/messages";
         long timestamp = System.currentTimeMillis();
         String signature = makeSignature(timestamp, uri.getRawPath());
 
