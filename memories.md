@@ -33,6 +33,15 @@
 - 비고: 남은 작업이나 주의사항
 ```
 
+## 2026-05-27 - Swagger OpenAPI 문서 경로를 기본 `/v3/api-docs` 로 복귀
+
+- 구분: 운영, 엔드포인트, 문서
+- 변경: `springdoc.api-docs.path=/api-docs` 커스텀 설정을 제거해 Swagger UI가 기대하는 기본 OpenAPI 문서 경로 `/v3/api-docs` 를 다시 사용하도록 맞췄다.
+- 영향: `https://api.mollatalk.com/swagger-ui/index.html` 접속 시 UI 정적 파일은 뜨지만 `/v3/api-docs` 500으로 비어 보이던 문제가 해소된다.
+- 확인: 설정 파일 점검 후 `./gradlew testClasses` 로 컴파일 검증 예정
+- 관련 파일: `src/main/resources/application.yml`
+- 비고: 배포 후 `https://api.mollatalk.com/v3/api-docs` 와 `https://api.mollatalk.com/swagger-ui/index.html` 를 다시 확인해야 한다.
+
 ## 2026-05-26 - 개발용 로그인도 데모 기본 구독을 보장하도록 수정
 
 - 구분: 메인 로직, 엔드포인트, test
