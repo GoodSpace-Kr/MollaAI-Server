@@ -12,6 +12,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -42,9 +43,9 @@ public class SensClient {
     }
 
     public void sendSms(String toNumber, String content) {
-        String url = "/sms/v2/services/" + serviceId + "/messages";
+        URI uri = buildMessageUri();
         long timestamp = System.currentTimeMillis();
-        String signature = makeSignature(timestamp, url);
+        String signature = makeSignature(timestamp, uri.getRawPath());
 
         Map<String, Object> body = Map.of(
                 "type", "SMS",
@@ -55,7 +56,7 @@ public class SensClient {
 
         try {
             webClient.post()
-                    .uri(url)
+                    .uri(uri)
                     .header("x-ncp-apigw-timestamp", String.valueOf(timestamp))
                     .header("x-ncp-iam-access-key", accessKey)
                     .header("x-ncp-apigw-signature-v2", signature)
@@ -70,6 +71,14 @@ public class SensClient {
             log.error("SMS 발송 실패 — to: {}, error: {}", toNumber, e.getMessage());
             throw new GlobalException(ErrorCode.SMS_SEND_FAILED);
         }
+    }
+
+    URI buildMessageUri() {
+        return URI.create("/sms/v2/services/" + encodeServiceId(serviceId) + "/messages");
+    }
+
+    private String encodeServiceId(String serviceId) {
+        return serviceId.replace(":", "%3A");
     }
 
     private String makeSignature(long timestamp, String url) {

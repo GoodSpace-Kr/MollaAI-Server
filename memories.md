@@ -33,6 +33,15 @@
 - 비고: 남은 작업이나 주의사항
 ```
 
+## 2026-05-27 - Naver SENS serviceId 경로/서명 인코딩 불일치 수정
+
+- 구분: 메인 로직, 운영, 인증, test
+- 변경: `SensClient`가 SMS 발송 요청 경로를 만들 때 `serviceId` 의 `:` 를 `%3A` 로 한 번만 인코딩한 `URI` 를 사용하고, HMAC 서명도 같은 `rawPath` 를 기준으로 계산하도록 수정했다.
+- 영향: 운영에서 `NAVER_SENS_SERVICE_ID=ncp:sms:...` 값은 정상인데 실제 요청 URL이 `ncp%253A...` 형태로 이중 인코딩되며 401이 나던 문제를 줄인다.
+- 확인: `./gradlew test --tests com.molla.domain.auth.SensClientTest --tests com.molla.domain.auth.AuthServiceTest`
+- 관련 파일: `src/main/java/com/molla/domain/auth/SensClient.java`, `src/test/java/com/molla/domain/auth/SensClientTest.java`
+- 비고: 운영 반영 후 `/api/v1/auth/send-code` 재호출과 컨테이너 로그의 `SMS 발송 성공` 확인이 필요하다.
+
 ## 2026-05-27 - SMS 발신 번호 기본값을 승인된 `01057807344` 로 변경
 
 - 구분: 환경변수, 운영, 인증, test
