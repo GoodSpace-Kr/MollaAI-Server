@@ -33,6 +33,15 @@
 - 비고: 남은 작업이나 주의사항
 ```
 
+## 2026-05-27 - Naver SENS SMS 경로를 공식 raw serviceId 형식으로 복귀
+
+- 구분: 메인 로직, 운영, 인증, test
+- 변경: `SensClient` 의 SMS 발송 경로를 `"/sms/v2/services/" + serviceId + "/messages"` raw 형식으로 되돌리고, HMAC 서명도 같은 raw path 문자열 기준으로 계산하도록 정리했다. 앞선 `%3A` 수동 인코딩 로직과 절대 URI 조합은 제거했다.
+- 영향: 운영 로그에서 `ncp%253A...` 같은 이중 인코딩 문제를 피하면서, Naver SENS 공식 예제와 같은 serviceId 경로 형식으로 요청/서명을 맞춘다.
+- 확인: `./gradlew test --tests com.molla.domain.auth.SensClientTest --tests com.molla.domain.auth.AuthServiceTest`
+- 관련 파일: `src/main/java/com/molla/domain/auth/SensClient.java`, `src/test/java/com/molla/domain/auth/SensClientTest.java`
+- 비고: 재배포 후 `/api/v1/auth/send-code` 호출 결과와 컨테이너 로그의 Naver 응답을 다시 확인해야 한다.
+
 ## 2026-05-27 - Naver SENS serviceId 경로/서명 인코딩 불일치 수정
 
 - 구분: 메인 로직, 운영, 인증, test
