@@ -33,6 +33,15 @@
 - 비고: 남은 작업이나 주의사항
 ```
 
+## 2026-05-27 - SMS 발신 번호 기본값을 승인된 `01057807344` 로 변경
+
+- 구분: 환경변수, 운영, 인증, test
+- 변경: `naver.sens.from-number` 설정이 `NAVER_SENS_FROM_NUMBER` 환경변수가 비어 있을 때도 승인된 발신 번호 `01057807344` 를 기본값으로 사용하도록 변경했다.
+- 영향: 운영 환경변수 누락이나 잘못된 기본 설정 때문에 SMS 발송이 실패할 가능성을 줄인다. 단, 서버 `.env` 에 다른 `NAVER_SENS_FROM_NUMBER` 값이 들어 있으면 그 값이 계속 우선 적용된다.
+- 확인: `./gradlew test --tests com.molla.config.ApplicationYamlSmsConfigTest`
+- 관련 파일: `src/main/resources/application.yml`, `src/test/java/com/molla/config/ApplicationYamlSmsConfigTest.java`
+- 비고: 실제 발신 번호를 확실히 바꾸려면 운영 서버 `.env` 의 `NAVER_SENS_FROM_NUMBER` 값도 `01057807344` 로 맞춰야 한다.
+
 ## 2026-05-27 - Swagger OpenAPI 문서 경로를 기본 `/v3/api-docs` 로 복귀
 
 - 구분: 운영, 엔드포인트, 문서

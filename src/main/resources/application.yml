@@ -28,7 +28,7 @@ naver:
     access-key: ${NAVER_SENS_ACCESS_KEY}
     secret-key: ${NAVER_SENS_SECRET_KEY}
     service-id: ${NAVER_SENS_SERVICE_ID}
-    from-number: ${NAVER_SENS_FROM_NUMBER}
+    from-number: ${NAVER_SENS_FROM_NUMBER:01057807344}
     base-url: https://sens.apigw.ntruss.com
 
 openai:
