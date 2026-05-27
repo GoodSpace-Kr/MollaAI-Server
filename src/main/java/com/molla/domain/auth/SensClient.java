@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import javax.crypto.Mac;
@@ -65,6 +66,14 @@ public class SensClient {
                     .block();
 
             log.info("SMS 발송 성공 — to: {}", toNumber);
+        } catch (WebClientResponseException e) {
+            log.error(
+                    "SMS 발송 실패 — to: {}, status: {}, response: {}",
+                    toNumber,
+                    e.getStatusCode(),
+                    e.getResponseBodyAsString()
+            );
+            throw new GlobalException(ErrorCode.SMS_SEND_FAILED);
         } catch (Exception e) {
             log.error("SMS 발송 실패 — to: {}, error: {}", toNumber, e.getMessage());
             throw new GlobalException(ErrorCode.SMS_SEND_FAILED);
