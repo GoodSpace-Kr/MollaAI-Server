@@ -33,6 +33,15 @@
 - 비고: 남은 작업이나 주의사항
 ```
 
+## 2026-05-28 - Swagger 프로덕션 서버 URL을 `api.mollatalk.com` 으로 갱신
+
+- 구분: 운영, 문서, 엔드포인트
+- 변경: OpenAPI `servers` 설정의 프로덕션 URL을 `https://mollatalk.com` 에서 `https://api.mollatalk.com` 으로 변경했다.
+- 영향: Swagger UI에서 실행해보는 프로덕션 요청 대상이 현재 백엔드 실제 도메인과 일치한다.
+- 확인: `./gradlew testClasses`
+- 관련 파일: `src/main/java/com/molla/config/SwaggerConfig.java`
+- 비고: 배포 후 `https://api.mollatalk.com/swagger-ui/index.html` 에서 server 목록이 갱신됐는지 확인하면 된다.
+
 ## 2026-05-27 - Naver SENS SMS 경로를 공식 raw serviceId 형식으로 복귀
 
 - 구분: 메인 로직, 운영, 인증, test
