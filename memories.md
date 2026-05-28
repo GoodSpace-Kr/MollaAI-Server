@@ -1,3 +1,12 @@
+## 2026-05-28 - Auth Swagger 응답 스키마를 래퍼 형식에 맞게 정정
+
+- 구분: 문서, 엔드포인트
+- 변경: `/api/v1/auth/verify-code` 와 `/api/v1/auth/refresh` 의 Swagger 200 응답 스키마를 실제 `ApiResponse<...>` 래퍼 구조와 맞도록 별도 응답 스키마로 문서화했다.
+- 영향: 프론트가 Swagger 예시를 보고 토큰 경로를 루트 필드로 오해하는 일을 줄인다.
+- 확인: 관련 컨트롤러 반환 타입과 Swagger 어노테이션 대조, `./gradlew testClasses`
+- 관련 파일: `src/main/java/com/molla/controller/AuthController.java`, `src/main/java/com/molla/controller/dto/auth/VerifyCodeApiResponse.java`, `src/main/java/com/molla/controller/dto/auth/RefreshAccessTokenApiResponse.java`
+- 비고: 실제 HTTP 응답 구조는 변경하지 않았고, 문서 정합성만 보정했다.
+
 # memories.md
 
 이 파일은 MollaAI Server의 중요한 변경사항을 시간순으로 기록하는 작업 메모리이다. 에이전트와 개발자는 작업 전후로 이 파일을 확인하고, 운영이나 제품 동작에 영향을 주는 변경사항을 반드시 남긴다.

@@ -2,11 +2,13 @@ package com.molla.controller;
 
 import com.molla.common.response.ApiResponse;
 import com.molla.controller.dto.auth.AccessTokenResponse;
+import com.molla.controller.dto.auth.RefreshAccessTokenApiResponse;
 import com.molla.controller.dto.auth.RefreshTokenRequest;
 import com.molla.controller.dto.auth.RegisterRequest;
 import com.molla.controller.dto.auth.SendCodeRequest;
 import com.molla.controller.dto.auth.TokenResponse;
 import com.molla.controller.dto.auth.VerifyCodeRequest;
+import com.molla.controller.dto.auth.VerifyCodeApiResponse;
 import com.molla.controller.dto.user.UserResponse;
 import com.molla.domain.auth.AuthService;
 import com.molla.domain.user.UserService;
@@ -65,7 +67,7 @@ public class AuthController {
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200", description = "인증 성공 + JWT 발급",
-                    content = @Content(schema = @Schema(implementation = TokenResponse.class))),
+                    content = @Content(schema = @Schema(implementation = VerifyCodeApiResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400", description = "인증번호 불일치 또는 만료",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class)))
@@ -117,7 +119,7 @@ public class AuthController {
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200", description = "재발급 성공",
-                    content = @Content(schema = @Schema(implementation = AccessTokenResponse.class))),
+                    content = @Content(schema = @Schema(implementation = RefreshAccessTokenApiResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "401", description = "Refresh Token 무효 또는 만료",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class)))
