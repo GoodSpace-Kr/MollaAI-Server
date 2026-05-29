@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.molla.common.response.ErrorCode;
 import com.molla.domain.callsession.CallSession;
+import com.molla.domain.callsession.CallSessionTurn;
 import com.molla.controller.dto.feedbackreport.FeedbackReportResponse;
 import com.molla.controller.dto.feedbackreport.FeedbackReportSummaryResponse;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +43,10 @@ public class FeedbackReportViewMapper {
         ).stream()
                 .map(this::attachAudioUrl)
                 .toList();
+        List<CallSessionTurn> transcript = session != null
+                ? readList(session.getTurnsJson(), new TypeReference<List<CallSessionTurn>>() {
+                }, "turnsJson")
+                : List.of();
 
         return new FeedbackReportResponse(
                 report.getId(),
@@ -55,6 +60,7 @@ public class FeedbackReportViewMapper {
                 }, "scores"),
                 readList(report.getWeakPoints(), new TypeReference<List<String>>() {
                 }, "weakPoints"),
+                transcript,
                 report.getLevelPercentage(),
                 report.getLevelAnalysis(),
                 report.getLevelResult(),
