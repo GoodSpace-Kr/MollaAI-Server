@@ -2,6 +2,7 @@ package com.molla.domain.feedbackreport;
 
 import com.molla.common.response.ErrorCode;
 import com.molla.controller.dto.feedbackreport.FeedbackReportResponse;
+import com.molla.controller.dto.feedbackreport.FeedbackReportSummaryResponse;
 import com.molla.domain.callsession.CallSession;
 import com.molla.domain.callsession.CallSessionTurn;
 import com.molla.domain.callsession.CallSessionRepository;
@@ -15,6 +16,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -29,6 +31,47 @@ class FeedbackReportServiceTest {
             callSessionRepository,
             feedbackReportViewMapper
     );
+
+    @Test
+    void getMyReportsLoadsSessionsOnceAndMapsDurationIntoSummary() {
+        FeedbackReport report = FeedbackReport.create(
+                "session-1",
+                "practice",
+                "summary",
+                33,
+                "문장 정확도와 확장성을 조금 더 보완하면 좋아집니다.",
+                "[]",
+                "[]",
+                "[]",
+                "[]",
+                null
+        );
+        CallSession session = mock(CallSession.class);
+        FeedbackReportSummaryResponse expected = new FeedbackReportSummaryResponse(
+                "report-1",
+                "session-1",
+                "practice",
+                "summary",
+                List.of(),
+                33,
+                "문장 정확도와 확장성을 조금 더 보완하면 좋아집니다.",
+                null,
+                3,
+                LocalDateTime.of(2026, 5, 25, 15, 10)
+        );
+
+        when(feedbackReportRepository.findAllByUserId("user-1")).thenReturn(List.of(report));
+        when(callSessionRepository.findAllById(List.of("session-1"))).thenReturn(List.of(session));
+        when(session.getId()).thenReturn("session-1");
+        when(feedbackReportViewMapper.toSummaryResponse(report, session)).thenReturn(expected);
+
+        List<FeedbackReportSummaryResponse> response = service.getMyReports("user-1");
+
+        assertThat(response).containsExactly(expected);
+        verify(callSessionRepository).findAllById(List.of("session-1"));
+        verify(feedbackReportViewMapper).toSummaryResponse(report, session);
+        verify(feedbackReportViewMapper, never()).toSummaryResponse(report);
+    }
 
     @Test
     void getReportLoadsSessionAndReturnsDetailedResponseWithSessionMetadata() {

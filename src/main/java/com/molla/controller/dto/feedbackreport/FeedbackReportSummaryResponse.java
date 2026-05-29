@@ -36,6 +36,9 @@ public record FeedbackReportSummaryResponse(
         @Schema(description = "레벨 결과 (level_test 타입만 사용)", example = "상위 23%")
         String levelResult,
 
+        @Schema(description = "해당 통화 세션 통화 시간(분)", example = "3")
+        Integer sessionDurationMinutes,
+
         @Schema(description = "리포트 생성 일시")
         LocalDateTime createdAt
 ) {

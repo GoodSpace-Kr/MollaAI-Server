@@ -1,3 +1,12 @@
+## 2026-05-29 - 리포트 목록 응답에 통화 시간 추가
+
+- 구분: 엔드포인트, 메인 로직
+- 변경: 리포트 목록 응답 `FeedbackReportSummaryResponse` 에 `sessionDurationMinutes` 필드를 추가하고, 리포트 목록 조회 시 세션 정보를 한 번에 조회해 통화 시간을 함께 반환하도록 수정했다.
+- 영향: 프론트가 리포트 목록 화면에서도 각 통화의 소요 시간을 별도 API 호출 없이 바로 표시할 수 있다.
+- 확인: `./gradlew test --tests com.molla.domain.feedbackreport.FeedbackReportViewMapperTest --tests com.molla.domain.feedbackreport.FeedbackReportServiceTest`
+- 관련 파일: `src/main/java/com/molla/controller/dto/feedbackreport/FeedbackReportSummaryResponse.java`, `src/main/java/com/molla/domain/feedbackreport/FeedbackReportService.java`, `src/main/java/com/molla/domain/feedbackreport/FeedbackReportViewMapper.java`
+- 비고: 세션 매핑은 리포트별 N+1 조회 대신 `findAllById` 한 번으로 묶었다.
+
 ## 2026-05-29 - 리포트 상세 응답에 통화 전체 스크립트 추가
 
 - 구분: 엔드포인트, 메인 로직
