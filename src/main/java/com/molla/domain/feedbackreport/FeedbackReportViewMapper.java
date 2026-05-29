@@ -20,6 +20,10 @@ public class FeedbackReportViewMapper {
     private final com.molla.domain.worker.S3AudioUrlService s3AudioUrlService;
 
     public FeedbackReportSummaryResponse toSummaryResponse(FeedbackReport report) {
+        return toSummaryResponse(report, null);
+    }
+
+    public FeedbackReportSummaryResponse toSummaryResponse(FeedbackReport report, CallSession session) {
         return new FeedbackReportSummaryResponse(
                 report.getId(),
                 report.getSessionId(),
@@ -30,6 +34,7 @@ public class FeedbackReportViewMapper {
                 report.getLevelPercentage(),
                 report.getLevelAnalysis(),
                 report.getLevelResult(),
+                toDurationMinutes(session),
                 report.getCreatedAt()
         );
     }

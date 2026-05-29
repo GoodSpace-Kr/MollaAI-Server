@@ -93,12 +93,15 @@ class FeedbackReportViewMapperTest {
                 "[]",
                 "상위 20%"
         );
+        CallSession session = mock(CallSession.class);
+        when(session.getDurationSeconds()).thenReturn(240);
 
-        FeedbackReportSummaryResponse response = mapper.toSummaryResponse(report);
+        FeedbackReportSummaryResponse response = mapper.toSummaryResponse(report, session);
 
         assertThat(response.scores()).hasSize(3);
         assertThat(response.scores().get(2).exam()).isEqualTo("OPIC");
         assertThat(response.levelResult()).isEqualTo("상위 20%");
+        assertThat(response.sessionDurationMinutes()).isEqualTo(4);
         assertThat(response.levelPercentage()).isEqualTo(41);
         assertThat(response.levelAnalysis()).contains("상위권 진입 직전");
     }

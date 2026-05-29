@@ -9,6 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,9 +26,17 @@ public class FeedbackReportService {
     // ──────────────────────────────────────────────
 
     public List<FeedbackReportSummaryResponse> getMyReports(String userId) {
-        return feedbackReportRepository.findAllByUserId(userId)
+        List<FeedbackReport> reports = feedbackReportRepository.findAllByUserId(userId);
+        Map<String, CallSession> sessionsById = callSessionRepository.findAllById(
+                        reports.stream()
+                                .map(FeedbackReport::getSessionId)
+                                .toList()
+                ).stream()
+                .collect(Collectors.toMap(CallSession::getId, Function.identity()));
+
+        return reports
                 .stream()
-                .map(feedbackReportViewMapper::toSummaryResponse)
+                .map(report -> feedbackReportViewMapper.toSummaryResponse(report, sessionsById.get(report.getSessionId())))
                 .toList();
     }
 
