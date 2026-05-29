@@ -1,3 +1,12 @@
+## 2026-05-29 - 리포트 상세 응답에 통화 전체 스크립트 추가
+
+- 구분: 엔드포인트, 메인 로직
+- 변경: 리포트 상세 응답 `FeedbackReportResponse` 에 `transcript` 필드를 추가하고, `call_sessions.turns_json` 에 저장된 턴 목록을 파싱해 함께 반환하도록 수정했다.
+- 영향: 프론트가 리포트 상세 API 한 번으로 핵심 피드백뿐 아니라 통화 전체 스크립트까지 표시할 수 있다.
+- 확인: `./gradlew test --tests com.molla.domain.feedbackreport.FeedbackReportViewMapperTest --tests com.molla.domain.feedbackreport.FeedbackReportServiceTest`
+- 관련 파일: `src/main/java/com/molla/controller/dto/feedbackreport/FeedbackReportResponse.java`, `src/main/java/com/molla/domain/feedbackreport/FeedbackReportViewMapper.java`
+- 비고: transcript 는 외부 `callSid` 가 아니라 내부 세션의 `turns_json` 원본을 기반으로 내려간다.
+
 ## 2026-05-28 - Auth Swagger 응답 스키마를 래퍼 형식에 맞게 정정
 
 - 구분: 문서, 엔드포인트
