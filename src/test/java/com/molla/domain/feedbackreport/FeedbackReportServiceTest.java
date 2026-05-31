@@ -35,29 +35,16 @@ class FeedbackReportServiceTest {
     @Test
     void getMyReportsLoadsSessionsOnceAndMapsDurationIntoSummary() {
         FeedbackReport report = FeedbackReport.create(
-                "session-1",
-                "practice",
-                "summary",
-                33,
+                "session-1", "practice", "summary", 33,
                 "문장 정확도와 확장성을 조금 더 보완하면 좋아집니다.",
-                "[]",
-                "[]",
-                "[]",
-                "[]",
-                null
+                "[]", "[]", "[]", "[]", null
         );
         CallSession session = mock(CallSession.class);
         FeedbackReportSummaryResponse expected = new FeedbackReportSummaryResponse(
-                "report-1",
-                "session-1",
-                "practice",
-                "summary",
-                List.of(),
-                33,
+                "report-1", "session-1", "practice", "summary",
+                List.of(), 33,
                 "문장 정확도와 확장성을 조금 더 보완하면 좋아집니다.",
-                null,
-                3,
-                LocalDateTime.of(2026, 5, 25, 15, 10)
+                null, 3, LocalDateTime.of(2026, 5, 25, 15, 10)
         );
 
         when(feedbackReportRepository.findAllByUserId("user-1")).thenReturn(List.of(report));
@@ -76,38 +63,25 @@ class FeedbackReportServiceTest {
     @Test
     void getReportLoadsSessionAndReturnsDetailedResponseWithSessionMetadata() {
         FeedbackReport report = FeedbackReport.create(
-                "session-1",
-                "practice",
-                "summary",
-                33,
+                "session-1", "practice", "summary", 33,
                 "문장 정확도와 확장성을 조금 더 보완하면 좋아집니다.",
-                "[]",
-                "[]",
-                "[]",
-                "[]",
-                null
+                "[]", "[]", "[]", "[]", null
         );
         CallSession session = mock(CallSession.class);
         FeedbackReportResponse expected = new FeedbackReportResponse(
-                "report-1",
-                "session-1",
-                "practice",
-                "summary",
-                java.util.List.of(),
-                java.util.List.of(),
-                java.util.List.of(),
-                java.util.List.of(),
+                "report-1", "session-1", "practice", "summary",
+                java.util.List.of(), java.util.List.of(),
+                java.util.List.of(), java.util.List.of(),
                 List.of(new CallSessionTurn(
                         1,
                         OffsetDateTime.parse("2026-05-25T15:00:01+00:00"),
                         new CallSessionTurn.UserTurn("hello", 16000, "calls/test/turn-1.wav"),
-                        new CallSessionTurn.AssistantTurn("hi", OffsetDateTime.parse("2026-05-25T15:00:02+00:00"))
+                        new CallSessionTurn.AssistantTurn("hi", null, OffsetDateTime.parse("2026-05-25T15:00:02+00:00"))
                 )),
                 33,
                 "문장 정확도와 확장성을 조금 더 보완하면 좋아집니다.",
                 null,
-                LocalDateTime.of(2026, 5, 25, 15, 0),
-                3,
+                LocalDateTime.of(2026, 5, 25, 15, 0), 3,
                 LocalDateTime.of(2026, 5, 25, 15, 10)
         );
 
@@ -125,16 +99,9 @@ class FeedbackReportServiceTest {
     @Test
     void getReportThrowsWhenLinkedSessionDoesNotExist() {
         FeedbackReport report = FeedbackReport.create(
-                "session-1",
-                "practice",
-                "summary",
-                33,
+                "session-1", "practice", "summary", 33,
                 "문장 정확도와 확장성을 조금 더 보완하면 좋아집니다.",
-                "[]",
-                "[]",
-                "[]",
-                "[]",
-                null
+                "[]", "[]", "[]", "[]", null
         );
 
         when(feedbackReportRepository.findBySessionIdAndUserId("session-1", "user-1")).thenReturn(Optional.of(report));
