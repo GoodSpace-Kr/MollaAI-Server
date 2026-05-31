@@ -42,11 +42,7 @@ public class SensClient {
     }
 
     public void sendSms(String toNumber, String content) {
-<<<<<<< HEAD
-        String url = "/sms/v2/services/" + serviceId + "/messages";
-=======
         String url = buildMessagePath();
->>>>>>> 7245a5292cdd86d984e9ec4e7d8a927a666e25ef
         long timestamp = System.currentTimeMillis();
         String signature = makeSignature(timestamp, url);
 
