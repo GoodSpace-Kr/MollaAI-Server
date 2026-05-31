@@ -39,6 +39,7 @@ public record EndSessionRequest(
                         ) : null,
                         turn.assistant() != null ? new CallSessionTurn.AssistantTurn(
                                 turn.assistant().text(),
+                                turn.assistant().translatedText(),
                                 turn.assistant().createdAt()
                         ) : null
                 ))
@@ -78,6 +79,9 @@ public record EndSessionRequest(
     public record AssistantTurnPayload(
             @Schema(description = "어시스턴트 응답 텍스트", example = "Sure, what seems to be the issue?")
             String text,
+
+            @Schema(description = "어시스턴트 응답 한국어 번역", example = "물론이죠, 무슨 문제인가요?")
+            String translatedText,
 
             @Schema(description = "응답 생성 시각", example = "2026-05-20T12:00:02.234567+00:00")
             OffsetDateTime createdAt
