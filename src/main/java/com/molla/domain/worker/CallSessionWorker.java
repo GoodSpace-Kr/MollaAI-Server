@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -51,16 +52,21 @@ public class CallSessionWorker {
         }
 
         if (isShortCompletedSession(session)) {
-            log.info(
-                    "짧은 통화 세션 스킵 — sessionId: {}, duration: {}초, threshold: {}초",
-                    sessionId,
-                    session.getDurationSeconds(),
-                    MINIMUM_REPORTABLE_DURATION_SECONDS
-            );
+            log.info("짧은 통화 세션 스킵 — sessionId: {}, duration: {}초",
+                    sessionId, session.getDurationSeconds());
             return;
         }
 
         List<CallSessionTurn> turns = readTurns(session.getTurnsJson());
+
+        // ── Step 0: AI 발화 번역 ─────────────────────
+        try {
+            turns = translateAssistantTurns(turns, session);
+            log.info("Step 0 완료 — AI 발화 번역, sessionId: {}", sessionId);
+        } catch (Exception e) {
+            log.error("Step 0 실패 — 번역 오류, sessionId: {}, error: {}", sessionId, e.getMessage(), e);
+            // 번역 실패해도 리포트 생성은 계속 진행
+        }
 
         // ── Step 1: 리포트 생성 ──────────────────────
         Report reportData = null;
@@ -75,7 +81,6 @@ public class CallSessionWorker {
                 savedReport = saveReport(sessionId, session.getSessionType(), reportData);
                 log.info("Step 1 완료 — 리포트 생성, sessionId: {}", sessionId);
 
-                // level_test 통화 완료 시 english_level 자동 업데이트
                 if (isLevelTest && userId != null && savedReport.getLevelResult() != null) {
                     updateUserEnglishLevel(userId, savedReport.getLevelResult());
                 }
@@ -100,7 +105,71 @@ public class CallSessionWorker {
     }
 
     // ──────────────────────────────────────────────
-    // 내부 유틸
+    // Step 0: AI 발화 번역 후 turns_json 업데이트
+    // ──────────────────────────────────────────────
+
+    @Transactional
+    public List<CallSessionTurn> translateAssistantTurns(
+            List<CallSessionTurn> turns,
+            CallSession session
+    ) throws Exception {
+        // 번역이 필요한 assistant 텍스트만 추출
+        List<String> textsToTranslate = turns.stream()
+                .filter(t -> t.assistant() != null
+                        && t.assistant().text() != null
+                        && !t.assistant().text().isBlank()
+                        && t.assistant().translatedText() == null) // 이미 번역된 건 스킵
+                .map(t -> t.assistant().text())
+                .toList();
+
+        if (textsToTranslate.isEmpty()) {
+            log.info("번역할 AI 발화 없음 — sessionId: {}", session.getId());
+            return turns;
+        }
+
+        // OpenAI로 일괄 번역
+        List<String> translations = openAiClient.translateTexts(textsToTranslate);
+
+        // 번역 결과를 turns에 적용
+        List<CallSessionTurn> translatedTurns = new ArrayList<>();
+        int translationIndex = 0;
+
+        for (CallSessionTurn turn : turns) {
+            if (turn.assistant() != null
+                    && turn.assistant().text() != null
+                    && !turn.assistant().text().isBlank()
+                    && turn.assistant().translatedText() == null
+                    && translationIndex < translations.size()) {
+
+                String translated = translations.get(translationIndex++);
+
+                CallSessionTurn.AssistantTurn enrichedAssistant = new CallSessionTurn.AssistantTurn(
+                        turn.assistant().text(),
+                        translated,
+                        turn.assistant().createdAt()
+                );
+
+                translatedTurns.add(new CallSessionTurn(
+                        turn.index(),
+                        turn.createdAt(),
+                        turn.user(),
+                        enrichedAssistant
+                ));
+            } else {
+                translatedTurns.add(turn);
+            }
+        }
+
+        // turns_json 업데이트 (DB 저장)
+        session.updateTurnsJson(objectMapper.writeValueAsString(translatedTurns));
+        callSessionRepository.save(session);
+
+        log.info("번역 완료 — sessionId: {}, 번역 건수: {}", session.getId(), translationIndex);
+        return translatedTurns;
+    }
+
+    // ──────────────────────────────────────────────
+    // 기존 유틸 (변경 없음)
     // ──────────────────────────────────────────────
 
     @Transactional
@@ -142,10 +211,8 @@ public class CallSessionWorker {
         if (turnsJson == null || turnsJson.isBlank()) {
             return List.of();
         }
-
         try {
-            return objectMapper.readValue(turnsJson, new TypeReference<List<CallSessionTurn>>() {
-            });
+            return objectMapper.readValue(turnsJson, new TypeReference<List<CallSessionTurn>>() {});
         } catch (Exception e) {
             log.error("turns JSON 파싱 실패 — error: {}", e.getMessage(), e);
             return List.of();

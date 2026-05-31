@@ -17,6 +17,7 @@ public record CallSessionTurn(
 
     public record AssistantTurn(
             String text,
+            String translatedText,   
             OffsetDateTime createdAt
     ) {
     }

@@ -134,6 +134,51 @@ public class OpenAiClient {
         }
     }
 
+    /**
+     * AI 발화 텍스트 목록을 한국어로 일괄 번역.
+     * 개별 호출 대신 한 번에 배열로 요청해서 API 비용 절감.
+     */
+    public List<String> translateTexts(List<String> texts) {
+        if (texts == null || texts.isEmpty()) {
+            return List.of();
+        }
+
+        String systemPrompt = """
+            당신은 영어를 한국어로 번역하는 전문 번역가입니다.
+            반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트는 절대 포함하지 마세요.
+            각 텍스트를 자연스러운 한국어로 번역하되, 원문의 뉘앙스와 말투를 유지하세요.
+            
+            {
+              "translations": ["번역1", "번역2", "번역3"]
+            }
+            """;
+
+        String userPrompt;
+        try {
+            userPrompt = objectMapper.writeValueAsString(Map.of("texts", texts));
+        } catch (Exception e) {
+            throw new RuntimeException("번역 요청 생성 실패: " + e.getMessage(), e);
+        }
+
+        String responseJson = callChatApi(systemPrompt, userPrompt);
+
+        try {
+            JsonNode root = objectMapper.readTree(responseJson);
+            JsonNode translationsNode = root.path("translations");
+            if (!translationsNode.isArray()) {
+                throw new RuntimeException("번역 응답 형식 오류");
+            }
+            List<String> result = new java.util.ArrayList<>();
+            for (JsonNode node : translationsNode) {
+                result.add(node.asText());
+            }
+            return result;
+        } catch (Exception e) {
+            log.error("번역 응답 파싱 실패: {}", e.getMessage(), e);
+            throw new RuntimeException("번역 응답 파싱 실패: " + e.getMessage(), e);
+        }
+    }
+
     // ──────────────────────────────────────────────
     // 내부 유틸
     // ──────────────────────────────────────────────
