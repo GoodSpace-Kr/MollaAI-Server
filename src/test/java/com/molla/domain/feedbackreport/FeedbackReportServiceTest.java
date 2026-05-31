@@ -3,8 +3,8 @@ package com.molla.domain.feedbackreport;
 import com.molla.common.response.ErrorCode;
 import com.molla.controller.dto.feedbackreport.FeedbackReportResponse;
 import com.molla.controller.dto.feedbackreport.FeedbackReportSummaryResponse;
+import com.molla.controller.dto.feedbackreport.TranscriptTurnResponse;
 import com.molla.domain.callsession.CallSession;
-import com.molla.domain.callsession.CallSessionTurn;
 import com.molla.domain.callsession.CallSessionRepository;
 import org.junit.jupiter.api.Test;
 
@@ -97,11 +97,11 @@ class FeedbackReportServiceTest {
                 java.util.List.of(),
                 java.util.List.of(),
                 java.util.List.of(),
-                List.of(new CallSessionTurn(
+                List.of(new TranscriptTurnResponse(
                         1,
                         OffsetDateTime.parse("2026-05-25T15:00:01+00:00"),
-                        new CallSessionTurn.UserTurn("hello", 16000, "calls/test/turn-1.wav"),
-                        new CallSessionTurn.AssistantTurn("hi", OffsetDateTime.parse("2026-05-25T15:00:02+00:00"))
+                        new TranscriptTurnResponse.UserTurnResponse("hello", 16000, "calls/test/turn-1.wav", "https://signed-url"),
+                        new TranscriptTurnResponse.AssistantTurnResponse("hi", OffsetDateTime.parse("2026-05-25T15:00:02+00:00"))
                 )),
                 33,
                 "문장 정확도와 확장성을 조금 더 보완하면 좋아집니다.",
