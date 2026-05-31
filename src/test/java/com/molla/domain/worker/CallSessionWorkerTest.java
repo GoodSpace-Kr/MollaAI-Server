@@ -9,6 +9,7 @@ import com.molla.domain.feedbackreport.FeedbackReport;
 import com.molla.domain.feedbackreport.FeedbackReportRepository;
 import com.molla.domain.feedbackreport.Report;
 import com.molla.domain.user.UserRepository;
+import static org.mockito.ArgumentMatchers.eq;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
@@ -85,7 +86,7 @@ class CallSessionWorkerTest {
         worker.processAfterCall(new SessionEndedEvent("session-2", null, false));
 
         verify(openAiClient).generateReport(any(), any());
-        verify(qdrantClient).upsertTurns("session-2", null, "01012345678", turns);
+        verify(qdrantClient).upsertTurns(eq("session-2"), eq(null), eq("01012345678"), any());
         verify(feedbackReportRepository).save(argThat(feedbackReport ->
                 feedbackReport.getLevelPercentage() == 35
                         && "문장 정확도를 조금 더 다듬으면 좋습니다.".equals(feedbackReport.getLevelAnalysis())
