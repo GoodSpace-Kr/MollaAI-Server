@@ -22,7 +22,7 @@ public class SwaggerConfig {
         return new OpenAPI()
                 .info(apiInfo())
                 .servers(List.of(
-                        new Server().url("https://mollatalk.com").description("Production (EC2)"),
+                        new Server().url("https://api.mollatalk.com").description("Production (EC2)"),
                         new Server().url("http://localhost:8080").description("Local")
                 ))
                 // 전역 Security — 모든 엔드포인트에 Bearer 인증 적용

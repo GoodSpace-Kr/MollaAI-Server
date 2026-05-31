@@ -1,9 +1,10 @@
 package com.molla.controller.dto.feedbackreport;
 
-import com.molla.domain.feedbackreport.FeedbackReport;
+import com.molla.domain.feedbackreport.Report;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Schema(description = "리포트 상세 응답")
 public record FeedbackReportResponse(
@@ -21,48 +22,51 @@ public record FeedbackReportResponse(
         String oneLineSummary,
 
         @Schema(
-                description = "문법 교정 목록 (JSON 문자열 — 클라이언트에서 파싱)",
-                example = "[{\"original\":\"She go to school\",\"corrected\":\"She goes to school\",\"explanation\":\"3인칭 단수 주어에는 동사에 -s를 붙입니다.\"}]"
+                description = "핵심 문장 피드백 목록",
+                example = "[{\"sourceTurnIndex\":3,\"originSentence\":\"She go to school\",\"improvedSentence\":\"She usually goes to school early in the morning.\",\"keyExpression\":\"goes to school\",\"keyExpressionKorean\":\"학교에 다니다\",\"sampleRate\":16000,\"audioKey\":\"calls/CA.../turns/5.wav\",\"audioUrl\":\"https://signed-url\"}]"
         )
-        String grammarCorrections,
+        List<Report.CoreSentenceFeedback> coreSentences,
 
         @Schema(
-                description = "어휘 개선 제안 목록 (JSON 문자열)",
-                example = "[{\"used\":\"big\",\"better\":\"significant\",\"reason\":\"비즈니스 맥락에서 더 격식 있는 표현입니다.\"}]"
+                description = "습관 분석 목록",
+                example = "[{\"habit\":\"문장 끝에 right? 반복\",\"evidence\":\"It's important, right?\",\"suggestion\":\"확인 표현을 다양하게 바꿔보세요.\"}]"
         )
-        String vocabularySuggestions,
+        List<Report.HabitAnalysis> habitAnalyses,
 
         @Schema(
-                description = "습관 분석 목록 (JSON 문자열)",
-                example = "[{\"pattern\":\"문장 끝에 'right?' 반복\",\"example\":\"It's important, right?\",\"suggestion\":\"다양한 확인 표현을 사용해 보세요.\"}]"
+                description = "시험 점수 목록",
+                example = "[{\"exam\":\"IELTS\",\"score\":\"6.0\"},{\"exam\":\"TOEIC\",\"score\":\"780\"},{\"exam\":\"OPIC\",\"score\":\"IM2\"}]"
         )
-        String habitAnalysis,
+        List<Report.ReportScore> scores,
 
-        @Schema(description = "발음 노트", example = "th 발음이 d 발음으로 대체되는 경향이 있습니다.")
-        String pronunciationNotes,
+        @Schema(
+                description = "약점 목록",
+                example = "[\"3인칭 단수 동사 활용\", \"시제 일관성\"]"
+        )
+        List<String> weakPoints,
 
-        @Schema(description = "종합 점수 (0~100)", example = "78.5")
-        Float overallScore,
+        @Schema(
+                description = "통화 전체 스크립트 턴 목록",
+                example = "[{\"index\":1,\"createdAt\":\"2026-05-20T12:00:01.123456+00:00\",\"user\":{\"text\":\"Hello, I want to practice English.\",\"sampleRate\":16000,\"audioKey\":\"calls/CA.../turns/1.wav\",\"audioUrl\":\"https://signed-url\"},\"assistant\":{\"text\":\"Sure, let's get started.\",\"createdAt\":\"2026-05-20T12:00:02.234567+00:00\"}}]"
+        )
+        List<TranscriptTurnResponse> transcript,
+
+        @Schema(description = "레벨 퍼센트", example = "27")
+        Integer levelPercentage,
+
+        @Schema(description = "현재 영어 수준 분석", example = "표현 의도는 잘 전달되지만 문장 구조 안정성이 조금 더 필요합니다.")
+        String levelAnalysis,
 
         @Schema(description = "레벨 결과 (level_test 타입만 사용)", example = "상위 23%")
         String levelResult,
 
+        @Schema(description = "해당 통화 세션 시작 일시", example = "2026-05-20T12:00:00")
+        LocalDateTime sessionStartedAt,
+
+        @Schema(description = "해당 통화 세션 통화 시간(분)", example = "3")
+        Integer sessionDurationMinutes,
+
         @Schema(description = "리포트 생성 일시")
         LocalDateTime createdAt
 ) {
-    public static FeedbackReportResponse from(FeedbackReport report) {
-        return new FeedbackReportResponse(
-                report.getId(),
-                report.getSessionId(),
-                report.getReportType(),
-                report.getOneLineSummary(),
-                report.getGrammarCorrections(),
-                report.getVocabularySuggestions(),
-                report.getHabitAnalysis(),
-                report.getPronunciationNotes(),
-                report.getOverallScore(),
-                report.getLevelResult(),
-                report.getCreatedAt()
-        );
-    }
 }

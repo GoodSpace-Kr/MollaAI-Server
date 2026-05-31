@@ -5,6 +5,7 @@ import com.molla.common.response.ErrorCode;
 import com.molla.config.JwtProvider;
 import com.molla.controller.dto.auth.AccessTokenResponse;
 import com.molla.controller.dto.auth.TokenResponse;
+import com.molla.domain.subscription.SubscriptionService;
 import com.molla.domain.user.User;
 import com.molla.domain.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final SensClient sensClient;
     private final JwtProvider jwtProvider;
+    private final SubscriptionService subscriptionService;
 
     // ──────────────────────────────────────────────
     // 인증번호 발송
@@ -74,7 +76,11 @@ public class AuthService {
         boolean isNewUser = !userRepository.existsByPhoneNumber(phoneNumber);
 
         User user = userRepository.findByPhoneNumber(phoneNumber)
-                .orElseGet(() -> userRepository.save(User.createByPhone(phoneNumber)));
+                .orElseGet(() -> createUserWithDemoSubscription(phoneNumber));
+
+        if (!user.isRegistered()){
+            isNewUser = true;
+        }
 
         String accessToken = jwtProvider.generateAccessToken(user.getId(), phoneNumber);
         String refreshToken = jwtProvider.generateRefreshToken(user.getId());
@@ -123,5 +129,11 @@ public class AuthService {
 
     private String generateCode() {
         return String.valueOf(new SecureRandom().nextInt(900000) + 100000);
+    }
+
+    private User createUserWithDemoSubscription(String phoneNumber) {
+        User savedUser = userRepository.save(User.createByPhone(phoneNumber));
+        subscriptionService.ensureDemoPremiumSubscription(savedUser.getId());
+        return savedUser;
     }
 }

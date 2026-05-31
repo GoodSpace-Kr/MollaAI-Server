@@ -10,11 +10,13 @@ import java.util.Optional;
 
 public interface CallSessionRepository extends JpaRepository<CallSession, String> {
 
-    /** 유저의 통화 목록 — 최신순 */
-    List<CallSession> findByUserIdOrderByStartedAtDesc(String userId);
+    boolean existsByPhoneNumber(String phoneNumber);
 
-    /** 유저의 특정 세션 조회 (본인 것인지 확인용) */
-    Optional<CallSession> findByIdAndUserId(String id, String userId);
+    /** 전화번호 기준 통화 목록 — 최신순 */
+    List<CallSession> findByPhoneNumberOrderByStartedAtDesc(String phoneNumber);
+
+    /** 전화번호 기준 특정 세션 조회 (본인 것인지 확인용) */
+    Optional<CallSession> findByIdAndPhoneNumber(String id, String phoneNumber);
 
     /**
      * 오늘 완료된 통화의 총 duration_seconds 합산.
@@ -23,12 +25,23 @@ public interface CallSessionRepository extends JpaRepository<CallSession, String
     @Query("""
             SELECT COALESCE(SUM(c.durationSeconds), 0)
             FROM CallSession c
-            WHERE c.userId = :userId
+            WHERE c.phoneNumber = :phoneNumber
               AND c.status = 'completed'
               AND c.startedAt >= :startOfDay
             """)
-    int sumDurationSecondsTodayByUserId(
-            @Param("userId") String userId,
+    int sumDurationSecondsTodayByPhoneNumber(
+            @Param("phoneNumber") String phoneNumber,
             @Param("startOfDay") LocalDateTime startOfDay
     );
+
+    // 관리자용 — 전체 세션 목록 최신순
+    List<CallSession> findAllByOrderByStartedAtDesc();
+
+    // 유저별 세션 수 집계
+    @Query("SELECT COUNT(c) FROM CallSession c WHERE c.userId = :userId AND c.status = 'completed'")
+    int countCompletedByUserId(@Param("userId") String userId);
+
+    // 유저별 총 통화 시간
+    @Query("SELECT COALESCE(SUM(c.durationSeconds), 0) FROM CallSession c WHERE c.userId = :userId AND c.status = 'completed'")
+    int sumDurationSecondsByUserId(@Param("userId") String userId);
 }

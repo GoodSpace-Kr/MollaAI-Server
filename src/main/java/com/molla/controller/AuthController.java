@@ -2,11 +2,13 @@ package com.molla.controller;
 
 import com.molla.common.response.ApiResponse;
 import com.molla.controller.dto.auth.AccessTokenResponse;
+import com.molla.controller.dto.auth.RefreshAccessTokenApiResponse;
 import com.molla.controller.dto.auth.RefreshTokenRequest;
 import com.molla.controller.dto.auth.RegisterRequest;
 import com.molla.controller.dto.auth.SendCodeRequest;
 import com.molla.controller.dto.auth.TokenResponse;
 import com.molla.controller.dto.auth.VerifyCodeRequest;
+import com.molla.controller.dto.auth.VerifyCodeApiResponse;
 import com.molla.controller.dto.user.UserResponse;
 import com.molla.domain.auth.AuthService;
 import com.molla.domain.user.UserService;
@@ -58,14 +60,14 @@ public class AuthController {
             summary = "인증번호 확인 + JWT 발급",
             description = """
                     인증번호를 확인하고 JWT를 발급합니다.
-                    - 신규 유저: `isNewUser: true` → 프론트에서 이름 입력창 표시 → `/api/v1/auth/register` 호출
-                    - 기존 유저: `isNewUser: false` → 바로 로그인 완료
+                    - 신규 유저: `isNewUser: true` → 해당 phoneNumber로 기존 유저가 없음 → 프론트에서 이름 입력창 표시 → `/api/v1/auth/register` 호출
+                    - 기존 유저: `isNewUser: false` → 해당 phoneNumber의 유저가 이미 존재함 → 추가 가입 없이 바로 로그인 완료
                     """
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200", description = "인증 성공 + JWT 발급",
-                    content = @Content(schema = @Schema(implementation = TokenResponse.class))),
+                    content = @Content(schema = @Schema(implementation = VerifyCodeApiResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400", description = "인증번호 불일치 또는 만료",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class)))
@@ -117,7 +119,7 @@ public class AuthController {
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200", description = "재발급 성공",
-                    content = @Content(schema = @Schema(implementation = AccessTokenResponse.class))),
+                    content = @Content(schema = @Schema(implementation = RefreshAccessTokenApiResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "401", description = "Refresh Token 무효 또는 만료",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class)))

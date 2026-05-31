@@ -28,14 +28,13 @@ import java.util.Map;
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
-
     private final JwtProvider jwtProvider;
     private final ObjectMapper objectMapper;
-
     private static final String[] PUBLIC_ENDPOINTS = {
             "/api/v1/auth/send-code",
             "/api/v1/auth/verify-code",
             "/api/v1/auth/refresh",
+            "/api/v1/inquiries",
             "/api/v1/internal/**",
             "/api/v1/dev/**",
             "/swagger-ui/**",
@@ -43,7 +42,6 @@ public class SecurityConfig {
             "/api-docs/**",
             "/v3/api-docs/**",
     };
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http

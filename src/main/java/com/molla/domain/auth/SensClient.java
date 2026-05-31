@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import javax.crypto.Mac;
@@ -25,7 +26,6 @@ public class SensClient {
     private final String secretKey;
     private final String serviceId;
     private final String fromNumber;
-
     public SensClient(
             WebClient.Builder webClientBuilder,
             @Value("${naver.sens.base-url}") String baseUrl,
@@ -42,7 +42,11 @@ public class SensClient {
     }
 
     public void sendSms(String toNumber, String content) {
+<<<<<<< HEAD
         String url = "/sms/v2/services/" + serviceId + "/messages";
+=======
+        String url = buildMessagePath();
+>>>>>>> 7245a5292cdd86d984e9ec4e7d8a927a666e25ef
         long timestamp = System.currentTimeMillis();
         String signature = makeSignature(timestamp, url);
 
@@ -66,10 +70,22 @@ public class SensClient {
                     .block();
 
             log.info("SMS 발송 성공 — to: {}", toNumber);
+        } catch (WebClientResponseException e) {
+            log.error(
+                    "SMS 발송 실패 — to: {}, status: {}, response: {}",
+                    toNumber,
+                    e.getStatusCode(),
+                    e.getResponseBodyAsString()
+            );
+            throw new GlobalException(ErrorCode.SMS_SEND_FAILED);
         } catch (Exception e) {
             log.error("SMS 발송 실패 — to: {}, error: {}", toNumber, e.getMessage());
             throw new GlobalException(ErrorCode.SMS_SEND_FAILED);
         }
+    }
+
+    String buildMessagePath() {
+        return "/sms/v2/services/" + serviceId + "/messages";
     }
 
     private String makeSignature(long timestamp, String url) {

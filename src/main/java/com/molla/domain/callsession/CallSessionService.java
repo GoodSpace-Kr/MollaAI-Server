@@ -5,9 +5,13 @@ import com.molla.common.response.ErrorCode;
 import com.molla.controller.dto.callsession.CallSessionResponse;
 import com.molla.controller.dto.callsession.EndSessionRequest;
 import com.molla.controller.dto.callsession.StartSessionRequest;
+import com.molla.controller.dto.subscription.SubscriptionWithRemainingResponse;
+import com.molla.domain.callsession.CallSessionTurn;
 import com.molla.domain.subscription.SubscriptionRepository;
+import com.molla.domain.subscription.SubscriptionService;
 import com.molla.domain.user.User;
 import com.molla.domain.user.UserRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -15,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -24,7 +29,9 @@ public class CallSessionService {
     private final CallSessionRepository callSessionRepository;
     private final UserRepository userRepository;
     private final SubscriptionRepository subscriptionRepository;
+    private final SubscriptionService subscriptionService;
     private final ApplicationEventPublisher eventPublisher;
+    private final ObjectMapper objectMapper;
 
     // ──────────────────────────────────────────────
     // 세션 시작 (내부 API)
@@ -32,35 +39,29 @@ public class CallSessionService {
 
     @Transactional
     public CallSessionResponse startSession(StartSessionRequest request) {
-        User user = userRepository.findById(request.userId())
-                .orElseThrow(() -> new GlobalException(ErrorCode.USER_NOT_FOUND));
+        User user = userRepository.findByPhoneNumber(request.phoneNumber())
+                .orElseGet(() -> createUserWithDemoSubscription(request.phoneNumber()));
+        String resolvedUserId = user.getId();
+        String sessionType = resolveSessionType(request.phoneNumber());
 
         // 통화 시점의 유저 상태 스냅샷
-        String userStateAtCall = resolveUserState(user, request.userId());
-
-        // practice 타입이면 구독 여부 확인
-        if ("practice".equals(request.sessionType())) {
-            boolean hasActiveSubscription = subscriptionRepository.existsActiveByUserId(request.userId());
-            if (!hasActiveSubscription) {
-                throw new GlobalException(ErrorCode.SUBSCRIPTION_NOT_FOUND);
-            }
-        }
+        String userStateAtCall = resolveUserState(user);
 
         CallSession session = CallSession.create(
-                request.userId(),
+                resolvedUserId,
+                request.phoneNumber(),
                 request.callSid(),
-                request.aiWsSessionId(),
-                request.sessionType(),
-                userStateAtCall,
-                request.topic()
+                sessionType,
+                userStateAtCall
         );
 
         callSessionRepository.save(session);
+        SubscriptionWithRemainingResponse subscription = subscriptionService.getMySubscription(resolvedUserId);
 
         log.info("통화 세션 시작 — sessionId: {}, userId: {}, type: {}",
-                session.getId(), request.userId(), request.sessionType());
+                session.getId(), session.getUserId(), sessionType);
 
-        return CallSessionResponse.from(session);
+        return CallSessionResponse.from(session, subscription);
     }
 
     // ──────────────────────────────────────────────
@@ -77,24 +78,33 @@ public class CallSessionService {
         }
 
         String resolvedStatus = request != null ? request.resolvedStatus() : "completed";
-        String transcript = request != null ? request.transcript() : null;
+        Integer requestedDurationMinutes = request != null ? request.durationMinutes() : null;
+        List<CallSessionTurn> turns = request != null ? request.toCallSessionTurns() : List.of();
 
-        if ("completed".equals(resolvedStatus) && (transcript == null || transcript.isBlank())) {
-            throw new CallSessionException(ErrorCode.INVALID_REQUEST, "completed 상태로 종료하려면 transcript가 필요합니다.");
+        if ("completed".equals(resolvedStatus) && turns.isEmpty()) {
+            throw new CallSessionException(ErrorCode.INVALID_REQUEST, "completed 상태로 종료하려면 turns가 필요합니다.");
         }
 
-        if (transcript != null) {
-            session.updateTranscript(transcript);
+        if (requestedDurationMinutes != null && requestedDurationMinutes < 0) {
+            throw new CallSessionException(ErrorCode.INVALID_REQUEST, "durationMinutes는 0 이상이어야 합니다.");
+        }
+
+        if (!turns.isEmpty()) {
+            try {
+                session.updateTurnsJson(objectMapper.writeValueAsString(turns));
+            } catch (Exception e) {
+                throw new CallSessionException(ErrorCode.INTERNAL_SERVER_ERROR, "turns 저장 직렬화에 실패했습니다.");
+            }
         }
 
         if ("failed".equals(resolvedStatus)) {
             session.fail();
         } else {
-            session.end();
+            session.end(toDurationSeconds(requestedDurationMinutes));
         }
 
         // 통화 종료 후 비동기 워커 트리거 (Spring Event)
-        // 리포트 생성 → user_memories 갱신 → Qdrant upsert 순으로 처리
+        // 리포트 생성 → Qdrant upsert 순으로 처리
         if ("completed".equals(session.getStatus())) {
             eventPublisher.publishEvent(new SessionEndedEvent(session.getId(), session.getUserId(), session.isLevelTest()));
         }
@@ -110,7 +120,8 @@ public class CallSessionService {
     // ──────────────────────────────────────────────
 
     public List<CallSessionResponse> getMySessions(String userId) {
-        return callSessionRepository.findByUserIdOrderByStartedAtDesc(userId)
+        String phoneNumber = getPhoneNumberByUserId(userId);
+        return callSessionRepository.findByPhoneNumberOrderByStartedAtDesc(phoneNumber)
                 .stream()
                 .map(CallSessionResponse::from)
                 .toList();
@@ -121,7 +132,8 @@ public class CallSessionService {
     // ──────────────────────────────────────────────
 
     public CallSessionResponse getSession(String sessionId, String userId) {
-        CallSession session = callSessionRepository.findByIdAndUserId(sessionId, userId)
+        String phoneNumber = getPhoneNumberByUserId(userId);
+        CallSession session = callSessionRepository.findByIdAndPhoneNumber(sessionId, phoneNumber)
                 .orElseThrow(() -> new CallSessionException(ErrorCode.SESSION_NOT_FOUND));
         return CallSessionResponse.from(session);
     }
@@ -130,9 +142,33 @@ public class CallSessionService {
     // 내부 유틸
     // ──────────────────────────────────────────────
 
-    private String resolveUserState(User user, String userId) {
+    private String resolveUserState(User user) {
+        if (user == null) return "unregistered";
         if (!user.isRegistered()) return "unregistered";
-        if (subscriptionRepository.existsActiveByUserId(userId)) return "subscribed";
+        if (subscriptionRepository.existsActiveByUserId(user.getId())) return "subscribed";
         return "registered";
+    }
+
+    private String resolveSessionType(String phoneNumber) {
+        return callSessionRepository.existsByPhoneNumber(phoneNumber) ? "practice" : "level_test";
+    }
+
+    private String getPhoneNumberByUserId(String userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new GlobalException(ErrorCode.USER_NOT_FOUND))
+                .getPhoneNumber();
+    }
+
+    private User createUserWithDemoSubscription(String phoneNumber) {
+        User savedUser = userRepository.save(User.createByPhone(phoneNumber));
+        subscriptionService.ensureDemoPremiumSubscription(savedUser.getId());
+        return savedUser;
+    }
+
+    private Integer toDurationSeconds(Integer durationMinutes) {
+        if (durationMinutes == null) {
+            return null;
+        }
+        return durationMinutes * 60;
     }
 }

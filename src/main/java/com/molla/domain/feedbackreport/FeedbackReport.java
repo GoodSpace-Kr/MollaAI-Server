@@ -27,21 +27,23 @@ public class FeedbackReport {
     @Column(name = "one_line_summary", columnDefinition = "TEXT")
     private String oneLineSummary;
 
-    // JSON 컬럼 — String으로 저장, 애플리케이션에서 파싱
-    @Column(name = "grammar_corrections", columnDefinition = "JSON")
-    private String grammarCorrections;       // [{original, corrected, explanation}]
+    @Column(name = "level_percentage")
+    private Integer levelPercentage;
 
-    @Column(name = "vocabulary_suggestions", columnDefinition = "JSON")
-    private String vocabularySuggestions;    // [{used, better, reason}]
+    @Column(name = "level_analysis", columnDefinition = "TEXT")
+    private String levelAnalysis;
 
-    @Column(name = "habit_analysis", columnDefinition = "JSON")
-    private String habitAnalysis;            // [{pattern, example, suggestion}]
+    @Column(name = "core_sentences", columnDefinition = "JSON")
+    private String coreSentences;            // [{sentence, grammarCorrection, improvedSentence}]
 
-    @Column(name = "pronunciation_notes", columnDefinition = "TEXT")
-    private String pronunciationNotes;
+    @Column(name = "habit_analyses", columnDefinition = "JSON")
+    private String habitAnalyses;            // [{habit, evidence, suggestion}]
 
-    @Column(name = "overall_score")
-    private Float overallScore;              // 0~100
+    @Column(name = "scores", columnDefinition = "JSON")
+    private String scores;                   // [{exam, score}]
+
+    @Column(name = "weak_points", columnDefinition = "JSON")
+    private String weakPoints;               // ["weak point 1", "weak point 2"]
 
     @Column(name = "level_result", length = 50)
     private String levelResult;              // 레벨테스트 시만 사용. "상위 23%"
@@ -57,11 +59,12 @@ public class FeedbackReport {
             String sessionId,
             String reportType,
             String oneLineSummary,
-            String grammarCorrections,
-            String vocabularySuggestions,
-            String habitAnalysis,
-            String pronunciationNotes,
-            Float overallScore,
+            Integer levelPercentage,
+            String levelAnalysis,
+            String coreSentences,
+            String habitAnalyses,
+            String scores,
+            String weakPoints,
             String levelResult
     ) {
         FeedbackReport report = new FeedbackReport();
@@ -69,11 +72,12 @@ public class FeedbackReport {
         report.sessionId = sessionId;
         report.reportType = reportType;
         report.oneLineSummary = oneLineSummary;
-        report.grammarCorrections = grammarCorrections;
-        report.vocabularySuggestions = vocabularySuggestions;
-        report.habitAnalysis = habitAnalysis;
-        report.pronunciationNotes = pronunciationNotes;
-        report.overallScore = overallScore;
+        report.levelPercentage = levelPercentage;
+        report.levelAnalysis = levelAnalysis;
+        report.coreSentences = coreSentences;
+        report.habitAnalyses = habitAnalyses;
+        report.scores = scores;
+        report.weakPoints = weakPoints;
         report.levelResult = levelResult;
         report.createdAt = LocalDateTime.now();
         return report;

@@ -7,7 +7,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: false
     properties:
       hibernate:
@@ -28,7 +28,7 @@ naver:
     access-key: ${NAVER_SENS_ACCESS_KEY}
     secret-key: ${NAVER_SENS_SECRET_KEY}
     service-id: ${NAVER_SENS_SERVICE_ID}
-    from-number: ${NAVER_SENS_FROM_NUMBER}
+    from-number: ${NAVER_SENS_FROM_NUMBER:01057807344}
     base-url: https://sens.apigw.ntruss.com
 
 openai:
@@ -42,9 +42,31 @@ qdrant:
   port: ${QDRANT_PORT:6333}
   collection-name: molla_turns
 
+aws:
+  region: ${AWS_REGION}
+  credentials:
+    access-key-id: ${AWS_ACCESS_KEY_ID:${AWS_S3_ACCESS_KEY:}}
+    secret-access-key: ${AWS_SECRET_ACCESS_KEY:${AWS_S3_SECRET_KEY:}}
+    session-token: ${AWS_SESSION_TOKEN:}
+  s3:
+    credentials:
+      access-key-id: ${AWS_S3_ACCESS_KEY:}
+      secret-access-key: ${AWS_S3_SECRET_KEY:}
+    audio-bucket: ${ORCH_S3_AUDIO_BUCKET}
+    audio-prefix: ${ORCH_S3_AUDIO_PREFIX:}
+    presign-expiration-minutes: ${S3_AUDIO_PRESIGN_EXPIRATION_MINUTES:60}
+
+nicepay:
+  # 실서비스 전환 시 아래 두 줄 변경
+  # 테스트: https://sandbox-api.nicepay.co.kr
+  # 실서비스: https://api.nicepay.co.kr
+  base-url: https://sandbox-api.nicepay.co.kr
+
+  #실서비스 전환 시 환경변수로 실키 값 교체
+  client-key: ${NICEPAY_CLIENT_KEY:S2_fb903ce81792411ab6c459ec3a2a82c6}
+  secret-key: ${NICEPAY_SECRET_KEY:36e730803c7f45f3ae1462408083c94c}
+
 springdoc:
-  api-docs:
-    path: /api-docs
   swagger-ui:
     path: /swagger-ui.html
     operations-sorter: method

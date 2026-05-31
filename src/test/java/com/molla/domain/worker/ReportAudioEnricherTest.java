@@ -1,0 +1,70 @@
+package com.molla.domain.worker;
+
+import com.molla.domain.callsession.CallSessionTurn;
+import com.molla.domain.feedbackreport.Report;
+import org.junit.jupiter.api.Test;
+
+import java.time.OffsetDateTime;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+class ReportAudioEnricherTest {
+
+    private final ReportAudioEnricher enricher = new ReportAudioEnricher();
+
+    @Test
+    void attachesMatchedTurnAudioToCoreSentences() {
+        Report report = new Report(
+                "좋은 대화였어요.", 42,
+                "표현은 자연스럽지만 정확도를 조금 더 보완하면 좋아요.",
+                List.of(
+                        new Report.CoreSentenceFeedback(2, "I received the wrong item.", "I received the wrong item, so I'd like an exchange.", "wrong item", "잘못 온 상품", null, null, null),
+                        new Report.CoreSentenceFeedback(5, "She don't like spicy food.", "She doesn't like spicy food, so we chose another place.", "doesn't like", "좋아하지 않는다", null, null, null)
+                ),
+                List.of(), List.of(), List.of(), null
+        );
+
+        List<CallSessionTurn> turns = List.of(
+                new CallSessionTurn(
+                        2,
+                        OffsetDateTime.parse("2026-05-20T12:00:08.345678+00:00"),
+                        new CallSessionTurn.UserTurn("I received the wrong item.", 16000, "calls/test/turn-2.wav"),
+                        new CallSessionTurn.AssistantTurn("Understood.", null, OffsetDateTime.parse("2026-05-20T12:00:09.456789+00:00"))
+                ),
+                new CallSessionTurn(
+                        5,
+                        OffsetDateTime.parse("2026-05-20T12:00:18.345678+00:00"),
+                        new CallSessionTurn.UserTurn("She don't like spicy food.", 22050, "calls/test/turn-5.wav"),
+                        new CallSessionTurn.AssistantTurn("Okay.", null, OffsetDateTime.parse("2026-05-20T12:00:19.456789+00:00"))
+                )
+        );
+
+        Report enriched = enricher.attachTurnAudio(report, turns);
+
+        assertThat(enriched.coreSentences()).hasSize(2);
+        assertThat(enriched.coreSentences().get(0).keyExpressionKorean()).isEqualTo("잘못 온 상품");
+        assertThat(enriched.coreSentences().get(0).audioKey()).isEqualTo("calls/test/turn-2.wav");
+        assertThat(enriched.coreSentences().get(0).sampleRate()).isEqualTo(16000);
+        assertThat(enriched.coreSentences().get(1).audioKey()).isEqualTo("calls/test/turn-5.wav");
+        assertThat(enriched.coreSentences().get(1).sampleRate()).isEqualTo(22050);
+    }
+
+    @Test
+    void keepsCoreSentenceWhenMatchingTurnIsMissing() {
+        Report report = new Report(
+                "좋은 대화였어요.", 42,
+                "표현은 자연스럽지만 정확도를 조금 더 보완하면 좋아요.",
+                List.of(
+                        new Report.CoreSentenceFeedback(9, "Hello there.", "Hello there. Nice to meet you.", "nice to meet you", "만나서 반갑다", null, null, null)
+                ),
+                List.of(), List.of(), List.of(), null
+        );
+
+        Report enriched = enricher.attachTurnAudio(report, List.of());
+
+        assertThat(enriched.coreSentences().get(0).keyExpressionKorean()).isEqualTo("만나서 반갑다");
+        assertThat(enriched.coreSentences().get(0).audioKey()).isNull();
+        assertThat(enriched.coreSentences().get(0).audioUrl()).isNull();
+    }
+}

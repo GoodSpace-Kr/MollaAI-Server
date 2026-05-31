@@ -45,6 +45,8 @@ dependencies {
 
     // HTTP Client (네이버 SENS WebClient 호출용)
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation platform('software.amazon.awssdk:bom:2.25.64')
+    implementation 'software.amazon.awssdk:s3'
 
     // Lombok
     compileOnly 'org.projectlombok:lombok'
@@ -53,6 +55,7 @@ dependencies {
     // Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
+    testRuntimeOnly 'com.h2database:h2'
 }
 
 tasks.named('test') {

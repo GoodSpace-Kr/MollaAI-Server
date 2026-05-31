@@ -1,7 +1,7 @@
 package com.molla.domain.worker;
 
+import com.molla.domain.callsession.CallSessionTurn;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -14,153 +14,109 @@ import java.util.UUID;
 @Component
 public class QdrantClient {
 
+    private static final String MEMORY_POINTS_URI = "/memory/points";
+
     private final WebClient webClient;
     private final OpenAiClient openAiClient;
-    private final String collectionName;
     private final String embeddingModel;
 
     public QdrantClient(
             WebClient.Builder builder,
             OpenAiClient openAiClient,
-            @Value("${qdrant.host}") String host,
-            @Value("${qdrant.port}") int port,
-            @Value("${qdrant.collection-name}") String collectionName,
-            @Value("${openai.embedding-model}") String embeddingModel
+            @org.springframework.beans.factory.annotation.Value("${openai.embedding-model}") String embeddingModel
     ) {
         this.webClient = builder
-                .baseUrl("http://" + host + ":" + port)
+                .baseUrl("https://orch.mollatalk.com")
                 .build();
         this.openAiClient = openAiClient;
-        this.collectionName = collectionName;
         this.embeddingModel = embeddingModel;
     }
 
-    /**
-     * transcript를 파싱해서 user 발화만 임베딩 후 Qdrant에 upsert.
-     * transcript 포맷에 화자 라벨이 명확히 없으면 적재를 스킵한다.
-     */
-    public void upsertTranscript(String sessionId, String userId, String transcript) {
-        List<TranscriptChunk> userTurns = extractUserTurns(transcript);
-
+    public void upsertTurns(String sessionId, String userId, String phoneNumber, List<CallSessionTurn> turns) {
+        List<TranscriptChunk> userTurns = extractUserTurns(turns);
         if (userTurns.isEmpty()) {
             log.info("임베딩 대상 발화 없음 — sessionId: {}", sessionId);
             return;
         }
 
-        List<Map<String, Object>> points = userTurns.stream()
-                .map(turn -> {
-                    List<Float> vector = openAiClient.createEmbedding(turn.content(), embeddingModel);
-                    return Map.<String, Object>of(
-                            "id", UUID.randomUUID().toString(),
-                            "vector", vector,
-                            "payload", Map.of(
-                                    "sessionId", sessionId,
-                                    "userId", userId,
-                                    "content", turn.content(),
-                                    "sequenceOrder", turn.sequenceOrder()
-                            )
-                    );
-                })
-                .toList();
+        Map<String, Object> body = buildUpsertBody(userId, phoneNumber, turns);
 
-        Map<String, Object> body = Map.of("points", points);
-
-        webClient.put()
-                .uri("/collections/" + collectionName + "/points")
+        webClient.post()
+                .uri(MEMORY_POINTS_URI)
                 .bodyValue(body)
                 .retrieve()
                 .toBodilessEntity()
                 .block();
 
-        log.info("Qdrant upsert 완료 — sessionId: {}, 임베딩 수: {}", sessionId, points.size());
+        log.info("메모리 포인트 업로드 완료 — sessionId: {}, 임베딩 수: {}", sessionId, userTurns.size());
     }
 
-    private List<TranscriptChunk> extractUserTurns(String transcript) {
-        if (transcript == null || transcript.isBlank()) {
+    Map<String, Object> buildUpsertBody(String userId, String phoneNumber, List<CallSessionTurn> turns) {
+        List<TranscriptChunk> userTurns = extractUserTurns(turns);
+
+        List<Map<String, Object>> points = userTurns.stream()
+                .map(turn -> {
+                    List<Float> vector = openAiClient.createEmbedding(turn.userText(), embeddingModel);
+                    Map<String, Object> payload = new java.util.LinkedHashMap<>();
+                    payload.put("userId", userId);
+                    payload.put("phoneNumber", phoneNumber);
+                    payload.put("userText", turn.userText());
+                    payload.put("assistantText", turn.assistantText());
+                    payload.put("createdAt", turn.createdAt());
+                    payload.put("audioKey", turn.audioKey());
+
+                    return Map.<String, Object>of(
+                            "id", UUID.randomUUID().toString(),
+                            "vector", vector,
+                            "payload", payload
+                    );
+                })
+                .toList();
+
+        return Map.of("points", points);
+    }
+
+    private List<TranscriptChunk> extractUserTurns(List<CallSessionTurn> turns) {
+        if (turns == null || turns.isEmpty()) {
             return List.of();
         }
 
-        String[] lines = transcript.split("\\R");
         List<TranscriptChunk> chunks = new ArrayList<>();
-        String currentSpeaker = null;
-        StringBuilder currentContent = new StringBuilder();
-        int order = 0;
-        boolean foundSpeakerMarkers = false;
-
-        for (String rawLine : lines) {
-            String line = rawLine.trim();
-            if (line.isEmpty()) {
+        for (CallSessionTurn turn : turns) {
+            if (turn == null || turn.user() == null || turn.user().text() == null) {
                 continue;
             }
 
-            ParsedSpeakerLine parsedLine = parseSpeakerLine(line);
-            if (parsedLine != null) {
-                foundSpeakerMarkers = true;
-                flushUserChunk(chunks, currentSpeaker, currentContent, order);
-
-                currentSpeaker = parsedLine.speaker();
-                currentContent = new StringBuilder(parsedLine.content());
-                order++;
-            } else if (currentContent.length() > 0) {
-                currentContent.append('\n').append(line);
-            } else {
-                log.warn("Qdrant transcript 파싱 실패 — 화자 라벨 없는 라인 감지, line: {}", line);
-                return List.of();
+            String content = turn.user().text().trim();
+            if (content.isEmpty()) {
+                continue;
             }
-        }
 
-        flushUserChunk(chunks, currentSpeaker, currentContent, order);
-
-        if (!foundSpeakerMarkers) {
-            log.warn("Qdrant transcript 파싱 실패 — 화자 라벨 없음");
-            return List.of();
+            chunks.add(new TranscriptChunk(
+                    content,
+                    turn.assistant() != null ? trimToNull(turn.assistant().text()) : null,
+                    turn.createdAt() != null ? turn.createdAt().toString() : null,
+                    turn.user().audioKey()
+            ));
         }
 
         return chunks;
     }
 
-    private void flushUserChunk(List<TranscriptChunk> chunks, String currentSpeaker, StringBuilder currentContent, int order) {
-        if (!"user".equals(currentSpeaker)) {
-            return;
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
         }
 
-        String content = currentContent.toString().trim();
-        if (!content.isEmpty()) {
-            chunks.add(new TranscriptChunk(order, content));
-        }
-    }
-
-    private ParsedSpeakerLine parseSpeakerLine(String line) {
-        String normalized = line.trim();
-        String[] prefixes = {
-                "[USER]", "USER:", "USER：", "USER-", "사용자:", "사용자：", "유저:", "유저：",
-                "[AI]", "AI:", "AI：", "AI-", "ASSISTANT:", "ASSISTANT：", "BOT:", "BOT：", "SYSTEM:", "SYSTEM："
-        };
-
-        for (String prefix : prefixes) {
-            if (normalized.regionMatches(true, 0, prefix, 0, prefix.length())) {
-                String speaker = isUserPrefix(prefix) ? "user" : "ai";
-                String content = normalized.substring(prefix.length()).trim();
-                return new ParsedSpeakerLine(speaker, content);
-            }
-        }
-
-        return null;
-    }
-
-    private boolean isUserPrefix(String prefix) {
-        return prefix.startsWith("[USER]") || prefix.startsWith("USER") || prefix.startsWith("사용자") || prefix.startsWith("유저");
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private record TranscriptChunk(
-            int sequenceOrder,
-            String content
-    ) {
-    }
-
-    private record ParsedSpeakerLine(
-            String speaker,
-            String content
+            String userText,
+            String assistantText,
+            String createdAt,
+            String audioKey
     ) {
     }
 }

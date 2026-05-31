@@ -18,15 +18,43 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class SubscriptionService {
 
+    private static final String DEMO_DEFAULT_PLAN_TYPE = "premium";
+
     private final SubscriptionRepository subscriptionRepository;
     private final UserRepository userRepository;
     private final DailyUsageCalculator dailyUsageCalculator;
 
     // ──────────────────────────────────────────────
+    // 플랜별 설정
+    // ──────────────────────────────────────────────
+
+    public static int getDailyLimitByPlan(String planType) {
+        return switch (planType) {
+            case "premium"      -> 300;
+            case "max"          -> 500;
+            case "professional" -> 99999;
+            default             -> 30;   // free
+        };
+    }
+
+    public static int getPriceByPlan(String planType) {
+        return switch (planType) {
+            case "premium"      -> 9900;
+            case "max"          -> 12900;
+            case "professional" -> 19900;
+            default             -> 0;    // free
+        };
+    }
+
+    public static boolean isUnlimited(String planType) {
+        return "professional".equals(planType);
+    }
+
+    // ──────────────────────────────────────────────
     // 내 구독 조회
     // ──────────────────────────────────────────────
 
-    @Transactional  // expireSubscription() Dirty Checking 반영을 위해 필요
+    @Transactional
     public SubscriptionWithRemainingResponse getMySubscription(String userId) {
         Subscription subscription = subscriptionRepository.findActiveByUserId(userId)
                 .orElseThrow(() -> new SubscriptionException(ErrorCode.SUBSCRIPTION_NOT_FOUND));
@@ -53,20 +81,44 @@ public class SubscriptionService {
             throw new SubscriptionException(ErrorCode.SUBSCRIPTION_ALREADY_ACTIVE);
         }
 
-        int dailyLimit = request.dailyLimitMinutes() != null ? request.dailyLimitMinutes() : 30;
+        // 플랜에서 자동 결정
+        int dailyLimit = getDailyLimitByPlan(request.planType());
         LocalDateTime expiresAt = request.durationDays() != null
                 ? LocalDateTime.now().plusDays(request.durationDays())
-                : null;
+                : LocalDateTime.now().plusDays(30);
 
         Subscription subscription = Subscription.create(userId, request.planType(), dailyLimit, expiresAt);
         subscriptionRepository.save(subscription);
 
-        log.info("구독 생성 완료 — userId: {}, planType: {}", userId, request.planType());
+        log.info("구독 생성 완료 — userId: {}, planType: {}, dailyLimit: {}분",
+                userId, request.planType(), dailyLimit);
         return SubscriptionResponse.from(subscription);
     }
 
+    @Transactional
+    public void ensureDemoPremiumSubscription(String userId) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new GlobalException(ErrorCode.USER_NOT_FOUND));
+
+        if (subscriptionRepository.existsActiveByUserId(userId)) {
+            log.info("기존 활성 구독 재사용 — userId: {}", userId);
+            return;
+        }
+
+        int dailyLimit = getDailyLimitByPlan(DEMO_DEFAULT_PLAN_TYPE);
+        Subscription subscription = Subscription.create(
+                userId,
+                DEMO_DEFAULT_PLAN_TYPE,
+                dailyLimit,
+                null
+        );
+        subscriptionRepository.save(subscription);
+
+        log.info("데모 기본 구독 생성 완료 — userId: {}, planType: {}", userId, DEMO_DEFAULT_PLAN_TYPE);
+    }
+
     // ──────────────────────────────────────────────
-    // 통화 분 차감 검증 (내부 API에서 호출)
+    // 통화 분 차감 검증
     // ──────────────────────────────────────────────
 
     @Transactional
@@ -74,8 +126,13 @@ public class SubscriptionService {
         Subscription subscription = subscriptionRepository.findActiveByUserId(userId)
                 .orElseThrow(() -> new SubscriptionException(ErrorCode.SUBSCRIPTION_NOT_FOUND));
 
-        int remaining = getRemainingMinutes(userId, subscription);
+        // professional은 무제한 — 차감 검증 스킵
+        if (isUnlimited(subscription.getPlanType())) {
+            log.info("무제한 플랜 — 차감 검증 스킵, userId: {}", userId);
+            return;
+        }
 
+        int remaining = getRemainingMinutes(userId, subscription);
         if (remaining < usedMinutes) {
             throw new SubscriptionException(ErrorCode.DAILY_LIMIT_EXCEEDED);
         }
@@ -99,6 +156,10 @@ public class SubscriptionService {
     // ──────────────────────────────────────────────
 
     private int getRemainingMinutes(String userId, Subscription subscription) {
+        // professional은 무제한
+        if (isUnlimited(subscription.getPlanType())) {
+            return 99999;
+        }
         int usedMinutesToday = dailyUsageCalculator.calculateTodayUsedMinutes(userId);
         int remaining = subscription.getDailyLimitMinutes() - usedMinutesToday;
         return Math.max(remaining, 0);
