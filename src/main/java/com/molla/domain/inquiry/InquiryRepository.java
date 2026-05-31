@@ -6,4 +6,6 @@ import java.util.List;
 
 public interface InquiryRepository extends JpaRepository<Inquiry, String> {
     List<Inquiry> findAllByOrderByCreatedAtDesc();
+
+    long countByReadFalse();
 }

@@ -33,4 +33,15 @@ public interface CallSessionRepository extends JpaRepository<CallSession, String
             @Param("phoneNumber") String phoneNumber,
             @Param("startOfDay") LocalDateTime startOfDay
     );
+
+    // 관리자용 — 전체 세션 목록 최신순
+    List<CallSession> findAllByOrderByStartedAtDesc();
+
+    // 유저별 세션 수 집계
+    @Query("SELECT COUNT(c) FROM CallSession c WHERE c.userId = :userId AND c.status = 'completed'")
+    int countCompletedByUserId(@Param("userId") String userId);
+
+    // 유저별 총 통화 시간
+    @Query("SELECT COALESCE(SUM(c.durationSeconds), 0) FROM CallSession c WHERE c.userId = :userId AND c.status = 'completed'")
+    int sumDurationSecondsByUserId(@Param("userId") String userId);
 }
