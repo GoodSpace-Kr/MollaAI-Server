@@ -136,7 +136,7 @@ class CallSessionServiceTest {
                         1,
                         OffsetDateTime.parse("2026-05-20T12:00:01.123456+00:00"),
                         new EndSessionRequest.UserTurnPayload("hello", 16000, "calls/test/turn-1.wav"),
-                        new EndSessionRequest.AssistantTurnPayload("hi", OffsetDateTime.parse("2026-05-20T12:00:02.234567+00:00"))
+                        new EndSessionRequest.AssistantTurnPayload("hi", null, OffsetDateTime.parse("2026-05-20T12:00:02.234567+00:00"))
                 ))
         );
 

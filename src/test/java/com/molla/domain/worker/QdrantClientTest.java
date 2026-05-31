@@ -33,7 +33,7 @@ class QdrantClientTest {
                         1,
                         OffsetDateTime.parse("2026-05-20T07:08:33.742000+00:00"),
                         new CallSessionTurn.UserTurn("I received the wrong item.", 16000, "calls/CA/test/turns/5.wav"),
-                        new CallSessionTurn.AssistantTurn("I'm sorry to hear that. What item did you expect?", OffsetDateTime.parse("2026-05-20T07:08:34.646000+00:00"))
+                        new CallSessionTurn.AssistantTurn("I'm sorry to hear that. What item did you expect?", null, OffsetDateTime.parse("2026-05-20T07:08:34.646000+00:00"))
                 ))
         );
 

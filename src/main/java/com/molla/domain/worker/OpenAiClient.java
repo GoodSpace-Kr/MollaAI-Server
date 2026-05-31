@@ -34,6 +34,8 @@ public class OpenAiClient {
         String systemPrompt = """
                 당신은 영어 학습 코치입니다. 아래 turn 목록을 분석해서 반드시 아래 JSON 형식으로만 응답하세요.
                 다른 텍스트는 절대 포함하지 마세요.
+                IELTS는 실제 시험 응시자 평균(5.5~6.0)을 기준으로 상대적으로 평가하되, 기초 수준도 3.0 이상을 유지하세요.
+                점수는 실제 학습자를 격려할 수 있도록 다소 관대하게 부여하세요.
                 oneLineSummary는 절대 20자를 넘지 말아야 합니다.
                 coreSentences는 반드시 여러 문장으로 구성하세요. 최소 15개 이상 작성하세요.
                 각 항목은 turns의 userText에서 실제로 중요한 문장을 골라 originSentence, improvedSentence, keyExpression, keyExpressionKorean을 1:1:1:1로 대응시켜 주세요.
@@ -42,13 +44,24 @@ public class OpenAiClient {
                 coreSentences의 각 항목에는 반드시 sourceTurnIndex를 포함하고, 이 값은 originSentence가 나온 turn의 index여야 합니다.
                 keyExpression은 해당 ImprovedSentence문장에서 꼭 익혀야 할 핵심 표현 한 가지를 짧게 추출하세요.
                 keyExpressionKorean은 keyExpression의 자연스러운 한글 뜻을 15자 이내로 짧게 설명하세요.
+                keyExpression은 반드시 중급 이상(B2 이상) 표현만 선정하세요.
+                explain, curious, nothing, hello, yes, no, okay, sorry, thank you 등 기초 단어(A1-A2)는 keyExpression으로 선정하지 마세요.
+                관용구, 구동사(phrasal verb), 비즈니스 표현, 원어민이 자주 쓰는 자연스러운 표현 위주로 선정하세요.
+                예: "hear me out", "board the plane", "on my mind", "that's the thing" 등
                 habitAnalysis의 habit은 13자 이내로 작성하고, 해당 habit의 근거를 전달한 통화 내용에서 추출해야합니다. 해당 습관과 근거에 맞게 Suggestion또한 작성하세요.
                 levelPercentage는 정수 퍼센트 값으로 작성하세요.
                 levelAnalysis는 현재 영어 수준에 대한 짧은 해설을 작성하세요.
                 weakPoints는 반드시 1개 이상 3개 이하의 태그를 선택하세요.
                 weakPoints는 ["주어-동사 수 일치", "완료시제", "관사사용", "관계대명사 생략", "전치사 선택 오류"] 태그 안에서 선택하세요.
-                scores는 사용자의 발화 내용 수준을 파악해서 각각 ILETS, TOEIC, OPIC점수로 변환하여 넣으세요. 
-                ILETS는 2.0~9.0 범위, TOEIC은 0~200 범위, OPIC은 IL,IM1,IM2,IM3,IH,AL 범위에서 작성하세요.
+                환산표 (IELTS Speaking 기준):
+                - IELTS 8~9 → OPIc: AL, TOEIC Speaking: 200
+                - IELTS 7~8 → OPIc: AL, TOEIC Speaking: 180~200
+                - IELTS 6.5~7 → OPIc: IH~AL, TOEIC Speaking: 160~180
+                - IELTS 6~6.5 → OPIc: IM3~IH, TOEIC Speaking: 130~160
+                - IELTS 5 → OPIc: IM2~IM3, TOEIC Speaking: 110~130
+                - IELTS 4 → OPIc: IM1~IM2, TOEIC Speaking: 80~110
+                - IELTS 3 → OPIc: IL~IM1, TOEIC Speaking: 50~80
+                - IELTS 2 → OPIc: NH, TOEIC Speaking: 50 미만.
                  
                 
                 {
@@ -118,6 +131,51 @@ public class OpenAiClient {
 
         } catch (Exception e) {
             throw new RuntimeException("임베딩 생성 실패: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * AI 발화 텍스트 목록을 한국어로 일괄 번역.
+     * 개별 호출 대신 한 번에 배열로 요청해서 API 비용 절감.
+     */
+    public List<String> translateTexts(List<String> texts) {
+        if (texts == null || texts.isEmpty()) {
+            return List.of();
+        }
+
+        String systemPrompt = """
+            당신은 영어를 한국어로 번역하는 전문 번역가입니다.
+            반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트는 절대 포함하지 마세요.
+            각 텍스트를 자연스러운 한국어로 번역하되, 원문의 뉘앙스와 말투를 유지하세요.
+            
+            {
+              "translations": ["번역1", "번역2", "번역3"]
+            }
+            """;
+
+        String userPrompt;
+        try {
+            userPrompt = objectMapper.writeValueAsString(Map.of("texts", texts));
+        } catch (Exception e) {
+            throw new RuntimeException("번역 요청 생성 실패: " + e.getMessage(), e);
+        }
+
+        String responseJson = callChatApi(systemPrompt, userPrompt);
+
+        try {
+            JsonNode root = objectMapper.readTree(responseJson);
+            JsonNode translationsNode = root.path("translations");
+            if (!translationsNode.isArray()) {
+                throw new RuntimeException("번역 응답 형식 오류");
+            }
+            List<String> result = new java.util.ArrayList<>();
+            for (JsonNode node : translationsNode) {
+                result.add(node.asText());
+            }
+            return result;
+        } catch (Exception e) {
+            log.error("번역 응답 파싱 실패: {}", e.getMessage(), e);
+            throw new RuntimeException("번역 응답 파싱 실패: " + e.getMessage(), e);
         }
     }
 

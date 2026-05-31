@@ -30,7 +30,7 @@ class FeedbackReportViewMapperTest {
         when(session.getStartedAt()).thenReturn(LocalDateTime.of(2026, 5, 20, 12, 0));
         when(session.getDurationSeconds()).thenReturn(180);
         when(session.getTurnsJson()).thenReturn("""
-                [{"index":1,"createdAt":"2026-05-20T12:00:01.123456+00:00","user":{"text":"Hello, I want to practice English.","sampleRate":16000,"audioKey":"calls/test/turn-1.wav"},"assistant":{"text":"Sure, let's get started.","createdAt":"2026-05-20T12:00:02.234567+00:00"}}]
+                [{"index":1,"createdAt":"2026-05-20T12:00:01.123456+00:00","user":{"text":"Hello, I want to practice English.","sampleRate":16000,"audioKey":"calls/test/turn-1.wav"},"assistant":{"text":"Sure, let's get started.","translatedText":null,"createdAt":"2026-05-20T12:00:02.234567+00:00"}}]
                 """);
 
         FeedbackReport report = FeedbackReport.create(
@@ -71,6 +71,7 @@ class FeedbackReportViewMapperTest {
                 OffsetDateTime.parse("2026-05-20T12:00:01.123456+00:00"),
                 new TranscriptTurnResponse.UserTurnResponse("Hello, I want to practice English.", 16000, "calls/test/turn-1.wav", "https://turn-audio-url"),
                 new TranscriptTurnResponse.AssistantTurnResponse("Sure, let's get started.", OffsetDateTime.parse("2026-05-20T12:00:02.234567+00:00"))
+
         )));
         assertThat(response.levelPercentage()).isEqualTo(27);
         assertThat(response.levelAnalysis()).contains("문장 구조 안정성");
