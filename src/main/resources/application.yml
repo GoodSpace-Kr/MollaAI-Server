@@ -45,10 +45,13 @@ qdrant:
 aws:
   region: ${AWS_REGION}
   credentials:
-    access-key-id: ${AWS_S3_ACCESS_KEY:${AWS_ACCESS_KEY_ID:}}
-    secret-access-key: ${AWS_S3_SECRET_KEY:${AWS_SECRET_ACCESS_KEY:}}
+    access-key-id: ${AWS_ACCESS_KEY_ID:${AWS_S3_ACCESS_KEY:}}
+    secret-access-key: ${AWS_SECRET_ACCESS_KEY:${AWS_S3_SECRET_KEY:}}
     session-token: ${AWS_SESSION_TOKEN:}
   s3:
+    credentials:
+      access-key-id: ${AWS_S3_ACCESS_KEY:}
+      secret-access-key: ${AWS_S3_SECRET_KEY:}
     audio-bucket: ${ORCH_S3_AUDIO_BUCKET}
     audio-prefix: ${ORCH_S3_AUDIO_PREFIX:}
     presign-expiration-minutes: ${S3_AUDIO_PRESIGN_EXPIRATION_MINUTES:60}
