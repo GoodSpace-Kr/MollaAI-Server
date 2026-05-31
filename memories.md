@@ -1,3 +1,20 @@
+## 2026-05-31 - S3 presign 자격증명을 전용 환경변수로 분리
+
+- 구분: 환경변수, 메인 로직
+- 변경: 전역 `aws.credentials` 설정은 유지하고, 오디오 presigned URL 생성에만 쓰는 S3 전용 자격증명 속성 `aws.s3.credentials.access-key-id`, `aws.s3.credentials.secret-access-key` 를 추가했다. `S3Presigner` 는 이 전용 값이 있으면 우선 사용하고, 없을 때만 기존 `aws.credentials` 로 fallback 한다.
+- 영향: 다른 AWS 설정 동작은 그대로 두면서, 오디오 재생 URL 서명에만 `AWS_S3_ACCESS_KEY` / `AWS_S3_SECRET_KEY` 를 분리해 사용할 수 있다.
+- 확인: `./gradlew test --tests com.molla.config.ApplicationYamlSmsConfigTest --tests com.molla.config.S3ConfigTest`
+- 관련 파일: `src/main/resources/application.yml`, `src/main/java/com/molla/config/S3Config.java`, `src/test/java/com/molla/config/ApplicationYamlSmsConfigTest.java`, `src/test/java/com/molla/config/S3ConfigTest.java`
+
+## 2026-05-31 - 리포트 상세 transcript 에 audioUrl 추가
+
+- 구분: 엔드포인트, 메인 로직
+- 변경: 리포트 상세 응답의 `transcript` 를 응답 전용 DTO로 분리하고, 사용자 발화의 `audioKey` 와 함께 S3 presigned `audioUrl` 도 반환하도록 수정했다.
+- 영향: 프론트가 전체 스크립트에서 각 사용자 발화 오디오를 바로 재생할 수 있다.
+- 확인: `./gradlew test --tests com.molla.domain.feedbackreport.FeedbackReportViewMapperTest --tests com.molla.domain.feedbackreport.FeedbackReportServiceTest`
+- 관련 파일: `src/main/java/com/molla/controller/dto/feedbackreport/TranscriptTurnResponse.java`, `src/main/java/com/molla/controller/dto/feedbackreport/FeedbackReportResponse.java`, `src/main/java/com/molla/domain/feedbackreport/FeedbackReportViewMapper.java`
+- 비고: 저장 구조(`CallSessionTurn`, `turns_json`)는 유지하고, 조회 응답에서만 `audioUrl` 을 덧붙인다.
+
 ## 2026-05-29 - 리포트 목록 응답에 통화 시간 추가
 
 - 구분: 엔드포인트, 메인 로직

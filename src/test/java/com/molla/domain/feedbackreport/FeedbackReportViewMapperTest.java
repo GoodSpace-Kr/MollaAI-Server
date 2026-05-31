@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.molla.controller.dto.feedbackreport.FeedbackReportResponse;
 import com.molla.controller.dto.feedbackreport.FeedbackReportSummaryResponse;
+import com.molla.controller.dto.feedbackreport.TranscriptTurnResponse;
 import com.molla.domain.callsession.CallSession;
-import com.molla.domain.callsession.CallSessionTurn;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -25,6 +25,7 @@ class FeedbackReportViewMapperTest {
     @Test
     void mapsStructuredDetailResponse() {
         when(s3AudioUrlService.createAudioUrl("calls/test/turn-3.wav")).thenReturn("https://signed-url");
+        when(s3AudioUrlService.createAudioUrl("calls/test/turn-1.wav")).thenReturn("https://turn-audio-url");
         CallSession session = mock(CallSession.class);
         when(session.getStartedAt()).thenReturn(LocalDateTime.of(2026, 5, 20, 12, 0));
         when(session.getDurationSeconds()).thenReturn(180);
@@ -65,11 +66,12 @@ class FeedbackReportViewMapperTest {
         assertThat(response.habitAnalyses()).hasSize(1);
         assertThat(response.scores()).hasSize(3);
         assertThat(response.weakPoints()).containsExactly("시제 일관성", "3인칭 단수 동사 활용");
-        assertThat(response.transcript()).isEqualTo(List.of(new CallSessionTurn(
+        assertThat(response.transcript()).isEqualTo(List.of(new TranscriptTurnResponse(
                 1,
                 OffsetDateTime.parse("2026-05-20T12:00:01.123456+00:00"),
-                new CallSessionTurn.UserTurn("Hello, I want to practice English.", 16000, "calls/test/turn-1.wav"),
-                new CallSessionTurn.AssistantTurn("Sure, let's get started.", null, OffsetDateTime.parse("2026-05-20T12:00:02.234567+00:00"))
+                new TranscriptTurnResponse.UserTurnResponse("Hello, I want to practice English.", 16000, "calls/test/turn-1.wav", "https://turn-audio-url"),
+                new TranscriptTurnResponse.AssistantTurnResponse("Sure, let's get started.", OffsetDateTime.parse("2026-05-20T12:00:02.234567+00:00"))
+
         )));
         assertThat(response.levelPercentage()).isEqualTo(27);
         assertThat(response.levelAnalysis()).contains("문장 구조 안정성");

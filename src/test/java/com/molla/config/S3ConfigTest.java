@@ -14,6 +14,40 @@ class S3ConfigTest {
     private final S3Config s3Config = new S3Config();
 
     @Test
+    void usesDedicatedS3CredentialsWhenProvided() {
+        AwsCredentialsProvider provider = s3Config.credentialsProvider(
+                "s3-access-key",
+                "s3-secret-key",
+                "default-access-key",
+                "default-secret-key",
+                null
+        );
+
+        AwsCredentials credentials = provider.resolveCredentials();
+
+        assertThat(credentials).isInstanceOf(AwsBasicCredentials.class);
+        assertThat(credentials.accessKeyId()).isEqualTo("s3-access-key");
+        assertThat(credentials.secretAccessKey()).isEqualTo("s3-secret-key");
+    }
+
+    @Test
+    void fallsBackToDefaultCredentialsWhenDedicatedS3CredentialsMissing() {
+        AwsCredentialsProvider provider = s3Config.credentialsProvider(
+                null,
+                null,
+                "default-access-key",
+                "default-secret-key",
+                null
+        );
+
+        AwsCredentials credentials = provider.resolveCredentials();
+
+        assertThat(credentials).isInstanceOf(AwsBasicCredentials.class);
+        assertThat(credentials.accessKeyId()).isEqualTo("default-access-key");
+        assertThat(credentials.secretAccessKey()).isEqualTo("default-secret-key");
+    }
+
+    @Test
     void usesBasicCredentialsWhenAccessKeyAndSecretKeyProvided() {
         AwsCredentialsProvider provider = s3Config.credentialsProvider("access-key", "secret-key", null);
 
