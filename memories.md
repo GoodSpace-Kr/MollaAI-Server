@@ -1,3 +1,11 @@
+## 2026-05-31 - S3 presign 자격증명 우선순위를 전용 환경변수 기준으로 변경
+
+- 구분: 환경변수, 메인 로직
+- 변경: 오디오 presigned URL 생성 시 AWS 자격증명 우선순위를 `AWS_S3_ACCESS_KEY` / `AWS_S3_SECRET_KEY` 우선, 없을 때만 `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` fallback 하도록 변경했다.
+- 영향: 운영 컨테이너에서 일반 AWS 자격증명이 비어 있거나 다른 용도로 설정되어 있어도, S3 오디오 재생용 키를 명시적으로 분리해 사용할 수 있다.
+- 확인: `./gradlew test --tests com.molla.config.ApplicationYamlSmsConfigTest`
+- 관련 파일: `src/main/resources/application.yml`, `src/test/java/com/molla/config/ApplicationYamlSmsConfigTest.java`
+
 ## 2026-05-31 - 리포트 상세 transcript 에 audioUrl 추가
 
 - 구분: 엔드포인트, 메인 로직
