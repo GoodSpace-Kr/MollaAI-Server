@@ -53,6 +53,16 @@ aws:
     audio-prefix: ${ORCH_S3_AUDIO_PREFIX:}
     presign-expiration-minutes: ${S3_AUDIO_PRESIGN_EXPIRATION_MINUTES:60}
 
+nicepay:
+  # 실서비스 전환 시 아래 두 줄 변경
+  # 테스트: https://sandbox-api.nicepay.co.kr
+  # 실서비스: https://api.nicepay.co.kr
+  base-url: https://sandbox-api.nicepay.co.kr
+
+  #실서비스 전환 시 환경변수로 실키 값 교체
+  client-key: ${NICEPAY_CLIENT_KEY:S2_fb903ce81792411ab6c459ec3a2a82c6}
+  secret-key: ${NICEPAY_SECRET_KEY:36e730803c7f45f3ae1462408083c94c}
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
