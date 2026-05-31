@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class SubscriptionService {
 
-    private static final String DEMO_DEFAULT_PLAN_TYPE = "free";
+    private static final String DEMO_DEFAULT_PLAN_TYPE = "premium";
 
     private final SubscriptionRepository subscriptionRepository;
     private final UserRepository userRepository;
