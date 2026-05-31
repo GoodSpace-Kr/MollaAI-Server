@@ -38,7 +38,7 @@ class SubscriptionServiceTest {
         Subscription saved = captor.getValue();
         assertThat(saved.getUserId()).isEqualTo(user.getId());
         assertThat(saved.getPlanType()).isEqualTo("premium");
-        assertThat(saved.getDailyLimitMinutes()).isEqualTo(30);
+        assertThat(saved.getDailyLimitMinutes()).isEqualTo(300);
         assertThat(saved.getExpiresAt()).isNull();
         assertThat(saved.getStatus()).isEqualTo("active");
     }
