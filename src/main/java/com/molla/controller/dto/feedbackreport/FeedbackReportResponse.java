@@ -1,6 +1,5 @@
 package com.molla.controller.dto.feedbackreport;
 
-import com.molla.domain.callsession.CallSessionTurn;
 import com.molla.domain.feedbackreport.Report;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -48,9 +47,9 @@ public record FeedbackReportResponse(
 
         @Schema(
                 description = "통화 전체 스크립트 턴 목록",
-                example = "[{\"index\":1,\"createdAt\":\"2026-05-20T12:00:01.123456+00:00\",\"user\":{\"text\":\"Hello, I want to practice English.\",\"sampleRate\":16000,\"audioKey\":\"calls/CA.../turns/1.wav\"},\"assistant\":{\"text\":\"Sure, let's get started.\",\"createdAt\":\"2026-05-20T12:00:02.234567+00:00\"}}]"
+                example = "[{\"index\":1,\"createdAt\":\"2026-05-20T12:00:01.123456+00:00\",\"user\":{\"text\":\"Hello, I want to practice English.\",\"sampleRate\":16000,\"audioKey\":\"calls/CA.../turns/1.wav\",\"audioUrl\":\"https://signed-url\"},\"assistant\":{\"text\":\"Sure, let's get started.\",\"createdAt\":\"2026-05-20T12:00:02.234567+00:00\"}}]"
         )
-        List<CallSessionTurn> transcript,
+        List<TranscriptTurnResponse> transcript,
 
         @Schema(description = "레벨 퍼센트", example = "27")
         Integer levelPercentage,

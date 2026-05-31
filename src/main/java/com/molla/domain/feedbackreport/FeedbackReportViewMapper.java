@@ -3,6 +3,7 @@ package com.molla.domain.feedbackreport;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.molla.common.response.ErrorCode;
+import com.molla.controller.dto.feedbackreport.TranscriptTurnResponse;
 import com.molla.domain.callsession.CallSession;
 import com.molla.domain.callsession.CallSessionTurn;
 import com.molla.controller.dto.feedbackreport.FeedbackReportResponse;
@@ -48,9 +49,11 @@ public class FeedbackReportViewMapper {
         ).stream()
                 .map(this::attachAudioUrl)
                 .toList();
-        List<CallSessionTurn> transcript = session != null
+        List<TranscriptTurnResponse> transcript = session != null
                 ? readList(session.getTurnsJson(), new TypeReference<List<CallSessionTurn>>() {
-                }, "turnsJson")
+                }, "turnsJson").stream()
+                .map(this::attachTranscriptAudioUrl)
+                .toList()
                 : List.of();
 
         return new FeedbackReportResponse(
@@ -104,6 +107,35 @@ public class FeedbackReportViewMapper {
                 coreSentence.sampleRate(),
                 coreSentence.audioKey(),
                 s3AudioUrlService.createAudioUrl(coreSentence.audioKey())
+        );
+    }
+
+    private TranscriptTurnResponse attachTranscriptAudioUrl(CallSessionTurn turn) {
+        if (turn == null) {
+            return null;
+        }
+
+        TranscriptTurnResponse.UserTurnResponse user = turn.user() == null
+                ? null
+                : new TranscriptTurnResponse.UserTurnResponse(
+                turn.user().text(),
+                turn.user().sampleRate(),
+                turn.user().audioKey(),
+                s3AudioUrlService.createAudioUrl(turn.user().audioKey())
+        );
+
+        TranscriptTurnResponse.AssistantTurnResponse assistant = turn.assistant() == null
+                ? null
+                : new TranscriptTurnResponse.AssistantTurnResponse(
+                turn.assistant().text(),
+                turn.assistant().createdAt()
+        );
+
+        return new TranscriptTurnResponse(
+                turn.index(),
+                turn.createdAt(),
+                user,
+                assistant
         );
     }
 
