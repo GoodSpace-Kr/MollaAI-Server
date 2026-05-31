@@ -68,6 +68,7 @@ class FeedbackReportServiceTest {
                 "[]", "[]", "[]", "[]", null
         );
         CallSession session = mock(CallSession.class);
+        FeedbackReportResponse expected = new FeedbackReportResponse(
                 "report-1",
                 "session-1",
                 "practice",
@@ -86,7 +87,8 @@ class FeedbackReportServiceTest {
                 33,
                 "문장 정확도와 확장성을 조금 더 보완하면 좋아집니다.",
                 null,
-                LocalDateTime.of(2026, 5, 25, 15, 0), 3,
+                LocalDateTime.of(2026, 5, 25, 15, 0),
+                3,
                 LocalDateTime.of(2026, 5, 25, 15, 10)
         );
 
