@@ -16,11 +16,13 @@ import com.molla.domain.user.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @Tag(name = "Admin", description = "관리자 API")
 @RestController
 @RequiredArgsConstructor
@@ -30,7 +32,7 @@ public class AdminController {
     private final UserRepository userRepository;
     private final CallSessionRepository callSessionRepository;
     private final FeedbackReportRepository feedbackReportRepository;
-    private final FeedbackReportViewMapper feedbackReportViewMapper;  // ← 추가
+    private final FeedbackReportViewMapper feedbackReportViewMapper;
     private final PaymentRepository paymentRepository;
     private final SubscriptionRepository subscriptionRepository;
     private final InquiryRepository inquiryRepository;
@@ -81,16 +83,28 @@ public class AdminController {
         ));
     }
 
-    @Operation(summary = "회원 상태 변경 (active/suspended/withdrawn)")
+    @Operation(summary = "회원 상태 변경 (active/suspended)")
     @PatchMapping("/users/{id}/status")
     public ResponseEntity<ApiResponse<Void>> updateUserStatus(
             @PathVariable String id,
             @RequestParam String status
     ) {
         userRepository.findById(id).ifPresent(user -> {
-            if ("suspended".equals(status)) user.withdraw(); // 임시: status 필드 직접 수정 필요
+            if ("suspended".equals(status)) user.suspend();
+            else if ("active".equals(status)) user.restore();
             userRepository.save(user);
         });
+        return ResponseEntity.ok(ApiResponse.success());
+    }
+
+    @Operation(summary = "회원 삭제 (관리자 — 완전 삭제)")
+    @DeleteMapping("/users/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable String id) {
+        if (!userRepository.existsById(id)) {
+            throw new RuntimeException("유저 없음: " + id);
+        }
+        userRepository.deleteById(id);
+        log.info("관리자 회원 삭제 — userId: {}", id);
         return ResponseEntity.ok(ApiResponse.success());
     }
 
@@ -115,17 +129,6 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success(list));
     }
 
-    // ── 결제 ──────────────────────────────────────
-    @Operation(summary = "전체 결제 내역")
-    @GetMapping("/payments")
-    public ResponseEntity<ApiResponse<List<AdminPaymentResponse>>> payments() {
-        List<AdminPaymentResponse> list = paymentRepository.findAllByOrderByCreatedAtDesc()
-                .stream()
-                .map(AdminPaymentResponse::from)
-                .toList();
-        return ResponseEntity.ok(ApiResponse.success(list));
-    }
-
     @Operation(summary = "리포트 상세 조회 (관리자)")
     @GetMapping("/reports/{sessionId}")
     public ResponseEntity<ApiResponse<FeedbackReportResponse>> reportDetail(
@@ -136,5 +139,16 @@ public class AdminController {
         CallSession session = callSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new RuntimeException("세션 없음"));
         return ResponseEntity.ok(ApiResponse.success(feedbackReportViewMapper.toDetailResponse(report, session)));
+    }
+
+    // ── 결제 ──────────────────────────────────────
+    @Operation(summary = "전체 결제 내역")
+    @GetMapping("/payments")
+    public ResponseEntity<ApiResponse<List<AdminPaymentResponse>>> payments() {
+        List<AdminPaymentResponse> list = paymentRepository.findAllByOrderByCreatedAtDesc()
+                .stream()
+                .map(AdminPaymentResponse::from)
+                .toList();
+        return ResponseEntity.ok(ApiResponse.success(list));
     }
 }
