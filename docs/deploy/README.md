@@ -81,7 +81,6 @@ curl -i http://127.0.0.1:8080/api/v1/internal/sessions/start \
 ```
 
 ## 응답 해석
-
 - `404 Not Found`: Nginx가 다른 서버 블록을 타고 있거나 설정 반영이 안 됨
 - `405 Method Not Allowed`: GET으로 호출했을 가능성 큼. 이 API는 `POST` 만 받음
 - `400 Bad Request`: JSON 형식 또는 `phoneNumber` 형식 오류
