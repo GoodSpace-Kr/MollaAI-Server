@@ -48,6 +48,15 @@
 
 실제 secret 값, 개인키, DB 비밀번호, API key, 인증번호, 토큰, 통화 전문 원문은 기록하지 않는다.
 
+## 2026-06-08 - 외부 WebSocket outbound 연결 테스트 도구 추가
+
+- 구분: 운영, 문서, 기타
+- 변경: 외부 서버용 FastAPI WebSocket echo 서버와 교내 PC용 `websockets` 기반 장기 실행 클라이언트를 `ws-connectivity-test/` 아래에 추가했다. 테스트 엔드포인트는 `GET /healthz`, `WS /workers/ws` 이며 클라이언트는 `worker_hello`, 10초 heartbeat, echo 로그, 자동 재연결 backoff를 지원한다.
+- 영향: 교내 PC에서 `wss://api.molla.ai/workers/ws` 같은 외부 백엔드 WebSocket outbound 연결이 30분 이상 유지되는지 별도 도구로 확인할 수 있다.
+- 확인: `/private/tmp/ws-connectivity-test-venv/bin/python -m unittest discover -s ws-connectivity-test/tests`, `env PYTHONPYCACHEPREFIX=/private/tmp/ws-connectivity-pycache /private/tmp/ws-connectivity-test-venv/bin/python -m py_compile ws-connectivity-test/server/main.py ws-connectivity-test/client/ws_test_client.py`, 로컬 `ws://127.0.0.1:8765/workers/ws` 서버/클라이언트 짧은 왕복 검증
+- 관련 파일: `ws-connectivity-test/server/main.py`, `ws-connectivity-test/client/ws_test_client.py`, `ws-connectivity-test/README.md`
+- 비고: 운영 테스트는 프록시와 인증서가 포함된 `wss://DOMAIN:443` 경로에서 수행해야 한다.
+
 ## 기록 대상
 
 다음 변경은 반드시 기록한다.
