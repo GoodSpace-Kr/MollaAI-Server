@@ -25,7 +25,7 @@ ports:
 
 - `docs/deploy/nginx.conf`
 
-`wss://api.molla.ai/workers/ws` 테스트는 실제 `443 ssl` 서버 블록에 `/workers/ws` location이 있어야 동작한다. Certbot이 `443` 서버 블록을 별도로 생성한 운영 서버라면 `docs/deploy/nginx.conf`의 `/workers/ws`, `/healthz` location을 해당 `443` 서버 블록에도 동일하게 반영한다.
+`wss://api.mollatalk.com/workers/ws` 테스트는 실제 `443 ssl` 서버 블록에 `/workers/ws` location이 있어야 동작한다. Certbot이 `443` 서버 블록을 별도로 생성한 운영 서버라면 `docs/deploy/nginx.conf`의 `/workers/ws`, `/healthz` location을 해당 `443` 서버 블록에도 동일하게 반영한다.
 
 서버에 복사:
 
@@ -92,13 +92,13 @@ curl -i http://127.0.0.1:8000/healthz
 운영 도메인 프록시 확인:
 
 ```bash
-curl -i https://api.molla.ai/healthz
+curl -i https://api.mollatalk.com/healthz
 ```
 
 교내 PC에서는 다음 명령으로 443 기반 WebSocket 연결을 확인한다.
 
 ```bash
-python ws_test_client.py --url wss://api.molla.ai/workers/ws --log-file connectivity.log
+python ws_test_client.py --url wss://api.mollatalk.com/workers/ws --log-file connectivity.log
 ```
 
 ## 응답 해석

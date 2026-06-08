@@ -51,7 +51,7 @@ ws://127.0.0.1:8000/workers/ws
 
 ## 운영 도메인 연결
 
-`wss://api.molla.ai/workers/ws`로 테스트하려면 외부 서버의 Nginx 443 서버 블록에 `/workers/ws`를 FastAPI 테스트 서버로 보내는 location이 있어야 한다. 이 저장소의 예시 설정은 `docs/deploy/nginx.conf`에 들어 있다.
+`wss://api.mollatalk.com/workers/ws`로 테스트하려면 외부 서버의 Nginx 443 서버 블록에 `/workers/ws`를 FastAPI 테스트 서버로 보내는 location이 있어야 한다. 이 저장소의 예시 설정은 `docs/deploy/nginx.conf`에 들어 있다.
 
 핵심 설정:
 
@@ -97,7 +97,7 @@ sudo systemctl reload nginx
 도메인 health check:
 
 ```bash
-curl https://api.molla.ai/healthz
+curl https://api.mollatalk.com/healthz
 ```
 
 응답이 `{"status":"ok"}`이면 도메인이 FastAPI 테스트 서버까지 프록시되고 있다.
@@ -111,7 +111,7 @@ cd ws-connectivity-test/client
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-python ws_test_client.py --url wss://api.molla.ai/workers/ws --log-file connectivity.log
+python ws_test_client.py --url wss://api.mollatalk.com/workers/ws --log-file connectivity.log
 ```
 
 기본 동작:
@@ -127,7 +127,7 @@ python ws_test_client.py --url wss://api.molla.ai/workers/ws --log-file connecti
 30분 이상 안정성 확인:
 
 ```bash
-python ws_test_client.py --url wss://api.molla.ai/workers/ws --log-file connectivity.log
+python ws_test_client.py --url wss://api.mollatalk.com/workers/ws --log-file connectivity.log
 ```
 
 다른 터미널에서 로그를 확인한다.
@@ -149,7 +149,7 @@ tail -f connectivity.log
 예:
 
 ```bash
-python ws_test_client.py --url wss://api.molla.ai/workers/ws --log-file connectivity.log
+python ws_test_client.py --url wss://api.mollatalk.com/workers/ws --log-file connectivity.log
 ```
 
 ## 메시지 예시
