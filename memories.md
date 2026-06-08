@@ -48,6 +48,15 @@
 
 실제 secret 값, 개인키, DB 비밀번호, API key, 인증번호, 토큰, 통화 전문 원문은 기록하지 않는다.
 
+## 2026-06-08 - 운영 도메인의 WebSocket 테스트 라우팅 설정 추가
+
+- 구분: 운영, 배포, 문서
+- 변경: Nginx 예시 설정에 `api.molla.ai` server name과 `/workers/ws`, `/healthz` location을 추가해 WebSocket 테스트 서버 `127.0.0.1:8000`으로 프록시하도록 했다. 운영 도메인 테스트 실행 절차도 배포 문서와 `ws-connectivity-test/README.md`에 보강했다.
+- 영향: 외부 서버에서 FastAPI 테스트 서버를 로컬 `8000` 포트로 실행하고 Nginx 설정을 반영하면 교내 PC에서 `wss://api.molla.ai/workers/ws`로 outbound WebSocket 연결 안정성을 확인할 수 있다.
+- 확인: `rg`로 Nginx `/workers/ws`, `/healthz`, `api.molla.ai`, upgrade header 설정 확인, `rg -n "T[O]DO|T[B]D|FIX[M]E|작성[[:space:]]+예정" docs/deploy/nginx.conf ws-connectivity-test/README.md docs/deploy/README.md memories.md`, `env PYTHONPYCACHEPREFIX=/private/tmp/ws-connectivity-pycache /private/tmp/ws-connectivity-test-venv/bin/python -m unittest discover -s ws-connectivity-test/tests`, `env PYTHONPYCACHEPREFIX=/private/tmp/ws-connectivity-pycache /private/tmp/ws-connectivity-test-venv/bin/python -m py_compile ws-connectivity-test/server/main.py ws-connectivity-test/client/ws_test_client.py ws-connectivity-test/tests/test_ws_test_client.py`
+- 관련 파일: `docs/deploy/nginx.conf`, `docs/deploy/README.md`, `ws-connectivity-test/README.md`
+- 비고: 실제 운영 서버에는 Nginx 설정 복사, `nginx -t`, reload, FastAPI 테스트 서버 실행이 별도로 필요하다.
+
 ## 2026-06-08 - 외부 WebSocket outbound 연결 테스트 도구 추가
 
 - 구분: 운영, 문서, 기타

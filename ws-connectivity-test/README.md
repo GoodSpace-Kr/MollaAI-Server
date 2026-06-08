@@ -17,20 +17,20 @@ ws-connectivity-test/
 
 ## 서버 실행
 
-외부 서버에서 실행한다.
+외부 서버에서 실행한다. 운영 도메인 테스트에서는 FastAPI 서버를 외부에 직접 열지 말고, 로컬 루프백 `127.0.0.1:8000`에 띄운 뒤 Nginx가 `wss://DOMAIN/workers/ws`를 이 서버로 프록시하게 둔다.
 
 ```bash
 cd ws-connectivity-test/server
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-uvicorn main:app --host 0.0.0.0 --port 8000
+uvicorn main:app --host 127.0.0.1 --port 8000
 ```
 
 상태 확인:
 
 ```bash
-curl http://SERVER_IP:8000/healthz
+curl http://127.0.0.1:8000/healthz
 ```
 
 응답:
@@ -44,10 +44,63 @@ curl http://SERVER_IP:8000/healthz
 WebSocket 엔드포인트:
 
 ```text
-ws://SERVER_IP:8000/workers/ws
+ws://127.0.0.1:8000/workers/ws
 ```
 
 운영 도메인 뒤에 배치할 때는 Nginx, ALB, Cloudflare 같은 프록시에서 WebSocket upgrade 헤더가 전달되어야 한다.
+
+## 운영 도메인 연결
+
+`wss://api.molla.ai/workers/ws`로 테스트하려면 외부 서버의 Nginx 443 서버 블록에 `/workers/ws`를 FastAPI 테스트 서버로 보내는 location이 있어야 한다. 이 저장소의 예시 설정은 `docs/deploy/nginx.conf`에 들어 있다.
+
+핵심 설정:
+
+```nginx
+location = /workers/ws {
+    proxy_pass http://127.0.0.1:8000/workers/ws;
+    proxy_http_version 1.1;
+
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+
+    proxy_read_timeout 3600s;
+    proxy_send_timeout 3600s;
+}
+```
+
+`/healthz`도 테스트 서버로 확인하려면 다음 location을 같은 서버 블록에 둔다.
+
+```nginx
+location = /healthz {
+    proxy_pass http://127.0.0.1:8000/healthz;
+    proxy_http_version 1.1;
+
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Connection "";
+}
+```
+
+설정 반영:
+
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+도메인 health check:
+
+```bash
+curl https://api.molla.ai/healthz
+```
+
+응답이 `{"status":"ok"}`이면 도메인이 FastAPI 테스트 서버까지 프록시되고 있다.
 
 ## 클라이언트 실행
 
