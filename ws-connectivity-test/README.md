@@ -1,6 +1,8 @@
 # WebSocket Connectivity Test
 
-교내 PC에서 외부 백엔드 WebSocket으로 outbound 연결이 가능한지 확인하기 위한 독립 테스트 도구이다.
+교내 PC에서 외부 백엔드 WebSocket으로 outbound 연결이 가능한지 확인하기 위한 테스트 도구이다.
+
+운영 도메인 테스트의 기본 경로는 Spring Boot 서버에 직접 구현된 `wss://api.mollatalk.com/workers/ws` 이다. 별도 FastAPI 서버는 운영 백엔드와 분리해 테스트하고 싶을 때만 사용한다.
 
 ## 구조
 
@@ -17,7 +19,7 @@ ws-connectivity-test/
 
 ## 서버 실행
 
-외부 서버에서 실행한다. 운영 도메인 테스트에서는 FastAPI 서버를 외부에 직접 열지 말고, 로컬 루프백 `127.0.0.1:8000`에 띄운 뒤 Nginx가 `wss://DOMAIN/workers/ws`를 이 서버로 프록시하게 둔다.
+독립 테스트 서버가 필요할 때만 외부 서버에서 실행한다. 운영 도메인 `wss://api.mollatalk.com/workers/ws` 테스트에는 이 FastAPI 서버가 필요 없고, Spring Boot에 직접 구현된 `/workers/ws`를 사용한다.
 
 ```bash
 cd ws-connectivity-test/server
@@ -51,13 +53,13 @@ ws://127.0.0.1:8000/workers/ws
 
 ## 운영 도메인 연결
 
-`wss://api.mollatalk.com/workers/ws`로 테스트하려면 외부 서버의 Nginx 443 서버 블록에 `/workers/ws`를 FastAPI 테스트 서버로 보내는 location이 있어야 한다. 이 저장소의 예시 설정은 `docs/deploy/nginx.conf`에 들어 있다.
+`wss://api.mollatalk.com/workers/ws`로 테스트하려면 외부 서버의 Nginx 443 서버 블록에 `/workers/ws`를 Spring Boot 서버로 보내는 location이 있어야 한다. 이 저장소의 예시 설정은 `docs/deploy/nginx.conf`에 들어 있다.
 
 핵심 설정:
 
 ```nginx
 location = /workers/ws {
-    proxy_pass http://127.0.0.1:8000/workers/ws;
+    proxy_pass http://127.0.0.1:8080/workers/ws;
     proxy_http_version 1.1;
 
     proxy_set_header Upgrade $http_upgrade;
@@ -69,21 +71,6 @@ location = /workers/ws {
 
     proxy_read_timeout 3600s;
     proxy_send_timeout 3600s;
-}
-```
-
-`/healthz`도 테스트 서버로 확인하려면 다음 location을 같은 서버 블록에 둔다.
-
-```nginx
-location = /healthz {
-    proxy_pass http://127.0.0.1:8000/healthz;
-    proxy_http_version 1.1;
-
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_set_header Connection "";
 }
 ```
 
@@ -100,7 +87,7 @@ sudo systemctl reload nginx
 curl https://api.mollatalk.com/healthz
 ```
 
-응답이 `{"status":"ok"}`이면 도메인이 FastAPI 테스트 서버까지 프록시되고 있다.
+응답이 `{"status":"ok"}`이면 도메인이 Spring Boot 서버까지 프록시되고 있다.
 
 ## 클라이언트 실행
 

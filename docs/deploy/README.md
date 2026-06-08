@@ -1,8 +1,8 @@
 # Nginx Reverse Proxy
 
 이 서버의 Spring 애플리케이션은 `8080` 포트에서 동작한다.
-외부에서는 `80` 또는 `443` 포트로 받고 Nginx가 일반 백엔드는 `127.0.0.1:8080` 으로 프록시한다.
-WebSocket outbound 연결 테스트 중에는 `/workers/ws`와 `/healthz`만 테스트용 FastAPI 서버 `127.0.0.1:8000` 으로 프록시한다.
+외부에서는 `80` 또는 `443` 포트로 받고 Nginx가 Spring 애플리케이션 `127.0.0.1:8080` 으로 프록시한다.
+WebSocket outbound 연결 테스트용 `/workers/ws`와 `/healthz`도 Spring 애플리케이션에서 직접 제공한다.
 
 ## 최종 요청 URL
 
@@ -25,7 +25,7 @@ ports:
 
 - `docs/deploy/nginx.conf`
 
-`wss://api.mollatalk.com/workers/ws` 테스트는 실제 `443 ssl` 서버 블록에 `/workers/ws` location이 있어야 동작한다. Certbot이 `443` 서버 블록을 별도로 생성한 운영 서버라면 `docs/deploy/nginx.conf`의 `/workers/ws`, `/healthz` location을 해당 `443` 서버 블록에도 동일하게 반영한다.
+`wss://api.mollatalk.com/workers/ws` 테스트는 실제 `443 ssl` 서버 블록에 `/workers/ws` location이 있어야 동작한다. Certbot이 `443` 서버 블록을 별도로 생성한 운영 서버라면 `docs/deploy/nginx.conf`의 `/workers/ws` location을 해당 `443` 서버 블록에도 동일하게 반영한다.
 
 서버에 복사:
 
@@ -83,10 +83,10 @@ curl -i http://127.0.0.1:8080/api/v1/internal/sessions/start \
   -d '{"phoneNumber":"01012345678","callSid":"test-call"}'
 ```
 
-WebSocket 테스트 서버 로컬 확인:
+Spring health check 로컬 확인:
 
 ```bash
-curl -i http://127.0.0.1:8000/healthz
+curl -i http://127.0.0.1:8080/healthz
 ```
 
 운영 도메인 프록시 확인:

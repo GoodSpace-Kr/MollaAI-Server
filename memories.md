@@ -48,6 +48,15 @@
 
 실제 secret 값, 개인키, DB 비밀번호, API key, 인증번호, 토큰, 통화 전문 원문은 기록하지 않는다.
 
+## 2026-06-08 - WebSocket 테스트 엔드포인트를 Spring Boot에 직접 추가
+
+- 구분: 엔드포인트, 운영, 배포, 문서
+- 변경: 기존 Spring Boot 애플리케이션에 `GET /healthz`와 `WS /workers/ws` 테스트 엔드포인트를 직접 추가했다. `/workers/ws`는 연결 직후 `connected` 메시지를 보내고, 수신 메시지를 `echo`로 반환한다. Nginx 예시도 별도 FastAPI `8000` 포트가 아니라 Spring Boot `8080`으로 `/workers/ws`를 프록시하도록 정리했다.
+- 영향: 운영 배포 후 교내 PC에서 별도 테스트 서버 없이 `wss://api.mollatalk.com/workers/ws`로 바로 연결 안정성을 확인할 수 있다.
+- 확인: `./gradlew test --tests com.molla.controller.HealthCheckControllerTest --tests com.molla.config.WorkerWebSocketHandlerTest`, `./gradlew testClasses`
+- 관련 파일: `build.gradle`, `src/main/java/com/molla/controller/HealthCheckController.java`, `src/main/java/com/molla/config/WorkerWebSocketHandler.java`, `src/main/java/com/molla/config/WebSocketConfig.java`, `src/main/java/com/molla/config/SecurityConfig.java`, `docs/deploy/nginx.conf`
+- 비고: 운영 서버에는 새 애플리케이션 이미지/프로세스 재배포와 Nginx `443 ssl` 서버 블록의 `/workers/ws` location 반영이 필요하다. 이전 FastAPI `8000` 프록시 방식은 운영 기본 경로에서 제외한다.
+
 ## 2026-06-08 - WebSocket 테스트 운영 도메인을 `api.mollatalk.com`으로 정정
 
 - 구분: 운영, 배포, 문서
