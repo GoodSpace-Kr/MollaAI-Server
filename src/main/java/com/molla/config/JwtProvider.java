@@ -18,17 +18,23 @@ import java.util.Date;
 public class JwtProvider {
 
     private final SecretKey secretKey;
+    private final SecretKey callSecretKey;
     private final long accessTokenExpirationMs;
     private final long refreshTokenExpirationMs;
+    private final long callTokenExpirationMs;
 
     public JwtProvider(
             @Value("${jwt.secret}") String secret,
+            @Value("${jwt.call-secret}") String callSecret,
             @Value("${jwt.access-token-expiration-ms}") long accessTokenExpirationMs,
-            @Value("${jwt.refresh-token-expiration-ms}") long refreshTokenExpirationMs
+            @Value("${jwt.refresh-token-expiration-ms}") long refreshTokenExpirationMs,
+            @Value("${jwt.call-token-expiration-ms}") long callTokenExpirationMs
     ) {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        this.callSecretKey = Keys.hmacShaKeyFor(callSecret.getBytes(StandardCharsets.UTF_8));
         this.accessTokenExpirationMs = accessTokenExpirationMs;
         this.refreshTokenExpirationMs = refreshTokenExpirationMs;
+        this.callTokenExpirationMs = callTokenExpirationMs;
     }
 
     // ──────────────────────────────────────────────
@@ -43,6 +49,23 @@ public class JwtProvider {
     /** Refresh Token 생성 */
     public String generateRefreshToken(String userId) {
         return buildToken(userId, null, refreshTokenExpirationMs, "refresh");
+    }
+
+    /** AI 오케스트레이터 WSS 접속용 Call Token 생성 */
+    public String generateCallToken(String userId, String sessionId) {
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + callTokenExpirationMs);
+
+        return Jwts.builder()
+                .subject(userId)
+                .claim("type", "call")
+                .claim("sessionId", sessionId)
+                .claim("scope", "call:connect")
+                .claim("audience", "molla-orchestrator")
+                .issuedAt(now)
+                .expiration(expiry)
+                .signWith(callSecretKey)
+                .compact();
     }
 
     private String buildToken(String userId, String phoneNumber, long expirationMs, String tokenType) {
@@ -96,9 +119,32 @@ public class JwtProvider {
         return getClaims(token).get("type", String.class);
     }
 
+    /** call token의 세션 ID 추출 */
+    public String getSessionId(String token) {
+        return getClaims(token).get("sessionId", String.class);
+    }
+
+    /** call token의 scope 추출 */
+    public String getScope(String token) {
+        return getClaims(token).get("scope", String.class);
+    }
+
+    /** call token의 audience 추출 */
+    public String getAudience(String token) {
+        return getClaims(token).get("audience", String.class);
+    }
+
     private Claims getClaims(String token) {
+        try {
+            return parseClaims(token, secretKey);
+        } catch (JwtException e) {
+            return parseClaims(token, callSecretKey);
+        }
+    }
+
+    private Claims parseClaims(String token, SecretKey key) {
         return Jwts.parser()
-                .verifyWith(secretKey)
+                .verifyWith(key)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();

@@ -1,3 +1,12 @@
+## 2026-06-09 - 앱 직접 WSS 접속용 통화 토큰 발급 추가
+
+- 구분: 환경변수, 엔드포인트, 인증, 메인 로직
+- 변경: 인증된 앱이 `POST /api/v1/sessions/start` 로 통화 세션을 생성하면 `callToken` 과 `wssUrl` 을 함께 받도록 추가했다. `callToken` 은 `type=call`, `sessionId`, `scope=call:connect`, `audience=molla-orchestrator` claim 을 포함하는 짧은 수명의 JWT이며, `JWT_CALL_SECRET` 으로 서명한다. `JWT_CALL_SECRET` 이 없으면 기존 `JWT_SECRET` 으로 fallback 한다.
+- 영향: 앱은 사용자 JWT로 백엔드에서 세션을 만든 뒤, 응답의 `wssUrl` 에 `callToken` 을 붙여 Cloudflare Tunnel 뒤 AI 오케스트레이터 WSS에 직접 접속할 수 있다. 기존 내부 세션 시작/종료 API는 유지된다.
+- 확인: `./gradlew test --tests com.molla.config.JwtProviderTest --tests com.molla.domain.callsession.CallSessionServiceTest`, `./gradlew test`
+- 관련 파일: `src/main/java/com/molla/config/JwtProvider.java`, `src/main/java/com/molla/controller/CallSessionController.java`, `src/main/java/com/molla/domain/callsession/CallSessionService.java`, `src/main/java/com/molla/controller/dto/callsession/CallSessionResponse.java`, `src/main/resources/application.yml`
+- 비고: 운영에는 `ORCHESTRATOR_WSS_URL` 과 충분히 긴 `JWT_CALL_SECRET` 설정이 필요하다. `JWT_CALL_TOKEN_EXPIRATION_MS` 기본값은 300000ms이다.
+
 ## 2026-05-31 - S3 presign 자격증명을 전용 환경변수로 분리
 
 - 구분: 환경변수, 메인 로직

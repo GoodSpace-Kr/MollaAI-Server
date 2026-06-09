@@ -1,6 +1,7 @@
 package com.molla.domain.callsession;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.molla.config.JwtProvider;
 import com.molla.controller.dto.callsession.CallSessionResponse;
 import com.molla.controller.dto.callsession.EndSessionRequest;
 import com.molla.controller.dto.callsession.StartSessionRequest;
@@ -21,6 +22,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 
 class CallSessionServiceTest {
 
@@ -30,6 +33,7 @@ class CallSessionServiceTest {
     private final SubscriptionService subscriptionService = mock(SubscriptionService.class);
     private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
     private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+    private final JwtProvider jwtProvider = mock(JwtProvider.class);
 
     private final CallSessionService callSessionService = new CallSessionService(
             callSessionRepository,
@@ -37,7 +41,9 @@ class CallSessionServiceTest {
             subscriptionRepository,
             subscriptionService,
             eventPublisher,
-            objectMapper
+            objectMapper,
+            jwtProvider,
+            "wss://ai.example.com/call/ws"
     );
 
     @Test
@@ -72,6 +78,37 @@ class CallSessionServiceTest {
         assertThat(savedSession.getUserStateAtCall()).isEqualTo("unregistered");
         assertThat(response.userStateAtCall()).isEqualTo("unregistered");
         assertThat(response.sessionType()).isEqualTo("level_test");
+        assertThat(response.subscription()).isEqualTo(subscription);
+    }
+
+    @Test
+    void startMySessionIssuesCallTokenAndWssUrlForAuthenticatedUser() {
+        String phoneNumber = "01012345678";
+        User existingUser = User.createByPhone(phoneNumber);
+        SubscriptionWithRemainingResponse subscription = new SubscriptionWithRemainingResponse(
+                "sub-client",
+                "premium",
+                300,
+                300,
+                null,
+                null,
+                "active"
+        );
+
+        when(userRepository.findById(existingUser.getId())).thenReturn(Optional.of(existingUser));
+        when(callSessionRepository.existsByPhoneNumber(phoneNumber)).thenReturn(false);
+        when(subscriptionService.getMySubscription(existingUser.getId())).thenReturn(subscription);
+        when(jwtProvider.generateCallToken(eq(existingUser.getId()), anyString())).thenReturn("call-token");
+
+        CallSessionResponse response = callSessionService.startMySession(existingUser.getId());
+
+        ArgumentCaptor<CallSession> sessionCaptor = ArgumentCaptor.forClass(CallSession.class);
+        verify(callSessionRepository).save(sessionCaptor.capture());
+        CallSession savedSession = sessionCaptor.getValue();
+
+        verify(jwtProvider).generateCallToken(existingUser.getId(), savedSession.getId());
+        assertThat(response.callToken()).isEqualTo("call-token");
+        assertThat(response.wssUrl()).isEqualTo("wss://ai.example.com/call/ws");
         assertThat(response.subscription()).isEqualTo(subscription);
     }
 

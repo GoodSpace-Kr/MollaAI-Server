@@ -89,6 +89,30 @@ public class CallSessionController {
     // ──────────────────────────────────────────────
 
     @Operation(
+            summary = "앱 통화 세션 시작",
+            description = """
+                    JWT로 인증된 유저의 통화 세션을 생성하고 앱이 AI 오케스트레이터에 직접 연결할 수 있는 정보를 반환합니다.
+                    - 사용자 JWT는 이 API에서만 검증합니다.
+                    - 응답의 callToken은 AI 오케스트레이터 WSS 접속 전용 짧은 수명의 JWT입니다.
+                    - 응답의 wssUrl은 ORCHESTRATOR_WSS_URL 환경변수로 설정합니다.
+                    """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200", description = "세션 시작 성공",
+                    content = @Content(schema = @Schema(implementation = CallSessionResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401", description = "인증 필요",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class)))
+    })
+    @PostMapping("/api/v1/sessions/start")
+    public ResponseEntity<ApiResponse<CallSessionResponse>> startMySession() {
+        String userId = getCurrentUserId();
+        CallSessionResponse response = callSessionService.startMySession(userId);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @Operation(
             summary = "내 통화 목록 조회",
             description = "JWT로 인증된 유저의 전체 통화 기록을 최신순으로 반환합니다."
     )
