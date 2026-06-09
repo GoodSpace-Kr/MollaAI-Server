@@ -2,6 +2,7 @@ package com.molla.domain.callsession;
 
 import com.molla.common.exception.GlobalException;
 import com.molla.common.response.ErrorCode;
+import com.molla.config.JwtProvider;
 import com.molla.controller.dto.callsession.CallSessionResponse;
 import com.molla.controller.dto.callsession.EndSessionRequest;
 import com.molla.controller.dto.callsession.StartSessionRequest;
@@ -17,6 +18,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
 
@@ -30,7 +32,8 @@ public class CallSessionService {
     private final SubscriptionService subscriptionService;
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
-    private final String appRealtimeWssUrl;
+    private final JwtProvider jwtProvider;
+    private final String agentControlWssUrl;
 
     public CallSessionService(
             CallSessionRepository callSessionRepository,
@@ -39,7 +42,8 @@ public class CallSessionService {
             SubscriptionService subscriptionService,
             ApplicationEventPublisher eventPublisher,
             ObjectMapper objectMapper,
-            @Value("${app.realtime.wss-url:}") String appRealtimeWssUrl
+            JwtProvider jwtProvider,
+            @Value("${agents.control.wss-url:}") String agentControlWssUrl
     ) {
         this.callSessionRepository = callSessionRepository;
         this.userRepository = userRepository;
@@ -47,7 +51,8 @@ public class CallSessionService {
         this.subscriptionService = subscriptionService;
         this.eventPublisher = eventPublisher;
         this.objectMapper = objectMapper;
-        this.appRealtimeWssUrl = appRealtimeWssUrl;
+        this.jwtProvider = jwtProvider;
+        this.agentControlWssUrl = agentControlWssUrl;
     }
 
     // ──────────────────────────────────────────────
@@ -103,10 +108,11 @@ public class CallSessionService {
 
         callSessionRepository.save(session);
         SubscriptionWithRemainingResponse subscription = subscriptionService.getMySubscription(user.getId());
+        String agentToken = jwtProvider.generateAgentToken(user.getId(), session.getId());
         log.info("앱 통화 세션 시작 — sessionId: {}, userId: {}, type: {}",
                 session.getId(), session.getUserId(), sessionType);
 
-        return CallSessionResponse.from(session, subscription, null, normalizedAppRealtimeWssUrl());
+        return CallSessionResponse.from(session, subscription, agentToken, agentControlWssUrl(agentToken));
     }
 
     // ──────────────────────────────────────────────
@@ -217,7 +223,14 @@ public class CallSessionService {
         return durationMinutes * 60;
     }
 
-    private String normalizedAppRealtimeWssUrl() {
-        return StringUtils.hasText(appRealtimeWssUrl) ? appRealtimeWssUrl : null;
+    private String agentControlWssUrl(String agentToken) {
+        if (!StringUtils.hasText(agentControlWssUrl)) {
+            return null;
+        }
+
+        return UriComponentsBuilder.fromUriString(agentControlWssUrl)
+                .replaceQueryParam("token", agentToken)
+                .build()
+                .toUriString();
     }
 }

@@ -18,28 +18,31 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class AppRealtimeWebSocketHandlerTest {
+class AgentControlWebSocketHandlerTest {
 
     private final JwtProvider jwtProvider = mock(JwtProvider.class);
-    private final AppRealtimeWebSocketHandler handler = new AppRealtimeWebSocketHandler(
+    private final AgentControlWebSocketHandler handler = new AgentControlWebSocketHandler(
             jwtProvider,
             new ObjectMapper()
     );
 
     @Test
-    void acceptsAccessTokenFromQueryAndSendsConnectedEvent() throws Exception {
+    void acceptsAgentTokenFromQueryAndSendsConnectedEvent() throws Exception {
         Map<String, Object> attributes = new HashMap<>();
         WebSocketSession session = mock(WebSocketSession.class);
 
-        when(session.getUri()).thenReturn(URI.create("wss://api.example.com/api/v1/realtime?token=access-token"));
+        when(session.getUri()).thenReturn(URI.create("wss://api.example.com/api/v1/agents/control?token=agent-token"));
         when(session.getAttributes()).thenReturn(attributes);
-        when(jwtProvider.validateToken("access-token")).thenReturn(true);
-        when(jwtProvider.getTokenType("access-token")).thenReturn("access");
-        when(jwtProvider.getUserId("access-token")).thenReturn("user-1");
+        when(jwtProvider.validateToken("agent-token")).thenReturn(true);
+        when(jwtProvider.getTokenType("agent-token")).thenReturn("agent");
+        when(jwtProvider.getScope("agent-token")).thenReturn("agent:control");
+        when(jwtProvider.getUserId("agent-token")).thenReturn("user-1");
+        when(jwtProvider.getSessionId("agent-token")).thenReturn("session-1");
 
         handler.afterConnectionEstablished(session);
 
         assertThat(attributes).containsEntry("userId", "user-1");
+        assertThat(attributes).containsEntry("callSessionId", "session-1");
         verify(session).sendMessage(any(TextMessage.class));
         verify(session, never()).close(any(CloseStatus.class));
     }
@@ -48,7 +51,7 @@ class AppRealtimeWebSocketHandlerTest {
     void closesConnectionWhenTokenIsInvalid() throws Exception {
         WebSocketSession session = mock(WebSocketSession.class);
 
-        when(session.getUri()).thenReturn(URI.create("wss://api.example.com/api/v1/realtime?token=bad-token"));
+        when(session.getUri()).thenReturn(URI.create("wss://api.example.com/api/v1/agents/control?token=bad-token"));
         when(jwtProvider.validateToken("bad-token")).thenReturn(false);
 
         handler.afterConnectionEstablished(session);

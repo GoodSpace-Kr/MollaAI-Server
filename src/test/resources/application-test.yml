@@ -15,13 +15,14 @@ spring:
 
 jwt:
   secret: molla-jwt-secret-key-must-be-at-least-256-bits-long-for-tests
-  call-secret: molla-call-jwt-secret-key-must-be-at-least-256-bits-long-for-tests
+  agent-secret: molla-agent-jwt-secret-key-must-be-at-least-256-bits-long-for-tests
   access-token-expiration-ms: 3600000
   refresh-token-expiration-ms: 2592000000
-  call-token-expiration-ms: 300000
+  agent-token-expiration-ms: 300000
 
-orchestrator:
-  wss-url: wss://ai.example.com/call/ws
+agents:
+  control:
+    wss-url: wss://api.example.com/api/v1/agents/control
 
 naver:
   sens:

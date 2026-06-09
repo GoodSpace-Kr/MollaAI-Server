@@ -27,10 +27,11 @@ class ApplicationYamlSmsConfigTest {
     }
 
     @Test
-    void usesBackendRealtimeWssUrlForAppPersistentSocket() throws Exception {
+    void usesAgentControlWssUrlForCallStartSocket() throws Exception {
         String source = Files.readString(Path.of("src/main/resources/application.yml"));
 
-        assertThat(source).contains("wss-url: ${APP_REALTIME_WSS_URL:}");
+        assertThat(source).contains("wss-url: ${AGENT_CONTROL_WSS_URL:}");
+        assertThat(source).doesNotContain("APP_REALTIME_WSS_URL");
         assertThat(source).doesNotContain("ORCHESTRATOR_WSS_URL");
     }
 }

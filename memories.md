@@ -1,3 +1,12 @@
+## 2026-06-09 - 통화 시작 WSS를 agent control 토큰 방식으로 변경
+
+- 구분: 환경변수, 엔드포인트, 인증, 메인 로직
+- 변경: `POST /api/v1/sessions/start` 응답을 `agentToken` 과 `wssUrl` 중심으로 변경했다. `agentToken` 은 `type=agent`, `sessionId`, `scope=agent:control`, `audience=molla-agent-control` claim 을 포함하는 짧은 수명의 JWT이며, `JWT_AGENT_SECRET` 으로 서명한다. `wssUrl` 은 `AGENT_CONTROL_WSS_URL` 에 `token={agentToken}` query 를 붙인 완성 URL이다. WebSocket 핸들러 경로도 `/api/v1/agents/control` 로 변경하고, access token 이 아니라 agent token 을 검증하도록 수정했다.
+- 영향: 앱은 통화 시작 후 `wss://api.example.com/api/v1/agents/control?token=<agentToken>` 형태로 백엔드 agent control WSS에 접속한다. 이전 `/api/v1/realtime` 및 `callToken`/`JWT_CALL_*` 기반 로직은 더 이상 사용하지 않는다.
+- 확인: `./gradlew test --tests com.molla.config.JwtProviderTest --tests com.molla.domain.callsession.CallSessionServiceTest --tests com.molla.realtime.AgentControlWebSocketHandlerTest --tests com.molla.config.ApplicationYamlSmsConfigTest`, `./gradlew test`
+- 관련 파일: `src/main/java/com/molla/config/JwtProvider.java`, `src/main/java/com/molla/config/WebSocketConfig.java`, `src/main/java/com/molla/realtime/AgentControlWebSocketHandler.java`, `src/main/java/com/molla/domain/callsession/CallSessionService.java`, `src/main/java/com/molla/controller/dto/callsession/CallSessionResponse.java`, `src/main/resources/application.yml`
+- 비고: 운영에는 `AGENT_CONTROL_WSS_URL=wss://api.example.com/api/v1/agents/control` 과 충분히 긴 `JWT_AGENT_SECRET` 설정이 필요하다. `JWT_AGENT_TOKEN_EXPIRATION_MS` 기본값은 300000ms이다.
+
 ## 2026-06-09 - 앱 상시 연결용 백엔드 realtime WSS 추가
 
 - 구분: 환경변수, 엔드포인트, 인증, 메인 로직

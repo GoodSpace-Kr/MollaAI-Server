@@ -103,18 +103,19 @@ MollaAI Server는 전화 기반 영어 회화 학습 서비스의 백엔드 API 
 1. 앱이 사용자 JWT로 세션 시작 API를 호출한다.
 2. 서버는 인증된 사용자의 첫 통화 여부를 확인하고 통화 세션을 생성한다.
 3. 첫 통화라면 세션 유형을 `level_test`로 저장한다.
-4. 서버는 앱에 AI 오케스트레이터 WSS URL과 통화 전용 토큰을 반환한다.
-5. 앱은 Cloudflare Tunnel을 통해 AI 오케스트레이터 WSS에 직접 연결한다.
-6. 통화 종료 시 AI 오케스트레이터가 내부 세션 종료 API를 호출한다.
-7. 서버는 통화 전문을 저장하고 비동기 워커를 실행한다.
-8. 워커는 AI 리포트를 생성하고 레벨 결과를 사용자 정보에 반영한다.
-9. 사용자는 앱에서 리포트와 레벨 결과를 확인한다.
+4. 서버는 앱에 agent control WSS URL과 agent token을 반환한다.
+5. 앱은 `wss://api.example.com/api/v1/agents/control?token=<agentToken>` 형식으로 백엔드 agent control WSS에 연결한다.
+6. 상시 연결된 AI 서버와 백엔드는 agent control 채널을 기준으로 통화 제어를 진행한다.
+7. 통화 종료 시 AI 오케스트레이션 서버가 내부 세션 종료 API를 호출한다.
+8. 서버는 통화 전문을 저장하고 비동기 워커를 실행한다.
+9. 워커는 AI 리포트를 생성하고 레벨 결과를 사용자 정보에 반영한다.
+10. 사용자는 앱에서 리포트와 레벨 결과를 확인한다.
 
 ### 6.3 반복 회화 연습
 
 1. 사용자가 다시 통화를 시작한다.
 2. 서버는 세션 유형을 `practice`로 저장한다.
-3. 앱은 응답받은 WSS URL과 통화 전용 토큰으로 AI 오케스트레이터에 직접 연결한다.
+3. 앱은 응답받은 agent control WSS URL로 연결한다.
 4. 통화 종료 후 피드백 리포트를 생성한다.
 5. 사용자는 이전 리포트와 단어장을 참고해 복습한다.
 
@@ -173,6 +174,7 @@ MollaAI Server는 전화 기반 영어 회화 학습 서비스의 백엔드 API 
 - `PATCH /api/v1/users/me`
 - `DELETE /api/v1/users/me`
 - `POST /api/v1/sessions/start`
+- `GET /api/v1/agents/control` (WebSocket upgrade)
 - `GET /api/v1/sessions`
 - `GET /api/v1/sessions/{id}`
 - `GET /api/v1/reports`
@@ -196,7 +198,7 @@ MollaAI Server는 전화 기반 영어 회화 학습 서비스의 백엔드 API 
 
 - 클라이언트 API는 JWT 기반 인증을 기본으로 한다.
 - Refresh Token은 사용자 단위로 저장하고 만료 시각을 관리한다.
-- 앱이 AI 오케스트레이터 WSS에 직접 접속할 때는 사용자 JWT 대신 백엔드가 발급한 짧은 수명의 통화 전용 JWT를 사용한다.
+- 앱이 agent control WSS에 접속할 때는 사용자 JWT 대신 백엔드가 발급한 짧은 수명의 agent token을 사용한다.
 - 전화번호, 통화 전문, 학습 리포트는 개인정보 및 민감 학습 데이터로 취급한다.
 - 내부 API는 운영 환경에서 네트워크 레벨 접근 제어 또는 내부 인증 장치가 필요하다.
 

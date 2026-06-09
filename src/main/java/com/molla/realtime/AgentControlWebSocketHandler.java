@@ -19,7 +19,7 @@ import java.util.Map;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class AppRealtimeWebSocketHandler extends TextWebSocketHandler {
+public class AgentControlWebSocketHandler extends TextWebSocketHandler {
 
     private static final TypeReference<Map<String, Object>> MESSAGE_TYPE = new TypeReference<>() {};
 
@@ -29,18 +29,21 @@ public class AppRealtimeWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         String token = resolveToken(session.getUri());
-        if (!isAccessToken(token)) {
-            session.close(CloseStatus.POLICY_VIOLATION.withReason("valid access token required"));
+        if (!isAgentToken(token)) {
+            session.close(CloseStatus.POLICY_VIOLATION.withReason("valid agent token required"));
             return;
         }
 
         String userId = jwtProvider.getUserId(token);
+        String callSessionId = jwtProvider.getSessionId(token);
         session.getAttributes().put("userId", userId);
+        session.getAttributes().put("callSessionId", callSessionId);
         session.sendMessage(new TextMessage(objectMapper.writeValueAsString(Map.of(
                 "type", "connected",
-                "userId", userId
+                "userId", userId,
+                "callSessionId", callSessionId
         ))));
-        log.info("app_realtime_connected userId={} sessionId={}", userId, session.getId());
+        log.info("agent_control_connected userId={} callSessionId={} wsSessionId={}", userId, callSessionId, session.getId());
     }
 
     @Override
@@ -54,13 +57,16 @@ public class AppRealtimeWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         Object userId = session.getAttributes().get("userId");
-        log.info("app_realtime_disconnected userId={} sessionId={} code={}", userId, session.getId(), status.getCode());
+        Object callSessionId = session.getAttributes().get("callSessionId");
+        log.info("agent_control_disconnected userId={} callSessionId={} wsSessionId={} code={}",
+                userId, callSessionId, session.getId(), status.getCode());
     }
 
-    private boolean isAccessToken(String token) {
+    private boolean isAgentToken(String token) {
         return StringUtils.hasText(token)
                 && jwtProvider.validateToken(token)
-                && "access".equals(jwtProvider.getTokenType(token));
+                && "agent".equals(jwtProvider.getTokenType(token))
+                && "agent:control".equals(jwtProvider.getScope(token));
     }
 
     private String resolveToken(URI uri) {

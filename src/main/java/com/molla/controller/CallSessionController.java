@@ -92,9 +92,9 @@ public class CallSessionController {
             summary = "앱 통화 세션 시작",
             description = """
                     JWT로 인증된 유저의 통화 세션을 생성합니다.
-                    - 앱은 AI 오케스트레이터 WSS에 직접 접속하지 않습니다.
-                    - 앱은 실행 시 백엔드 realtime WSS(/api/v1/realtime)에 상시 연결합니다.
-                    - 응답의 wssUrl은 APP_REALTIME_WSS_URL 환경변수로 설정합니다.
+                    - 응답의 agentToken은 agent control WSS 접속 전용 짧은 수명의 JWT입니다.
+                    - 응답의 wssUrl은 AGENT_CONTROL_WSS_URL 환경변수에 agentToken query를 붙인 완성 URL입니다.
+                    - 앱은 통화 시작 시 wssUrl로 접속합니다.
                     """
     )
     @ApiResponses({

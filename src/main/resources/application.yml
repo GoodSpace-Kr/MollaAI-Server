@@ -20,14 +20,14 @@ server:
 
 jwt:
   secret: ${JWT_SECRET:molla-jwt-secret-key-must-be-at-least-256-bits-long-for-hs256}
-  call-secret: ${JWT_CALL_SECRET:${JWT_SECRET:molla-jwt-secret-key-must-be-at-least-256-bits-long-for-hs256}}
+  agent-secret: ${JWT_AGENT_SECRET:${JWT_SECRET:molla-jwt-secret-key-must-be-at-least-256-bits-long-for-hs256}}
   access-token-expiration-ms: 3600000
   refresh-token-expiration-ms: 2592000000
-  call-token-expiration-ms: ${JWT_CALL_TOKEN_EXPIRATION_MS:300000}
+  agent-token-expiration-ms: ${JWT_AGENT_TOKEN_EXPIRATION_MS:300000}
 
-app:
-  realtime:
-    wss-url: ${APP_REALTIME_WSS_URL:}
+agents:
+  control:
+    wss-url: ${AGENT_CONTROL_WSS_URL:}
 
 naver:
   sens:
