@@ -25,4 +25,12 @@ class ApplicationYamlSmsConfigTest {
         assertThat(source).contains("access-key-id: ${AWS_S3_ACCESS_KEY:}");
         assertThat(source).contains("secret-access-key: ${AWS_S3_SECRET_KEY:}");
     }
+
+    @Test
+    void usesBackendRealtimeWssUrlForAppPersistentSocket() throws Exception {
+        String source = Files.readString(Path.of("src/main/resources/application.yml"));
+
+        assertThat(source).contains("wss-url: ${APP_REALTIME_WSS_URL:}");
+        assertThat(source).doesNotContain("ORCHESTRATOR_WSS_URL");
+    }
 }

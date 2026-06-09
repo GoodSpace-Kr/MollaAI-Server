@@ -2,7 +2,6 @@ package com.molla.domain.callsession;
 
 import com.molla.common.exception.GlobalException;
 import com.molla.common.response.ErrorCode;
-import com.molla.config.JwtProvider;
 import com.molla.controller.dto.callsession.CallSessionResponse;
 import com.molla.controller.dto.callsession.EndSessionRequest;
 import com.molla.controller.dto.callsession.StartSessionRequest;
@@ -31,8 +30,7 @@ public class CallSessionService {
     private final SubscriptionService subscriptionService;
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
-    private final JwtProvider jwtProvider;
-    private final String orchestratorWssUrl;
+    private final String appRealtimeWssUrl;
 
     public CallSessionService(
             CallSessionRepository callSessionRepository,
@@ -41,8 +39,7 @@ public class CallSessionService {
             SubscriptionService subscriptionService,
             ApplicationEventPublisher eventPublisher,
             ObjectMapper objectMapper,
-            JwtProvider jwtProvider,
-            @Value("${orchestrator.wss-url:}") String orchestratorWssUrl
+            @Value("${app.realtime.wss-url:}") String appRealtimeWssUrl
     ) {
         this.callSessionRepository = callSessionRepository;
         this.userRepository = userRepository;
@@ -50,8 +47,7 @@ public class CallSessionService {
         this.subscriptionService = subscriptionService;
         this.eventPublisher = eventPublisher;
         this.objectMapper = objectMapper;
-        this.jwtProvider = jwtProvider;
-        this.orchestratorWssUrl = orchestratorWssUrl;
+        this.appRealtimeWssUrl = appRealtimeWssUrl;
     }
 
     // ──────────────────────────────────────────────
@@ -107,12 +103,10 @@ public class CallSessionService {
 
         callSessionRepository.save(session);
         SubscriptionWithRemainingResponse subscription = subscriptionService.getMySubscription(user.getId());
-        String callToken = jwtProvider.generateCallToken(user.getId(), session.getId());
-
         log.info("앱 통화 세션 시작 — sessionId: {}, userId: {}, type: {}",
                 session.getId(), session.getUserId(), sessionType);
 
-        return CallSessionResponse.from(session, subscription, callToken, normalizedOrchestratorWssUrl());
+        return CallSessionResponse.from(session, subscription, null, normalizedAppRealtimeWssUrl());
     }
 
     // ──────────────────────────────────────────────
@@ -223,7 +217,7 @@ public class CallSessionService {
         return durationMinutes * 60;
     }
 
-    private String normalizedOrchestratorWssUrl() {
-        return StringUtils.hasText(orchestratorWssUrl) ? orchestratorWssUrl : null;
+    private String normalizedAppRealtimeWssUrl() {
+        return StringUtils.hasText(appRealtimeWssUrl) ? appRealtimeWssUrl : null;
     }
 }

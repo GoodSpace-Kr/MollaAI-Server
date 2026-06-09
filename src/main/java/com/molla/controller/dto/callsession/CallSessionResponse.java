@@ -6,7 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
 
-@Schema(description = "통화 세션 응답. 앱용 start 응답에서는 callToken, wssUrl, subscription이 함께 내려오고, 목록/상세/종료 응답에서는 null일 수 있습니다.")
+@Schema(description = "통화 세션 응답. 앱용 start 응답에서는 백엔드 realtime WSS URL과 subscription이 함께 내려오고, 목록/상세/종료 응답에서는 null일 수 있습니다.")
 public record CallSessionResponse(
 
         @Schema(description = "세션 ID", example = "550e8400-e29b-41d4-a716-446655440000")
@@ -30,10 +30,10 @@ public record CallSessionResponse(
         @Schema(description = "현재 활성 구독 정보와 오늘 잔여 통화 시간. 내부 start 세션 응답에서는 채워지고, 그 외 응답에서는 null일 수 있습니다.")
         SubscriptionWithRemainingResponse subscription,
 
-        @Schema(description = "AI 오케스트레이터 WSS 접속용 짧은 수명의 JWT. 앱용 start 세션 응답에서만 내려갑니다.")
+        @Schema(description = "레거시 필드. 앱은 더 이상 이 값으로 AI 오케스트레이터 WSS에 직접 접속하지 않습니다.")
         String callToken,
 
-        @Schema(description = "앱이 직접 접속할 AI 오케스트레이터 WebSocket URL. 환경변수 ORCHESTRATOR_WSS_URL로 설정합니다.", example = "wss://ai.example.com/call/ws")
+        @Schema(description = "앱이 상시 연결할 백엔드 realtime WebSocket URL. 환경변수 APP_REALTIME_WSS_URL로 설정합니다.", example = "wss://api.example.com/api/v1/realtime")
         String wssUrl,
 
         @Schema(description = "세션 상태 (in_progress / completed / failed)", example = "completed")

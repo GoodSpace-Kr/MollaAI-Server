@@ -1,3 +1,12 @@
+## 2026-06-09 - 앱 상시 연결용 백엔드 realtime WSS 추가
+
+- 구분: 환경변수, 엔드포인트, 인증, 메인 로직
+- 변경: 앱이 실행 중 상시 연결할 백엔드 WebSocket 엔드포인트 `/api/v1/realtime` 을 추가했다. 앱은 `wss://.../api/v1/realtime?token={accessToken}` 로 접속하며, 서버는 access JWT를 검증한 뒤 `connected` 이벤트를 내려준다. `POST /api/v1/sessions/start` 는 더 이상 AI 오케스트레이터 직접 접속용 `callToken` 을 발급하지 않고, 응답의 `wssUrl` 에는 `APP_REALTIME_WSS_URL` 설정값을 반환한다.
+- 영향: 앱은 AI 서버 WSS에 직접 붙지 않고 백엔드 realtime WSS에 상시 연결한다. 실제 음성 미디어는 이후 Cloudflare Realtime WebRTC 연결 정보가 준비되면 별도 media plane으로 붙이는 구조가 된다.
+- 확인: `./gradlew test --tests com.molla.realtime.AppRealtimeWebSocketHandlerTest --tests com.molla.domain.callsession.CallSessionServiceTest.startMySessionReturnsBackendRealtimeWssUrlWithoutCallToken`
+- 관련 파일: `build.gradle`, `src/main/java/com/molla/config/WebSocketConfig.java`, `src/main/java/com/molla/realtime/AppRealtimeWebSocketHandler.java`, `src/main/java/com/molla/domain/callsession/CallSessionService.java`, `src/main/java/com/molla/controller/dto/callsession/CallSessionResponse.java`, `src/main/resources/application.yml`
+- 비고: 운영에는 public WSS 주소를 `APP_REALTIME_WSS_URL` 로 설정해야 한다. 과거 `ORCHESTRATOR_WSS_URL` 기반 앱 직접 AI WSS 연결 방식은 사용하지 않는다.
+
 ## 2026-06-09 - 앱 직접 WSS 접속용 통화 토큰 발급 추가
 
 - 구분: 환경변수, 엔드포인트, 인증, 메인 로직
