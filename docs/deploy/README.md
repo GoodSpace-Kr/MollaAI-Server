@@ -2,7 +2,7 @@
 
 이 서버의 Spring 애플리케이션은 `8080` 포트에서 동작한다.
 외부에서는 `80` 또는 `443` 포트로 받고 Nginx가 Spring 애플리케이션 `127.0.0.1:8080` 으로 프록시한다.
-WebSocket outbound 연결 테스트용 `/workers/ws`와 `/healthz`도 Spring 애플리케이션에서 직접 제공한다.
+WebSocket outbound 연결 테스트용 `/workers/ws`, 오케스트레이터 agent control용 `/api/v1/agents/control`, `/healthz`도 Spring 애플리케이션에서 직접 제공한다.
 
 ## 최종 요청 URL
 
@@ -25,7 +25,7 @@ ports:
 
 - `docs/deploy/nginx.conf`
 
-`wss://api.mollatalk.com/workers/ws` 테스트는 실제 `443 ssl` 서버 블록에 `/workers/ws` location이 있어야 동작한다. Certbot이 `443` 서버 블록을 별도로 생성한 운영 서버라면 `docs/deploy/nginx.conf`의 `/workers/ws` location을 해당 `443` 서버 블록에도 동일하게 반영한다.
+`wss://api.mollatalk.com/workers/ws` 와 `wss://api.mollatalk.com/api/v1/agents/control` 테스트는 실제 `443 ssl` 서버 블록에 각각의 WebSocket location이 있어야 동작한다. Certbot이 `443` 서버 블록을 별도로 생성한 운영 서버라면 `docs/deploy/nginx.conf`의 `/workers/ws` 와 `/api/v1/agents/control` location을 해당 `443` 서버 블록에도 동일하게 반영한다.
 
 서버에 복사:
 
@@ -101,9 +101,15 @@ curl -i https://api.mollatalk.com/healthz
 python ws_test_client.py --url wss://api.mollatalk.com/workers/ws --log-file connectivity.log
 ```
 
+오케스트레이터 agent control WSS는 agent token query가 필요하다.
+
+```bash
+python ws_test_client.py --url 'wss://api.mollatalk.com/api/v1/agents/control?token=<AI_AGENT_TOKEN>' --log-file agent-control.log
+```
+
 ## 응답 해석
 - `404 Not Found`: Nginx가 다른 서버 블록을 타고 있거나 설정 반영이 안 됨
 - `405 Method Not Allowed`: GET으로 호출했을 가능성 큼. 이 API는 `POST` 만 받음
-- `400 Bad Request`: JSON 형식 또는 `phoneNumber` 형식 오류
+- `400 Bad Request`: JSON 형식, `phoneNumber` 형식 오류, 또는 WebSocket 요청이 Nginx에서 upgrade 헤더 없이 일반 HTTP 프록시로 전달됨
 - `403/404` JSON 응답: 애플리케이션까지는 도달했고, 비즈니스 로직에서 실패
 - 연결 실패: 프로세스 미기동, 보안그룹 차단, 또는 Nginx 미기동
