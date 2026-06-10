@@ -38,4 +38,14 @@ class ApplicationYamlSmsConfigTest {
         assertThat(source).doesNotContain("ORCHESTRATOR_WSS_URL");
         assertThat(source).doesNotContain("JWT_AGENT_SECRET");
     }
+
+    @Test
+    void dockerComposePassesAgentAndCloudflareEnvironmentVariables() throws Exception {
+        String source = Files.readString(Path.of("docker-compose.yml"));
+
+        assertThat(source).contains("AI_AGENT_TOKEN: ${AI_AGENT_TOKEN}");
+        assertThat(source).contains("CLOUDFLARE_REALTIME_API_BASE: ${CLOUDFLARE_REALTIME_API_BASE}");
+        assertThat(source).contains("CLOUDFLARE_REALTIME_APP_ID: ${CLOUDFLARE_REALTIME_APP_ID}");
+        assertThat(source).contains("CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN}");
+    }
 }
