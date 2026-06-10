@@ -2,8 +2,8 @@ package com.molla.domain.payment;
 
 import com.molla.controller.dto.payment.PaymentApproveRequest;
 import com.molla.controller.dto.payment.PaymentApproveResponse;
-import com.molla.domain.subscription.SubscriptionService;
 import com.molla.controller.dto.subscription.CreateSubscriptionRequest;
+import com.molla.domain.subscription.SubscriptionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,9 +28,18 @@ public class PaymentService {
             throw new PaymentException("이미 처리된 주문입니다: " + request.orderId());
         }
 
+        // 결제 금액 검증
+        int expectedAmount = SubscriptionService.getPriceByPlan(request.planType());
+        if (expectedAmount == 0) {
+            throw new PaymentException("무료 플랜은 결제가 필요하지 않습니다.");
+        }
+        if (expectedAmount != request.amount()) {
+            throw new PaymentException(
+                    "결제 금액이 올바르지 않습니다. 예상: " + expectedAmount + "원, 요청: " + request.amount() + "원");
+        }
+
         // 나이스페이 승인 API 호출
         Map<String, Object> result = nicepayClient.approve(request.tid(), request.amount());
-
         String resultCode = (String) result.get("resultCode");
 
         if (!"0000".equals(resultCode)) {
@@ -50,17 +59,15 @@ public class PaymentService {
         );
         paymentRepository.save(payment);
 
-        // 결제 성공 → 구독 자동 생성
-        // [교체 필요] 실서비스 전환 시 플랜별 dailyLimitMinutes, durationDays 정책 맞게 조정
+        // 구독 자동 생성 (dailyLimit은 플랜에서 자동 결정)
         CreateSubscriptionRequest subRequest = new CreateSubscriptionRequest(
                 request.planType(),
-                "premium".equals(request.planType()) ? 300 : 30,
                 30  // 30일 구독
         );
         subscriptionService.createSubscription(userId, subRequest);
 
-        log.info("결제 및 구독 생성 완료 — userId: {}, orderId: {}, amount: {}",
-                userId, request.orderId(), request.amount());
+        log.info("결제 및 구독 생성 완료 — userId: {}, planType: {}, orderId: {}",
+                userId, request.planType(), request.orderId());
 
         return new PaymentApproveResponse(
                 payment.getId(),

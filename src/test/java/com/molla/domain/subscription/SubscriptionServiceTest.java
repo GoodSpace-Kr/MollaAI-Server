@@ -26,7 +26,7 @@ class SubscriptionServiceTest {
     );
 
     @Test
-    void ensureDemoPremiumSubscriptionCreatesPremiumSubscriptionWhenNoneExists() {
+    void ensureDemoSubscriptionCreatesFreeSubscriptionWhenNoneExists() {
         User user = User.createByPhone("01012345678");
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(subscriptionRepository.existsActiveByUserId(user.getId())).thenReturn(false);
@@ -44,7 +44,7 @@ class SubscriptionServiceTest {
     }
 
     @Test
-    void ensureDemoPremiumSubscriptionSkipsWhenActiveSubscriptionExists() {
+    void ensureDemoSubscriptionSkipsWhenActiveSubscriptionExists() {
         User user = User.createByPhone("01012345678");
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(subscriptionRepository.existsActiveByUserId(user.getId())).thenReturn(true);
