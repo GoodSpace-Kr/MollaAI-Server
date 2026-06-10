@@ -4,6 +4,8 @@ import com.molla.common.response.ApiResponse;
 import com.molla.controller.dto.callsession.CallSessionResponse;
 import com.molla.controller.dto.callsession.EndSessionRequest;
 import com.molla.controller.dto.callsession.StartSessionRequest;
+import com.molla.controller.dto.callsession.WebrtcOfferRequest;
+import com.molla.controller.dto.callsession.WebrtcOfferResponse;
 import com.molla.domain.callsession.CallSessionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -92,9 +94,9 @@ public class CallSessionController {
             summary = "앱 통화 세션 시작",
             description = """
                     JWT로 인증된 유저의 통화 세션을 생성합니다.
-                    - 응답의 agentToken은 agent control WSS 접속 전용 짧은 수명의 JWT입니다.
-                    - 응답의 wssUrl은 AGENT_CONTROL_WSS_URL 환경변수에 agentToken query를 붙인 완성 URL입니다.
-                    - 앱은 통화 시작 시 wssUrl로 접속합니다.
+                    - 앱은 AI 오케스트레이터 WSS에 직접 접속하지 않습니다.
+                    - 백엔드는 연결된 AI 오케스트레이터 agent WSS로 join_call을 전송합니다.
+                    - 응답의 realtimeSessionId는 앱 WebRTC offer API에서 사용할 Cloudflare Realtime session ID입니다.
                     """
     )
     @ApiResponses({
@@ -152,6 +154,24 @@ public class CallSessionController {
     ) {
         String userId = getCurrentUserId();
         CallSessionResponse response = callSessionService.getSession(id, userId);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @Operation(
+            summary = "앱 WebRTC offer 등록",
+            description = """
+                    앱이 만든 WebRTC offer를 Cloudflare Realtime SFU에 전달하고 answer를 반환합니다.
+                    - realtimeSessionId는 /api/v1/sessions/start 응답값을 사용합니다.
+                    - 실제 음성 media는 이후 앱과 Cloudflare Realtime 사이의 WebRTC 연결로 이동합니다.
+                    """
+    )
+    @PostMapping("/api/v1/sessions/{id}/webrtc/offer")
+    public ResponseEntity<ApiResponse<WebrtcOfferResponse>> submitWebrtcOffer(
+            @PathVariable String id,
+            @RequestBody @Valid WebrtcOfferRequest request
+    ) {
+        String userId = getCurrentUserId();
+        WebrtcOfferResponse response = callSessionService.submitWebrtcOffer(id, userId, request);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 

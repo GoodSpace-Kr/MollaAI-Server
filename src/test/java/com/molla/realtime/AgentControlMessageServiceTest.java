@@ -1,0 +1,46 @@
+package com.molla.realtime;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.web.socket.WebSocketSession;
+
+import java.util.Map;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+class AgentControlMessageServiceTest {
+
+    private final CloudflareRealtimeClient cloudflareRealtimeClient = mock(CloudflareRealtimeClient.class);
+    private final AgentConnectionRegistry agentConnectionRegistry = mock(AgentConnectionRegistry.class);
+    private final AgentControlMessageService service = new AgentControlMessageService(
+            cloudflareRealtimeClient,
+            agentConnectionRegistry
+    );
+
+    @Test
+    void agentWebrtcOfferIsForwardedToCloudflareAndAnswerIsSentBackToAgent() {
+        WebSocketSession session = mock(WebSocketSession.class);
+        Map<String, Object> offer = Map.of(
+                "type", "agent_webrtc_offer",
+                "callId", "call-1",
+                "realtimeSessionId", "cf-session-1",
+                "sessionDescription", Map.of("type", "offer", "sdp", "local-sdp")
+        );
+        Map<String, Object> answer = Map.of("type", "answer", "sdp", "remote-sdp");
+        when(cloudflareRealtimeClient.addTracks("cf-session-1", offer))
+                .thenReturn(Map.of("sessionDescription", answer));
+
+        service.handle(session, offer);
+
+        verify(cloudflareRealtimeClient).addTracks("cf-session-1", offer);
+        verify(agentConnectionRegistry).send(
+                session,
+                Map.of(
+                        "type", "webrtc_answer",
+                        "callId", "call-1",
+                        "sessionDescription", answer
+                )
+        );
+    }
+}

@@ -27,11 +27,15 @@ class ApplicationYamlSmsConfigTest {
     }
 
     @Test
-    void usesAgentControlWssUrlForCallStartSocket() throws Exception {
+    void usesStaticAgentTokenAndCloudflareRealtimeConfig() throws Exception {
         String source = Files.readString(Path.of("src/main/resources/application.yml"));
 
-        assertThat(source).contains("wss-url: ${AGENT_CONTROL_WSS_URL:}");
+        assertThat(source).contains("token: ${AI_AGENT_TOKEN:}");
+        assertThat(source).contains("api-base: ${CLOUDFLARE_REALTIME_API_BASE:https://rtc.live.cloudflare.com/v1}");
+        assertThat(source).contains("app-id: ${CLOUDFLARE_REALTIME_APP_ID:}");
+        assertThat(source).contains("api-token: ${CLOUDFLARE_API_TOKEN:}");
         assertThat(source).doesNotContain("APP_REALTIME_WSS_URL");
         assertThat(source).doesNotContain("ORCHESTRATOR_WSS_URL");
+        assertThat(source).doesNotContain("JWT_AGENT_SECRET");
     }
 }

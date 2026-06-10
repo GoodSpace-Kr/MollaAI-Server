@@ -2,22 +2,25 @@ package com.molla.domain.callsession;
 
 import com.molla.common.exception.GlobalException;
 import com.molla.common.response.ErrorCode;
-import com.molla.config.JwtProvider;
 import com.molla.controller.dto.callsession.CallSessionResponse;
 import com.molla.controller.dto.callsession.EndSessionRequest;
 import com.molla.controller.dto.callsession.StartSessionRequest;
+import com.molla.controller.dto.callsession.WebrtcOfferRequest;
+import com.molla.controller.dto.callsession.WebrtcOfferResponse;
 import com.molla.controller.dto.subscription.SubscriptionWithRemainingResponse;
 import com.molla.domain.subscription.SubscriptionRepository;
 import com.molla.domain.subscription.SubscriptionService;
 import com.molla.domain.user.User;
 import com.molla.domain.user.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.molla.realtime.AgentConnectionRegistry;
+import com.molla.realtime.CloudflareRealtimeClient;
+import com.molla.realtime.CloudflareSessionResponse;
+import com.molla.realtime.JoinCallCommand;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
@@ -32,8 +35,8 @@ public class CallSessionService {
     private final SubscriptionService subscriptionService;
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
-    private final JwtProvider jwtProvider;
-    private final String agentControlWssUrl;
+    private final AgentConnectionRegistry agentConnectionRegistry;
+    private final CloudflareRealtimeClient cloudflareRealtimeClient;
 
     public CallSessionService(
             CallSessionRepository callSessionRepository,
@@ -42,8 +45,8 @@ public class CallSessionService {
             SubscriptionService subscriptionService,
             ApplicationEventPublisher eventPublisher,
             ObjectMapper objectMapper,
-            JwtProvider jwtProvider,
-            @Value("${agents.control.wss-url:}") String agentControlWssUrl
+            AgentConnectionRegistry agentConnectionRegistry,
+            CloudflareRealtimeClient cloudflareRealtimeClient
     ) {
         this.callSessionRepository = callSessionRepository;
         this.userRepository = userRepository;
@@ -51,8 +54,8 @@ public class CallSessionService {
         this.subscriptionService = subscriptionService;
         this.eventPublisher = eventPublisher;
         this.objectMapper = objectMapper;
-        this.jwtProvider = jwtProvider;
-        this.agentControlWssUrl = agentControlWssUrl;
+        this.agentConnectionRegistry = agentConnectionRegistry;
+        this.cloudflareRealtimeClient = cloudflareRealtimeClient;
     }
 
     // ──────────────────────────────────────────────
@@ -108,11 +111,14 @@ public class CallSessionService {
 
         callSessionRepository.save(session);
         SubscriptionWithRemainingResponse subscription = subscriptionService.getMySubscription(user.getId());
-        String agentToken = jwtProvider.generateAgentToken(user.getId(), session.getId());
+        CloudflareSessionResponse realtimeSession = cloudflareRealtimeClient.createSession();
+        agentConnectionRegistry.sendJoinCall(
+                JoinCallCommand.of(session.getId(), session.getId(), user.getId(), realtimeSession.sessionId())
+        );
         log.info("앱 통화 세션 시작 — sessionId: {}, userId: {}, type: {}",
                 session.getId(), session.getUserId(), sessionType);
 
-        return CallSessionResponse.from(session, subscription, agentToken, agentControlWssUrl(agentToken));
+        return CallSessionResponse.from(session, subscription, realtimeSession.sessionId());
     }
 
     // ──────────────────────────────────────────────
@@ -189,6 +195,15 @@ public class CallSessionService {
         return CallSessionResponse.from(session);
     }
 
+    public WebrtcOfferResponse submitWebrtcOffer(String sessionId, String userId, WebrtcOfferRequest request) {
+        String phoneNumber = getPhoneNumberByUserId(userId);
+        callSessionRepository.findByIdAndPhoneNumber(sessionId, phoneNumber)
+                .orElseThrow(() -> new CallSessionException(ErrorCode.SESSION_NOT_FOUND));
+        return WebrtcOfferResponse.fromCloudflare(
+                cloudflareRealtimeClient.addTracks(request.realtimeSessionId(), request.toCloudflarePayload())
+        );
+    }
+
     // ──────────────────────────────────────────────
     // 내부 유틸
     // ──────────────────────────────────────────────
@@ -223,14 +238,4 @@ public class CallSessionService {
         return durationMinutes * 60;
     }
 
-    private String agentControlWssUrl(String agentToken) {
-        if (!StringUtils.hasText(agentControlWssUrl)) {
-            return null;
-        }
-
-        return UriComponentsBuilder.fromUriString(agentControlWssUrl)
-                .replaceQueryParam("token", agentToken)
-                .build()
-                .toUriString();
-    }
 }

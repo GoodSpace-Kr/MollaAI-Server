@@ -6,7 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
 
-@Schema(description = "통화 세션 응답. 앱용 start 응답에서는 agentToken, agent control WSS URL, subscription이 함께 내려오고, 목록/상세/종료 응답에서는 null일 수 있습니다.")
+@Schema(description = "통화 세션 응답. 앱용 start 응답에서는 Cloudflare Realtime session ID와 subscription이 함께 내려오고, 목록/상세/종료 응답에서는 null일 수 있습니다.")
 public record CallSessionResponse(
 
         @Schema(description = "세션 ID", example = "550e8400-e29b-41d4-a716-446655440000")
@@ -30,11 +30,14 @@ public record CallSessionResponse(
         @Schema(description = "현재 활성 구독 정보와 오늘 잔여 통화 시간. 내부 start 세션 응답에서는 채워지고, 그 외 응답에서는 null일 수 있습니다.")
         SubscriptionWithRemainingResponse subscription,
 
-        @Schema(description = "agent control WSS 접속용 짧은 수명의 JWT. 앱용 start 세션 응답에서만 내려갑니다.")
+        @Schema(description = "레거시 필드. 앱은 더 이상 agent control WSS에 직접 접속하지 않습니다.")
         String agentToken,
 
-        @Schema(description = "앱이 통화 시작 시 접속할 agent control WebSocket URL. 환경변수 AGENT_CONTROL_WSS_URL에 agentToken query를 붙여 반환합니다.", example = "wss://api.example.com/api/v1/agents/control?token=...")
+        @Schema(description = "레거시 필드. 앱은 더 이상 agent control WSS에 직접 접속하지 않습니다.")
         String wssUrl,
+
+        @Schema(description = "Cloudflare Realtime SFU session ID. 앱 WebRTC offer API 호출 시 사용합니다.", example = "cf-session-id")
+        String realtimeSessionId,
 
         @Schema(description = "세션 상태 (in_progress / completed / failed)", example = "completed")
         String status
@@ -47,14 +50,13 @@ public record CallSessionResponse(
             CallSession session,
             SubscriptionWithRemainingResponse subscription
     ) {
-        return from(session, subscription, null, null);
+        return from(session, subscription, null);
     }
 
     public static CallSessionResponse from(
             CallSession session,
             SubscriptionWithRemainingResponse subscription,
-            String agentToken,
-            String wssUrl
+            String realtimeSessionId
     ) {
         return new CallSessionResponse(
                 session.getId(),
@@ -64,8 +66,9 @@ public record CallSessionResponse(
                 session.getEndedAt(),
                 session.getDurationSeconds(),
                 subscription,
-                agentToken,
-                wssUrl,
+                null,
+                null,
+                realtimeSessionId,
                 session.getStatus()
         );
     }
