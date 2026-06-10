@@ -36,6 +36,7 @@ public class SecurityConfig {
             "/api/v1/auth/refresh",
             "/api/v1/inquiries",
             "/api/v1/internal/**",
+            "/api/v1/agents/control",
             "/api/v1/dev/**",
             "/healthz",
             "/workers/ws",

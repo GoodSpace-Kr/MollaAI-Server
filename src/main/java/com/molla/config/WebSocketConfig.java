@@ -1,5 +1,7 @@
 package com.molla.config;
 
+
+import com.molla.realtime.AgentControlWebSocketHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
@@ -10,6 +12,11 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 @EnableWebSocket
 @RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketConfigurer {
+    private final AgentControlWebSocketHandler agentControlWebSocketHandler;
+
+    @Override
+    public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
+        registry.addHandler(agentControlWebSocketHandler, "/api/v1/agents/control")
     private final WorkerWebSocketHandler workerWebSocketHandler;
 
     @Override

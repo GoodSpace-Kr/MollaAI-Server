@@ -2,28 +2,28 @@ package com.molla.domain.callsession;
 
 import com.molla.common.exception.GlobalException;
 import com.molla.common.response.ErrorCode;
+import com.molla.config.JwtProvider;
 import com.molla.controller.dto.callsession.CallSessionResponse;
 import com.molla.controller.dto.callsession.EndSessionRequest;
 import com.molla.controller.dto.callsession.StartSessionRequest;
 import com.molla.controller.dto.subscription.SubscriptionWithRemainingResponse;
-import com.molla.domain.callsession.CallSessionTurn;
 import com.molla.domain.subscription.SubscriptionRepository;
 import com.molla.domain.subscription.SubscriptionService;
 import com.molla.domain.user.User;
 import com.molla.domain.user.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class CallSessionService {
 
     private final CallSessionRepository callSessionRepository;
@@ -32,6 +32,28 @@ public class CallSessionService {
     private final SubscriptionService subscriptionService;
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
+    private final JwtProvider jwtProvider;
+    private final String agentControlWssUrl;
+
+    public CallSessionService(
+            CallSessionRepository callSessionRepository,
+            UserRepository userRepository,
+            SubscriptionRepository subscriptionRepository,
+            SubscriptionService subscriptionService,
+            ApplicationEventPublisher eventPublisher,
+            ObjectMapper objectMapper,
+            JwtProvider jwtProvider,
+            @Value("${agents.control.wss-url:}") String agentControlWssUrl
+    ) {
+        this.callSessionRepository = callSessionRepository;
+        this.userRepository = userRepository;
+        this.subscriptionRepository = subscriptionRepository;
+        this.subscriptionService = subscriptionService;
+        this.eventPublisher = eventPublisher;
+        this.objectMapper = objectMapper;
+        this.jwtProvider = jwtProvider;
+        this.agentControlWssUrl = agentControlWssUrl;
+    }
 
     // ──────────────────────────────────────────────
     // 세션 시작 (내부 API)
@@ -62,6 +84,35 @@ public class CallSessionService {
                 session.getId(), session.getUserId(), sessionType);
 
         return CallSessionResponse.from(session, subscription);
+    }
+
+    // ──────────────────────────────────────────────
+    // 세션 시작 (프론트 API)
+    // ──────────────────────────────────────────────
+
+    @Transactional
+    public CallSessionResponse startMySession(String userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new GlobalException(ErrorCode.USER_NOT_FOUND));
+        String phoneNumber = user.getPhoneNumber();
+        String sessionType = resolveSessionType(phoneNumber);
+        String userStateAtCall = resolveUserState(user);
+
+        CallSession session = CallSession.create(
+                user.getId(),
+                phoneNumber,
+                null,
+                sessionType,
+                userStateAtCall
+        );
+
+        callSessionRepository.save(session);
+        SubscriptionWithRemainingResponse subscription = subscriptionService.getMySubscription(user.getId());
+        String agentToken = jwtProvider.generateAgentToken(user.getId(), session.getId());
+        log.info("앱 통화 세션 시작 — sessionId: {}, userId: {}, type: {}",
+                session.getId(), session.getUserId(), sessionType);
+
+        return CallSessionResponse.from(session, subscription, agentToken, agentControlWssUrl(agentToken));
     }
 
     // ──────────────────────────────────────────────
@@ -170,5 +221,16 @@ public class CallSessionService {
             return null;
         }
         return durationMinutes * 60;
+    }
+
+    private String agentControlWssUrl(String agentToken) {
+        if (!StringUtils.hasText(agentControlWssUrl)) {
+            return null;
+        }
+
+        return UriComponentsBuilder.fromUriString(agentControlWssUrl)
+                .replaceQueryParam("token", agentToken)
+                .build()
+                .toUriString();
     }
 }

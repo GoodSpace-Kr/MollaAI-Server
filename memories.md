@@ -1,3 +1,30 @@
+## 2026-06-09 - 통화 시작 WSS를 agent control 토큰 방식으로 변경
+
+- 구분: 환경변수, 엔드포인트, 인증, 메인 로직
+- 변경: `POST /api/v1/sessions/start` 응답을 `agentToken` 과 `wssUrl` 중심으로 변경했다. `agentToken` 은 `type=agent`, `sessionId`, `scope=agent:control`, `audience=molla-agent-control` claim 을 포함하는 짧은 수명의 JWT이며, `JWT_AGENT_SECRET` 으로 서명한다. `wssUrl` 은 `AGENT_CONTROL_WSS_URL` 에 `token={agentToken}` query 를 붙인 완성 URL이다. WebSocket 핸들러 경로도 `/api/v1/agents/control` 로 변경하고, access token 이 아니라 agent token 을 검증하도록 수정했다.
+- 영향: 앱은 통화 시작 후 `wss://api.example.com/api/v1/agents/control?token=<agentToken>` 형태로 백엔드 agent control WSS에 접속한다. 이전 `/api/v1/realtime` 및 `callToken`/`JWT_CALL_*` 기반 로직은 더 이상 사용하지 않는다.
+- 확인: `./gradlew test --tests com.molla.config.JwtProviderTest --tests com.molla.domain.callsession.CallSessionServiceTest --tests com.molla.realtime.AgentControlWebSocketHandlerTest --tests com.molla.config.ApplicationYamlSmsConfigTest`, `./gradlew test`
+- 관련 파일: `src/main/java/com/molla/config/JwtProvider.java`, `src/main/java/com/molla/config/WebSocketConfig.java`, `src/main/java/com/molla/realtime/AgentControlWebSocketHandler.java`, `src/main/java/com/molla/domain/callsession/CallSessionService.java`, `src/main/java/com/molla/controller/dto/callsession/CallSessionResponse.java`, `src/main/resources/application.yml`
+- 비고: 운영에는 `AGENT_CONTROL_WSS_URL=wss://api.example.com/api/v1/agents/control` 과 충분히 긴 `JWT_AGENT_SECRET` 설정이 필요하다. `JWT_AGENT_TOKEN_EXPIRATION_MS` 기본값은 300000ms이다.
+
+## 2026-06-09 - 앱 상시 연결용 백엔드 realtime WSS 추가
+
+- 구분: 환경변수, 엔드포인트, 인증, 메인 로직
+- 변경: 앱이 실행 중 상시 연결할 백엔드 WebSocket 엔드포인트 `/api/v1/realtime` 을 추가했다. 앱은 `wss://.../api/v1/realtime?token={accessToken}` 로 접속하며, 서버는 access JWT를 검증한 뒤 `connected` 이벤트를 내려준다. `POST /api/v1/sessions/start` 는 더 이상 AI 오케스트레이터 직접 접속용 `callToken` 을 발급하지 않고, 응답의 `wssUrl` 에는 `APP_REALTIME_WSS_URL` 설정값을 반환한다.
+- 영향: 앱은 AI 서버 WSS에 직접 붙지 않고 백엔드 realtime WSS에 상시 연결한다. 실제 음성 미디어는 이후 Cloudflare Realtime WebRTC 연결 정보가 준비되면 별도 media plane으로 붙이는 구조가 된다.
+- 확인: `./gradlew test --tests com.molla.realtime.AppRealtimeWebSocketHandlerTest --tests com.molla.domain.callsession.CallSessionServiceTest.startMySessionReturnsBackendRealtimeWssUrlWithoutCallToken`
+- 관련 파일: `build.gradle`, `src/main/java/com/molla/config/WebSocketConfig.java`, `src/main/java/com/molla/realtime/AppRealtimeWebSocketHandler.java`, `src/main/java/com/molla/domain/callsession/CallSessionService.java`, `src/main/java/com/molla/controller/dto/callsession/CallSessionResponse.java`, `src/main/resources/application.yml`
+- 비고: 운영에는 public WSS 주소를 `APP_REALTIME_WSS_URL` 로 설정해야 한다. 과거 `ORCHESTRATOR_WSS_URL` 기반 앱 직접 AI WSS 연결 방식은 사용하지 않는다.
+
+## 2026-06-09 - 앱 직접 WSS 접속용 통화 토큰 발급 추가
+
+- 구분: 환경변수, 엔드포인트, 인증, 메인 로직
+- 변경: 인증된 앱이 `POST /api/v1/sessions/start` 로 통화 세션을 생성하면 `callToken` 과 `wssUrl` 을 함께 받도록 추가했다. `callToken` 은 `type=call`, `sessionId`, `scope=call:connect`, `audience=molla-orchestrator` claim 을 포함하는 짧은 수명의 JWT이며, `JWT_CALL_SECRET` 으로 서명한다. `JWT_CALL_SECRET` 이 없으면 기존 `JWT_SECRET` 으로 fallback 한다.
+- 영향: 앱은 사용자 JWT로 백엔드에서 세션을 만든 뒤, 응답의 `wssUrl` 에 `callToken` 을 붙여 Cloudflare Tunnel 뒤 AI 오케스트레이터 WSS에 직접 접속할 수 있다. 기존 내부 세션 시작/종료 API는 유지된다.
+- 확인: `./gradlew test --tests com.molla.config.JwtProviderTest --tests com.molla.domain.callsession.CallSessionServiceTest`, `./gradlew test`
+- 관련 파일: `src/main/java/com/molla/config/JwtProvider.java`, `src/main/java/com/molla/controller/CallSessionController.java`, `src/main/java/com/molla/domain/callsession/CallSessionService.java`, `src/main/java/com/molla/controller/dto/callsession/CallSessionResponse.java`, `src/main/resources/application.yml`
+- 비고: 운영에는 `ORCHESTRATOR_WSS_URL` 과 충분히 긴 `JWT_CALL_SECRET` 설정이 필요하다. `JWT_CALL_TOKEN_EXPIRATION_MS` 기본값은 300000ms이다.
+
 ## 2026-05-31 - S3 presign 자격증명을 전용 환경변수로 분리
 
 - 구분: 환경변수, 메인 로직
