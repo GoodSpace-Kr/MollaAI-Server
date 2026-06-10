@@ -15,6 +15,10 @@
 | `DB_USERNAME` | 필수 | Spring Datasource | MySQL 접속 사용자명 |
 | `DB_PASSWORD` | 필수 | Spring Datasource | MySQL 접속 비밀번호 |
 | `JWT_SECRET` | 필수 | JWT | Access Token, Refresh Token 서명에 사용하는 secret |
+| `AI_AGENT_TOKEN` | 필수 | Agent Control WSS | 오케스트레이터가 `/api/v1/agents/control` 에 연결할 때 사용하는 공유 토큰. 오케스트레이터 `ORCH_AGENT_TOKEN` 과 동일해야 한다. |
+| `CLOUDFLARE_REALTIME_API_BASE` | 필수 | Cloudflare Realtime | Cloudflare Realtime API base URL. 일반적으로 `https://rtc.live.cloudflare.com/v1` |
+| `CLOUDFLARE_REALTIME_APP_ID` | 필수 | Cloudflare Realtime | Cloudflare Realtime Serverless SFU 앱 ID |
+| `CLOUDFLARE_API_TOKEN` | 필수 | Cloudflare Realtime | Cloudflare Realtime API 호출용 토큰 |
 | `NAVER_SENS_ACCESS_KEY` | 필수 | Naver SENS | SMS 인증번호 발송용 Access Key |
 | `NAVER_SENS_SECRET_KEY` | 필수 | Naver SENS | SMS 인증번호 발송용 Secret Key |
 | `NAVER_SENS_SERVICE_ID` | 필수 | Naver SENS | SMS 서비스 ID |
@@ -42,6 +46,10 @@ environment:
   DB_USERNAME: ${DB_USERNAME}
   DB_PASSWORD: ${DB_PASSWORD}
   JWT_SECRET: ${JWT_SECRET}
+  AI_AGENT_TOKEN: ${AI_AGENT_TOKEN}
+  CLOUDFLARE_REALTIME_API_BASE: ${CLOUDFLARE_REALTIME_API_BASE}
+  CLOUDFLARE_REALTIME_APP_ID: ${CLOUDFLARE_REALTIME_APP_ID}
+  CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN}
   NAVER_SENS_ACCESS_KEY: ${NAVER_SENS_ACCESS_KEY}
   NAVER_SENS_SECRET_KEY: ${NAVER_SENS_SECRET_KEY}
   NAVER_SENS_SERVICE_ID: ${NAVER_SENS_SERVICE_ID}
@@ -66,7 +74,7 @@ environment:
 ## 보안 기준
 
 - `.env` 파일은 저장소에 커밋하지 않는다.
-- `DB_PASSWORD`, `JWT_SECRET`, `NAVER_SENS_SECRET_KEY`, `OPENAI_API_KEY`는 로그, PR 설명, 문서에 실제 값을 남기지 않는다.
+- `DB_PASSWORD`, `JWT_SECRET`, `AI_AGENT_TOKEN`, `CLOUDFLARE_API_TOKEN`, `NAVER_SENS_SECRET_KEY`, `OPENAI_API_KEY`는 로그, PR 설명, 문서에 실제 값을 남기지 않는다.
 - `JWT_SECRET`은 HS256 서명에 충분한 길이와 무작위성을 가진 값을 사용한다.
 - 키를 교체한 뒤에는 서버 재기동과 인증/SMS/AI 리포트 생성 동작을 확인한다.
 - 운영 장애 분석 중에도 `docker compose config`, `env`, `printenv` 출력에 secret이 섞일 수 있으므로 공유 전 마스킹한다.
