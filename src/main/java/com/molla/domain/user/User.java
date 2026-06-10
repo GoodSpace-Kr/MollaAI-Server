@@ -93,6 +93,14 @@ public class User {
         this.tokenExpiresAt = expiresAt;
     }
 
+    public void suspend() {
+        this.status = "suspended";
+    }
+
+    public void restore() {
+        this.status = "active";
+    }
+
     public boolean isWithdrawn() {
         return "withdrawn".equals(this.status);
     }
