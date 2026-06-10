@@ -1,3 +1,12 @@
+## 2026-06-09 - agent control WSS를 오케스트레이터 상시 연결 구조로 정정
+
+- 구분: 환경변수, 엔드포인트, 인증, 메인 로직
+- 변경: `/api/v1/agents/control` 을 앱 접속용이 아니라 AI 오케스트레이터 상시 연결용 WSS로 정정했다. 백엔드는 `AI_AGENT_TOKEN` 환경변수로 static agent token을 검증하고, 연결된 오케스트레이터를 `AgentConnectionRegistry` 에 보관한다. `POST /api/v1/sessions/start` 는 Cloudflare Realtime session을 생성한 뒤 연결된 agent에 `join_call` 을 전송하고, agent가 보낸 `agent_webrtc_offer` 를 Cloudflare Realtime API `/apps/{appId}/sessions/{sessionId}/tracks/new` 로 전달한 뒤 `webrtc_answer` 를 agent에 돌려준다.
+- 영향: 앱은 더 이상 agent control WSS URL이나 agent token을 받지 않는다. 앱은 사용자 JWT로 세션을 만들고, 응답의 `realtimeSessionId` 를 기준으로 별도 WebRTC offer API를 호출해야 한다. AI 오케스트레이터는 `ORCH_AGENT_CONTROL_WSS_URL` 과 `ORCH_AGENT_TOKEN` 으로 백엔드에 상시 outbound 연결한다.
+- 확인: `./gradlew test`, `python3 -m unittest test_agent_control.py test_realtime_media.py test_session_history.py test_session_timeout.py test_storage.py test_transcript_store.py`, `python3 -m py_compile agent_control.py realtime_media.py config.py main.py`
+- 관련 파일: `src/main/java/com/molla/realtime/AgentControlWebSocketHandler.java`, `src/main/java/com/molla/realtime/AgentConnectionRegistry.java`, `src/main/java/com/molla/realtime/AgentControlMessageService.java`, `src/main/java/com/molla/realtime/CloudflareRealtimeClient.java`, `src/main/java/com/molla/domain/callsession/CallSessionService.java`, `src/main/resources/application.yml`, `docs/PROJECT_PLAN.md`
+- 비고: 운영에는 백엔드 `AI_AGENT_TOKEN`, `CLOUDFLARE_REALTIME_APP_ID`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_REALTIME_API_BASE` 와 오케스트레이터 `ORCH_AGENT_CONTROL_WSS_URL`, `ORCH_AGENT_TOKEN` 설정이 필요하다. 앱용 WebRTC offer API는 별도 구현 대상이다.
+
 ## 2026-06-09 - 통화 시작 WSS를 agent control 토큰 방식으로 변경
 
 - 구분: 환경변수, 엔드포인트, 인증, 메인 로직

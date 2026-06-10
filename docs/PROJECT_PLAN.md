@@ -103,8 +103,8 @@ MollaAI Server는 전화 기반 영어 회화 학습 서비스의 백엔드 API 
 1. 앱이 사용자 JWT로 세션 시작 API를 호출한다.
 2. 서버는 인증된 사용자의 첫 통화 여부를 확인하고 통화 세션을 생성한다.
 3. 첫 통화라면 세션 유형을 `level_test`로 저장한다.
-4. 서버는 앱에 agent control WSS URL과 agent token을 반환한다.
-5. 앱은 `wss://api.example.com/api/v1/agents/control?token=<agentToken>` 형식으로 백엔드 agent control WSS에 연결한다.
+4. 서버는 Cloudflare Realtime session을 만들고, 상시 연결된 AI 오케스트레이터 agent WSS로 `join_call`을 전송한다.
+5. 앱은 백엔드에 WebRTC offer를 전달하고 Cloudflare Realtime answer를 받아 media connection을 연다.
 6. 상시 연결된 AI 서버와 백엔드는 agent control 채널을 기준으로 통화 제어를 진행한다.
 7. 통화 종료 시 AI 오케스트레이션 서버가 내부 세션 종료 API를 호출한다.
 8. 서버는 통화 전문을 저장하고 비동기 워커를 실행한다.
@@ -115,7 +115,7 @@ MollaAI Server는 전화 기반 영어 회화 학습 서비스의 백엔드 API 
 
 1. 사용자가 다시 통화를 시작한다.
 2. 서버는 세션 유형을 `practice`로 저장한다.
-3. 앱은 응답받은 agent control WSS URL로 연결한다.
+3. 서버는 상시 연결된 AI 오케스트레이터 agent WSS로 통화를 배정한다.
 4. 통화 종료 후 피드백 리포트를 생성한다.
 5. 사용자는 이전 리포트와 단어장을 참고해 복습한다.
 

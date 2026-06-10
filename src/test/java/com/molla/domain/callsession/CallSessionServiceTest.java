@@ -1,21 +1,26 @@
 package com.molla.domain.callsession;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.molla.config.JwtProvider;
 import com.molla.controller.dto.callsession.CallSessionResponse;
 import com.molla.controller.dto.callsession.EndSessionRequest;
 import com.molla.controller.dto.callsession.StartSessionRequest;
+import com.molla.controller.dto.callsession.WebrtcOfferRequest;
+import com.molla.controller.dto.callsession.WebrtcOfferResponse;
 import com.molla.controller.dto.subscription.SubscriptionWithRemainingResponse;
 import com.molla.domain.subscription.SubscriptionRepository;
 import com.molla.domain.subscription.SubscriptionService;
 import com.molla.domain.user.User;
 import com.molla.domain.user.UserRepository;
+import com.molla.realtime.AgentConnectionRegistry;
+import com.molla.realtime.CloudflareRealtimeClient;
+import com.molla.realtime.CloudflareSessionResponse;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,7 +36,8 @@ class CallSessionServiceTest {
     private final SubscriptionService subscriptionService = mock(SubscriptionService.class);
     private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
     private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
-    private final JwtProvider jwtProvider = mock(JwtProvider.class);
+    private final AgentConnectionRegistry agentConnectionRegistry = mock(AgentConnectionRegistry.class);
+    private final CloudflareRealtimeClient cloudflareRealtimeClient = mock(CloudflareRealtimeClient.class);
 
     private final CallSessionService callSessionService = new CallSessionService(
             callSessionRepository,
@@ -40,8 +46,8 @@ class CallSessionServiceTest {
             subscriptionService,
             eventPublisher,
             objectMapper,
-            jwtProvider,
-            "wss://api.example.com/api/v1/agents/control"
+            agentConnectionRegistry,
+            cloudflareRealtimeClient
     );
 
     @Test
@@ -80,7 +86,7 @@ class CallSessionServiceTest {
     }
 
     @Test
-    void startMySessionReturnsAgentControlWssUrlWithAgentToken() {
+    void startMySessionCreatesCloudflareSessionAndDispatchesJoinCallToConnectedAgent() {
         String phoneNumber = "01012345678";
         User existingUser = User.createByPhone(phoneNumber);
         SubscriptionWithRemainingResponse subscription = new SubscriptionWithRemainingResponse(
@@ -96,8 +102,7 @@ class CallSessionServiceTest {
         when(userRepository.findById(existingUser.getId())).thenReturn(Optional.of(existingUser));
         when(callSessionRepository.existsByPhoneNumber(phoneNumber)).thenReturn(false);
         when(subscriptionService.getMySubscription(existingUser.getId())).thenReturn(subscription);
-        when(jwtProvider.generateAgentToken(org.mockito.ArgumentMatchers.eq(existingUser.getId()), org.mockito.ArgumentMatchers.anyString()))
-                .thenReturn("agent-token");
+        when(cloudflareRealtimeClient.createSession()).thenReturn(new CloudflareSessionResponse("cf-session-1"));
 
         CallSessionResponse response = callSessionService.startMySession(existingUser.getId());
 
@@ -105,8 +110,18 @@ class CallSessionServiceTest {
         verify(callSessionRepository).save(sessionCaptor.capture());
         CallSession savedSession = sessionCaptor.getValue();
 
-        assertThat(response.agentToken()).isEqualTo("agent-token");
-        assertThat(response.wssUrl()).isEqualTo("wss://api.example.com/api/v1/agents/control?token=agent-token");
+        verify(cloudflareRealtimeClient).createSession();
+        verify(agentConnectionRegistry).sendJoinCall(
+                org.mockito.ArgumentMatchers.argThat(command ->
+                        command.callId().equals(savedSession.getId())
+                                && command.sessionId().equals(savedSession.getId())
+                                && command.userId().equals(existingUser.getId())
+                                && command.realtime().sessionId().equals("cf-session-1")
+                )
+        );
+        assertThat(response.agentToken()).isNull();
+        assertThat(response.wssUrl()).isNull();
+        assertThat(response.realtimeSessionId()).isEqualTo("cf-session-1");
         assertThat(response.subscription()).isEqualTo(subscription);
     }
 
@@ -140,6 +155,40 @@ class CallSessionServiceTest {
         assertThat(savedSession.getPhoneNumber()).isEqualTo(phoneNumber);
         assertThat(response.sessionType()).isEqualTo("practice");
         assertThat(response.subscription()).isEqualTo(subscription);
+    }
+
+    @Test
+    void submitWebrtcOfferForwardsOwnedSessionOfferToCloudflare() {
+        User existingUser = User.createByPhone("01012345678");
+        CallSession session = CallSession.create(
+                existingUser.getId(),
+                existingUser.getPhoneNumber(),
+                null,
+                "practice",
+                "subscribed"
+        );
+        WebrtcOfferRequest request = new WebrtcOfferRequest(
+                "cf-session-1",
+                Map.of("type", "offer", "sdp", "local-sdp"),
+                List.of(Map.of("trackName", "user_audio"))
+        );
+        Map<String, Object> cloudflareResponse = Map.of(
+                "sessionDescription", Map.of("type", "answer", "sdp", "remote-sdp"),
+                "tracks", List.of(Map.of("trackName", "assistant_audio"))
+        );
+
+        when(userRepository.findById(existingUser.getId())).thenReturn(Optional.of(existingUser));
+        when(callSessionRepository.findByIdAndPhoneNumber(session.getId(), existingUser.getPhoneNumber()))
+                .thenReturn(Optional.of(session));
+        when(cloudflareRealtimeClient.addTracks("cf-session-1", request.toCloudflarePayload()))
+                .thenReturn(cloudflareResponse);
+
+        WebrtcOfferResponse response = callSessionService.submitWebrtcOffer(session.getId(), existingUser.getId(), request);
+
+        verify(cloudflareRealtimeClient).addTracks("cf-session-1", request.toCloudflarePayload());
+        assertThat(response.sessionDescription()).containsEntry("type", "answer");
+        assertThat(response.sessionDescription()).containsEntry("sdp", "remote-sdp");
+        assertThat(response.tracks()).hasSize(1);
     }
 
     @Test

@@ -20,14 +20,18 @@ server:
 
 jwt:
   secret: ${JWT_SECRET:molla-jwt-secret-key-must-be-at-least-256-bits-long-for-hs256}
-  agent-secret: ${JWT_AGENT_SECRET:${JWT_SECRET:molla-jwt-secret-key-must-be-at-least-256-bits-long-for-hs256}}
   access-token-expiration-ms: 3600000
   refresh-token-expiration-ms: 2592000000
-  agent-token-expiration-ms: ${JWT_AGENT_TOKEN_EXPIRATION_MS:300000}
 
 agents:
   control:
-    wss-url: ${AGENT_CONTROL_WSS_URL:}
+    token: ${AI_AGENT_TOKEN:}
+
+cloudflare:
+  realtime:
+    api-base: ${CLOUDFLARE_REALTIME_API_BASE:https://rtc.live.cloudflare.com/v1}
+    app-id: ${CLOUDFLARE_REALTIME_APP_ID:}
+    api-token: ${CLOUDFLARE_API_TOKEN:}
 
 naver:
   sens:
