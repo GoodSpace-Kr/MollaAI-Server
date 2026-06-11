@@ -6,6 +6,8 @@ import com.molla.controller.dto.auth.TokenResponse;
 import com.molla.domain.subscription.SubscriptionService;
 import com.molla.domain.user.User;
 import com.molla.domain.user.UserRepository;
+import com.molla.realtime.AgentConnectionRegistry;
+import com.molla.realtime.JoinCallCommand;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -32,6 +34,7 @@ public class DevController {
     private final UserRepository userRepository;
     private final JwtProvider jwtProvider;
     private final SubscriptionService subscriptionService;
+    private final AgentConnectionRegistry agentConnectionRegistry;
 
     @Operation(
             summary = "[개발 전용] SMS 인증 없이 바로 로그인",
@@ -59,9 +62,41 @@ public class DevController {
         return ResponseEntity.ok(ApiResponse.success(TokenResponse.of(accessToken, refreshToken, isNewUser)));
     }
 
+    @Operation(
+            summary = "[개발 전용] 연결된 오케스트레이터로 join_call 전송",
+            description = "백엔드 agent-control WSS와 오케스트레이터 연결을 수동으로 검증합니다. 운영 환경에서는 비활성화됩니다."
+    )
+    @PostMapping("/api/v1/dev/agents/join-call")
+    public ResponseEntity<ApiResponse<DevAgentJoinCallResponse>> devAgentJoinCall(
+            @RequestBody @Valid DevAgentJoinCallRequest request
+    ) {
+        agentConnectionRegistry.sendJoinCall(JoinCallCommand.of(
+                request.callId(),
+                request.sessionId(),
+                request.userId(),
+                request.realtimeSessionId()
+        ));
+        log.warn("[DEV] 오케스트레이터 join_call 수동 전송 — callId: {}, sessionId: {}, realtimeSessionId: {}",
+                request.callId(), request.sessionId(), request.realtimeSessionId());
+        return ResponseEntity.ok(ApiResponse.success(new DevAgentJoinCallResponse(true)));
+    }
+
     record DevLoginRequest(
             @NotBlank(message = "전화번호를 입력해주세요.")
             @Pattern(regexp = "^01[0-9]{8,9}$", message = "올바른 전화번호 형식이 아닙니다.")
             String phoneNumber
     ) {}
+
+    record DevAgentJoinCallRequest(
+            @NotBlank(message = "callId를 입력해주세요.")
+            String callId,
+            @NotBlank(message = "sessionId를 입력해주세요.")
+            String sessionId,
+            @NotBlank(message = "userId를 입력해주세요.")
+            String userId,
+            @NotBlank(message = "realtimeSessionId를 입력해주세요.")
+            String realtimeSessionId
+    ) {}
+
+    record DevAgentJoinCallResponse(boolean sent) {}
 }
