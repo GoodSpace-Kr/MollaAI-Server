@@ -45,6 +45,28 @@ class AgentControlWebSocketHandlerTest {
     }
 
     @Test
+    void acceptsUrlEncodedAgentToken() throws Exception {
+        AgentControlWebSocketHandler handler = new AgentControlWebSocketHandler(
+                new ObjectMapper(),
+                agentConnectionRegistry,
+                messageService,
+                "agent+token"
+        );
+        Map<String, Object> attributes = new HashMap<>();
+        WebSocketSession session = mock(WebSocketSession.class);
+
+        when(session.getUri()).thenReturn(URI.create("wss://api.example.com/api/v1/agents/control?token=agent%2Btoken"));
+        when(session.getAttributes()).thenReturn(attributes);
+
+        handler.afterConnectionEstablished(session);
+
+        assertThat(attributes).containsEntry("agentAuthenticated", true);
+        verify(agentConnectionRegistry).register(session);
+        verify(session).sendMessage(any(TextMessage.class));
+        verify(session, never()).close(any(CloseStatus.class));
+    }
+
+    @Test
     void closesConnectionWhenTokenIsInvalid() throws Exception {
         WebSocketSession session = mock(WebSocketSession.class);
 

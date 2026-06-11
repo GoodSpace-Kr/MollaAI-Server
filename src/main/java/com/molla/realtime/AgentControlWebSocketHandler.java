@@ -13,6 +13,8 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 @Slf4j
@@ -80,9 +82,14 @@ public class AgentControlWebSocketHandler extends TextWebSocketHandler {
         if (uri == null) {
             return "";
         }
-        return UriComponentsBuilder.fromUri(uri)
+        String token = UriComponentsBuilder.fromUri(uri)
                 .build()
                 .getQueryParams()
                 .getFirst("token");
+        return decodeQueryParam(token);
+    }
+
+    private String decodeQueryParam(String value) {
+        return value == null ? "" : URLDecoder.decode(value, StandardCharsets.UTF_8);
     }
 }
