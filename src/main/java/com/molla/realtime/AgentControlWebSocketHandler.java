@@ -63,7 +63,23 @@ public class AgentControlWebSocketHandler extends TextWebSocketHandler {
             session.sendMessage(new TextMessage(objectMapper.writeValueAsString(Map.of("type", "pong"))));
             return;
         }
-        messageService.handle(session, payload);
+        try {
+            messageService.handle(session, payload);
+        } catch (Exception e) {
+            log.error(
+                    "agent_control_message_failed wsSessionId={} type={} callId={} error={}",
+                    session.getId(),
+                    payload.get("type"),
+                    payload.get("callId"),
+                    e.getMessage(),
+                    e
+            );
+            session.sendMessage(new TextMessage(objectMapper.writeValueAsString(Map.of(
+                    "type", "agent_control_error",
+                    "callId", String.valueOf(payload.getOrDefault("callId", "")),
+                    "message", e.getMessage() == null ? "agent control message failed" : e.getMessage()
+            ))));
+        }
     }
 
     @Override

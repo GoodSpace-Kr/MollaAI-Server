@@ -12,6 +12,8 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -89,5 +91,25 @@ class AgentControlWebSocketHandlerTest {
         );
 
         verify(messageService).handle(session, Map.of("type", "agent_webrtc_offer", "callId", "call-1"));
+    }
+
+    @Test
+    void sendsErrorMessageAndKeepsConnectionOpenWhenMessageHandlingFails() throws Exception {
+        WebSocketSession session = mock(WebSocketSession.class);
+        Map<String, Object> payload = Map.of("type", "agent_webrtc_offer", "callId", "call-1");
+        doThrow(new IllegalStateException("cloudflare failed"))
+                .when(messageService).handle(session, payload);
+
+        handler.handleTextMessage(
+                session,
+                new TextMessage("{\"type\":\"agent_webrtc_offer\",\"callId\":\"call-1\"}")
+        );
+
+        verify(session).sendMessage(argThat((TextMessage message) ->
+                message.getPayload().contains("\"type\":\"agent_control_error\"")
+                        && message.getPayload().contains("\"callId\":\"call-1\"")
+                        && message.getPayload().contains("\"message\":\"cloudflare failed\"")
+        ));
+        verify(session, never()).close(any(CloseStatus.class));
     }
 }
