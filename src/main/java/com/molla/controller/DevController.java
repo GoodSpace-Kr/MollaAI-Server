@@ -7,6 +7,8 @@ import com.molla.domain.subscription.SubscriptionService;
 import com.molla.domain.user.User;
 import com.molla.domain.user.UserRepository;
 import com.molla.realtime.AgentConnectionRegistry;
+import com.molla.realtime.CloudflareRealtimeClient;
+import com.molla.realtime.CloudflareSessionResponse;
 import com.molla.realtime.JoinCallCommand;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -35,6 +37,7 @@ public class DevController {
     private final JwtProvider jwtProvider;
     private final SubscriptionService subscriptionService;
     private final AgentConnectionRegistry agentConnectionRegistry;
+    private final CloudflareRealtimeClient cloudflareRealtimeClient;
 
     @Operation(
             summary = "[개발 전용] SMS 인증 없이 바로 로그인",
@@ -63,22 +66,23 @@ public class DevController {
     }
 
     @Operation(
-            summary = "[개발 전용] 연결된 오케스트레이터로 join_call 전송",
-            description = "백엔드 agent-control WSS와 오케스트레이터 연결을 수동으로 검증합니다. 운영 환경에서는 비활성화됩니다."
+            summary = "[개발 전용] Cloudflare 세션 생성 후 오케스트레이터로 join_call 전송",
+            description = "Cloudflare Realtime 세션 생성, 백엔드 agent-control WSS, 오케스트레이터 WebRTC offer 반환 흐름을 수동으로 검증합니다. 운영 환경에서는 비활성화됩니다."
     )
     @PostMapping("/api/v1/dev/agents/join-call")
     public ResponseEntity<ApiResponse<DevAgentJoinCallResponse>> devAgentJoinCall(
             @RequestBody @Valid DevAgentJoinCallRequest request
     ) {
+        CloudflareSessionResponse realtimeSession = cloudflareRealtimeClient.createSession();
         agentConnectionRegistry.sendJoinCall(JoinCallCommand.of(
                 request.callId(),
                 request.sessionId(),
                 request.userId(),
-                request.realtimeSessionId()
+                realtimeSession.sessionId()
         ));
         log.warn("[DEV] 오케스트레이터 join_call 수동 전송 — callId: {}, sessionId: {}, realtimeSessionId: {}",
-                request.callId(), request.sessionId(), request.realtimeSessionId());
-        return ResponseEntity.ok(ApiResponse.success(new DevAgentJoinCallResponse(true)));
+                request.callId(), request.sessionId(), realtimeSession.sessionId());
+        return ResponseEntity.ok(ApiResponse.success(new DevAgentJoinCallResponse(true, realtimeSession.sessionId())));
     }
 
     record DevLoginRequest(
@@ -93,10 +97,8 @@ public class DevController {
             @NotBlank(message = "sessionId를 입력해주세요.")
             String sessionId,
             @NotBlank(message = "userId를 입력해주세요.")
-            String userId,
-            @NotBlank(message = "realtimeSessionId를 입력해주세요.")
-            String realtimeSessionId
+            String userId
     ) {}
 
-    record DevAgentJoinCallResponse(boolean sent) {}
+    record DevAgentJoinCallResponse(boolean sent, String realtimeSessionId) {}
 }
