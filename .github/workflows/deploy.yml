@@ -30,7 +30,23 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Run tests
-        run: ./gradlew test
+        run: |
+          set +e
+          echo "Git commit: $(git rev-parse HEAD)"
+          echo "SubscriptionService default plan:"
+          grep -n "DEMO_DEFAULT_PLAN_TYPE" src/main/java/com/molla/domain/subscription/SubscriptionService.java || true
+          echo "SubscriptionServiceTest assertion:"
+          nl -ba src/test/java/com/molla/domain/subscription/SubscriptionServiceTest.java | sed -n '34,44p'
+
+          ./gradlew clean test --stacktrace
+          status=$?
+
+          if [ "$status" -ne 0 ]; then
+            echo "SubscriptionServiceTest XML report:"
+            cat build/test-results/test/TEST-com.molla.domain.subscription.SubscriptionServiceTest.xml || true
+          fi
+
+          exit "$status"
 
       - name: Build application
         run: ./gradlew build -x test
