@@ -32,14 +32,17 @@ public class CloudflareRealtimeClient {
         this.apiToken = apiToken;
     }
 
-    public CloudflareSessionResponse createSession() {
+    public Map<String, Object> createSession(Map<String, Object> offerPayload) {
         ensureConfigured();
-        Map<?, ?> response = post("/apps/" + appId + "/sessions/new", Map.of());
+        Map<String, Object> request = Map.of(
+                "sessionDescription", offerPayload.get("sessionDescription")
+        );
+        Map<String, Object> response = post("/apps/" + appId + "/sessions/new", request);
         Object sessionId = response.get("sessionId");
         if (!(sessionId instanceof String value) || !StringUtils.hasText(value)) {
             throw new GlobalException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
-        return new CloudflareSessionResponse(value);
+        return response;
     }
 
     public Map<String, Object> addTracks(String realtimeSessionId, Map<String, Object> offerPayload) {

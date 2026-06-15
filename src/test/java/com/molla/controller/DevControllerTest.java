@@ -7,8 +7,6 @@ import com.molla.domain.subscription.SubscriptionService;
 import com.molla.domain.user.User;
 import com.molla.domain.user.UserRepository;
 import com.molla.realtime.AgentConnectionRegistry;
-import com.molla.realtime.CloudflareRealtimeClient;
-import com.molla.realtime.CloudflareSessionResponse;
 import com.molla.realtime.JoinCallCommand;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -27,13 +25,11 @@ class DevControllerTest {
     private final JwtProvider jwtProvider = mock(JwtProvider.class);
     private final SubscriptionService subscriptionService = mock(SubscriptionService.class);
     private final AgentConnectionRegistry agentConnectionRegistry = mock(AgentConnectionRegistry.class);
-    private final CloudflareRealtimeClient cloudflareRealtimeClient = mock(CloudflareRealtimeClient.class);
     private final DevController devController = new DevController(
             userRepository,
             jwtProvider,
             subscriptionService,
-            agentConnectionRegistry,
-            cloudflareRealtimeClient
+            agentConnectionRegistry
     );
 
     @Test
@@ -73,8 +69,6 @@ class DevControllerTest {
 
     @Test
     void devAgentJoinCallSendsJoinCallToConnectedOrchestrator() {
-        when(cloudflareRealtimeClient.createSession()).thenReturn(new CloudflareSessionResponse("cf-session-1"));
-
         ResponseEntity<ApiResponse<DevController.DevAgentJoinCallResponse>> response = devController.devAgentJoinCall(
                 new DevController.DevAgentJoinCallRequest(
                         "call-1",
@@ -84,7 +78,6 @@ class DevControllerTest {
         );
 
         ArgumentCaptor<JoinCallCommand> commandCaptor = ArgumentCaptor.forClass(JoinCallCommand.class);
-        verify(cloudflareRealtimeClient).createSession();
         verify(agentConnectionRegistry).sendJoinCall(commandCaptor.capture());
         JoinCallCommand command = commandCaptor.getValue();
 
@@ -92,9 +85,8 @@ class DevControllerTest {
         assertThat(command.callId()).isEqualTo("call-1");
         assertThat(command.sessionId()).isEqualTo("session-1");
         assertThat(command.userId()).isEqualTo("user-1");
-        assertThat(command.realtime().sessionId()).isEqualTo("cf-session-1");
+        assertThat(command.realtime().sessionId()).isEmpty();
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().data().sent()).isTrue();
-        assertThat(response.getBody().data().realtimeSessionId()).isEqualTo("cf-session-1");
     }
 }

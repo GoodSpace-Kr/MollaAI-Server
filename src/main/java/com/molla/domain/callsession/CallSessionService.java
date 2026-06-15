@@ -15,7 +15,6 @@ import com.molla.domain.user.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.molla.realtime.AgentConnectionRegistry;
 import com.molla.realtime.CloudflareRealtimeClient;
-import com.molla.realtime.CloudflareSessionResponse;
 import com.molla.realtime.JoinCallCommand;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -111,14 +110,13 @@ public class CallSessionService {
 
         callSessionRepository.save(session);
         SubscriptionWithRemainingResponse subscription = subscriptionService.getMySubscription(user.getId());
-        CloudflareSessionResponse realtimeSession = cloudflareRealtimeClient.createSession();
         agentConnectionRegistry.sendJoinCall(
-                JoinCallCommand.of(session.getId(), session.getId(), user.getId(), realtimeSession.sessionId())
+                JoinCallCommand.of(session.getId(), session.getId(), user.getId(), "")
         );
         log.info("앱 통화 세션 시작 — sessionId: {}, userId: {}, type: {}",
                 session.getId(), session.getUserId(), sessionType);
 
-        return CallSessionResponse.from(session, subscription, realtimeSession.sessionId());
+        return CallSessionResponse.from(session, subscription);
     }
 
     // ──────────────────────────────────────────────
