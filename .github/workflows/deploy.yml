@@ -38,7 +38,16 @@ jobs:
           echo "SubscriptionServiceTest assertion:"
           nl -ba src/test/java/com/molla/domain/subscription/SubscriptionServiceTest.java | sed -n '34,44p'
 
-          ./gradlew clean test --stacktrace
+          ./gradlew clean compileJava --no-build-cache
+          compile_status=$?
+          if [ "$compile_status" -ne 0 ]; then
+            exit "$compile_status"
+          fi
+
+          echo "Compiled SubscriptionService constants:"
+          javap -classpath build/classes/java/main -verbose com.molla.domain.subscription.SubscriptionService | grep -E "premium|free|DEMO_DEFAULT_PLAN_TYPE|planType" || true
+
+          ./gradlew test --no-build-cache
           status=$?
 
           if [ "$status" -ne 0 ]; then
