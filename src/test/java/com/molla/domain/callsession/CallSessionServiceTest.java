@@ -13,7 +13,6 @@ import com.molla.domain.user.User;
 import com.molla.domain.user.UserRepository;
 import com.molla.realtime.AgentConnectionRegistry;
 import com.molla.realtime.CloudflareRealtimeClient;
-import com.molla.realtime.CloudflareSessionResponse;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -102,7 +101,6 @@ class CallSessionServiceTest {
         when(userRepository.findById(existingUser.getId())).thenReturn(Optional.of(existingUser));
         when(callSessionRepository.existsByPhoneNumber(phoneNumber)).thenReturn(false);
         when(subscriptionService.getMySubscription(existingUser.getId())).thenReturn(subscription);
-        when(cloudflareRealtimeClient.createSession()).thenReturn(new CloudflareSessionResponse("cf-session-1"));
 
         CallSessionResponse response = callSessionService.startMySession(existingUser.getId());
 
@@ -110,18 +108,17 @@ class CallSessionServiceTest {
         verify(callSessionRepository).save(sessionCaptor.capture());
         CallSession savedSession = sessionCaptor.getValue();
 
-        verify(cloudflareRealtimeClient).createSession();
         verify(agentConnectionRegistry).sendJoinCall(
                 org.mockito.ArgumentMatchers.argThat(command ->
                         command.callId().equals(savedSession.getId())
                                 && command.sessionId().equals(savedSession.getId())
                                 && command.userId().equals(existingUser.getId())
-                                && command.realtime().sessionId().equals("cf-session-1")
+                                && command.realtime().sessionId().isEmpty()
                 )
         );
         assertThat(response.agentToken()).isNull();
         assertThat(response.wssUrl()).isNull();
-        assertThat(response.realtimeSessionId()).isEqualTo("cf-session-1");
+        assertThat(response.realtimeSessionId()).isNull();
         assertThat(response.subscription()).isEqualTo(subscription);
     }
 

@@ -39,6 +39,37 @@ class AgentControlMessageServiceTest {
                 Map.of(
                         "type", "webrtc_answer",
                         "callId", "call-1",
+                        "realtimeSessionId", "cf-session-1",
+                        "sessionDescription", answer
+                )
+        );
+    }
+
+    @Test
+    void agentWebrtcOfferWithoutRealtimeSessionCreatesCloudflareSession() {
+        WebSocketSession session = mock(WebSocketSession.class);
+        Map<String, Object> offer = Map.of(
+                "type", "agent_webrtc_offer",
+                "callId", "call-1",
+                "realtimeSessionId", "",
+                "sessionDescription", Map.of("type", "offer", "sdp", "local-sdp")
+        );
+        Map<String, Object> answer = Map.of("type", "answer", "sdp", "remote-sdp");
+        when(cloudflareRealtimeClient.createSession(offer))
+                .thenReturn(Map.of(
+                        "sessionId", "cf-session-1",
+                        "sessionDescription", answer
+                ));
+
+        service.handle(session, offer);
+
+        verify(cloudflareRealtimeClient).createSession(offer);
+        verify(agentConnectionRegistry).send(
+                session,
+                Map.of(
+                        "type", "webrtc_answer",
+                        "callId", "call-1",
+                        "realtimeSessionId", "cf-session-1",
                         "sessionDescription", answer
                 )
         );
