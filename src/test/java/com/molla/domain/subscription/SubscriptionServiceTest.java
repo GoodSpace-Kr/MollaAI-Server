@@ -26,7 +26,7 @@ class SubscriptionServiceTest {
     );
 
     @Test
-    void ensureDemoSubscriptionCreatesPremiumSubscriptionWhenNoneExists() {
+    void ensureDemoSubscriptionCreatesFreeSubscriptionWhenNoneExists() {
         User user = User.createByPhone("01012345678");
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(subscriptionRepository.existsActiveByUserId(user.getId())).thenReturn(false);
@@ -41,8 +41,8 @@ class SubscriptionServiceTest {
                 .as("saved demo subscription planType; dailyLimit=%s, status=%s",
                         saved.getDailyLimitMinutes(),
                         saved.getStatus())
-                .isEqualTo("premium");
-        assertThat(saved.getDailyLimitMinutes()).isEqualTo(300);
+                .isEqualTo("free");
+        assertThat(saved.getDailyLimitMinutes()).isEqualTo(30);
         assertThat(saved.getExpiresAt()).isNull();
         assertThat(saved.getStatus()).isEqualTo("active");
     }
