@@ -11,8 +11,9 @@ import com.molla.domain.subscription.SubscriptionRepository;
 import com.molla.domain.subscription.SubscriptionService;
 import com.molla.domain.user.User;
 import com.molla.domain.user.UserRepository;
-import com.molla.realtime.AgentConnectionRegistry;
 import com.molla.realtime.CloudflareRealtimeClient;
+import com.molla.realtime.JoinCallCommand;
+import com.molla.realtime.RealtimeSessionNegotiationService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -35,8 +36,8 @@ class CallSessionServiceTest {
     private final SubscriptionService subscriptionService = mock(SubscriptionService.class);
     private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
     private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
-    private final AgentConnectionRegistry agentConnectionRegistry = mock(AgentConnectionRegistry.class);
     private final CloudflareRealtimeClient cloudflareRealtimeClient = mock(CloudflareRealtimeClient.class);
+    private final RealtimeSessionNegotiationService realtimeSessionNegotiationService = mock(RealtimeSessionNegotiationService.class);
 
     private final CallSessionService callSessionService = new CallSessionService(
             callSessionRepository,
@@ -45,8 +46,8 @@ class CallSessionServiceTest {
             subscriptionService,
             eventPublisher,
             objectMapper,
-            agentConnectionRegistry,
-            cloudflareRealtimeClient
+            cloudflareRealtimeClient,
+            realtimeSessionNegotiationService
     );
 
     @Test
@@ -101,6 +102,8 @@ class CallSessionServiceTest {
         when(userRepository.findById(existingUser.getId())).thenReturn(Optional.of(existingUser));
         when(callSessionRepository.existsByPhoneNumber(phoneNumber)).thenReturn(false);
         when(subscriptionService.getMySubscription(existingUser.getId())).thenReturn(subscription);
+        when(realtimeSessionNegotiationService.requestRealtimeSession(org.mockito.ArgumentMatchers.any(JoinCallCommand.class)))
+                .thenReturn("cf-session-1");
 
         CallSessionResponse response = callSessionService.startMySession(existingUser.getId());
 
@@ -108,7 +111,7 @@ class CallSessionServiceTest {
         verify(callSessionRepository).save(sessionCaptor.capture());
         CallSession savedSession = sessionCaptor.getValue();
 
-        verify(agentConnectionRegistry).sendJoinCall(
+        verify(realtimeSessionNegotiationService).requestRealtimeSession(
                 org.mockito.ArgumentMatchers.argThat(command ->
                         command.callId().equals(savedSession.getId())
                                 && command.sessionId().equals(savedSession.getId())
@@ -118,7 +121,7 @@ class CallSessionServiceTest {
         );
         assertThat(response.agentToken()).isNull();
         assertThat(response.wssUrl()).isNull();
-        assertThat(response.realtimeSessionId()).isNull();
+        assertThat(response.realtimeSessionId()).isEqualTo("cf-session-1");
         assertThat(response.subscription()).isEqualTo(subscription);
     }
 
@@ -226,5 +229,28 @@ class CallSessionServiceTest {
         assertThat(ended.durationSeconds()).isEqualTo(180);
         assertThat(session.getDurationSeconds()).isEqualTo(180);
         assertThat(session.getStatus()).isEqualTo("completed");
+    }
+
+    @Test
+    void endMySessionEndsOwnedSessionWithoutTurns() {
+        User user = User.createByPhone("01012345678");
+        CallSession session = CallSession.create(
+                user.getId(),
+                user.getPhoneNumber(),
+                null,
+                "practice",
+                "registered"
+        );
+
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(callSessionRepository.findByIdAndPhoneNumber(session.getId(), user.getPhoneNumber()))
+                .thenReturn(Optional.of(session));
+
+        CallSessionResponse response = callSessionService.endMySession(session.getId(), user.getId(), null);
+
+        assertThat(response.id()).isEqualTo(session.getId());
+        assertThat(response.status()).isEqualTo("completed");
+        assertThat(session.getStatus()).isEqualTo("completed");
+        assertThat(session.getEndedAt()).isNotNull();
     }
 }

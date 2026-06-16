@@ -13,9 +13,9 @@ import com.molla.domain.subscription.SubscriptionService;
 import com.molla.domain.user.User;
 import com.molla.domain.user.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.molla.realtime.AgentConnectionRegistry;
 import com.molla.realtime.CloudflareRealtimeClient;
 import com.molla.realtime.JoinCallCommand;
+import com.molla.realtime.RealtimeSessionNegotiationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -34,8 +34,8 @@ public class CallSessionService {
     private final SubscriptionService subscriptionService;
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
-    private final AgentConnectionRegistry agentConnectionRegistry;
     private final CloudflareRealtimeClient cloudflareRealtimeClient;
+    private final RealtimeSessionNegotiationService realtimeSessionNegotiationService;
 
     public CallSessionService(
             CallSessionRepository callSessionRepository,
@@ -44,8 +44,8 @@ public class CallSessionService {
             SubscriptionService subscriptionService,
             ApplicationEventPublisher eventPublisher,
             ObjectMapper objectMapper,
-            AgentConnectionRegistry agentConnectionRegistry,
-            CloudflareRealtimeClient cloudflareRealtimeClient
+            CloudflareRealtimeClient cloudflareRealtimeClient,
+            RealtimeSessionNegotiationService realtimeSessionNegotiationService
     ) {
         this.callSessionRepository = callSessionRepository;
         this.userRepository = userRepository;
@@ -53,8 +53,8 @@ public class CallSessionService {
         this.subscriptionService = subscriptionService;
         this.eventPublisher = eventPublisher;
         this.objectMapper = objectMapper;
-        this.agentConnectionRegistry = agentConnectionRegistry;
         this.cloudflareRealtimeClient = cloudflareRealtimeClient;
+        this.realtimeSessionNegotiationService = realtimeSessionNegotiationService;
     }
 
     // ──────────────────────────────────────────────
@@ -110,13 +110,13 @@ public class CallSessionService {
 
         callSessionRepository.save(session);
         SubscriptionWithRemainingResponse subscription = subscriptionService.getMySubscription(user.getId());
-        agentConnectionRegistry.sendJoinCall(
+        String realtimeSessionId = realtimeSessionNegotiationService.requestRealtimeSession(
                 JoinCallCommand.of(session.getId(), session.getId(), user.getId(), "")
         );
         log.info("앱 통화 세션 시작 — sessionId: {}, userId: {}, type: {}",
                 session.getId(), session.getUserId(), sessionType);
 
-        return CallSessionResponse.from(session, subscription);
+        return CallSessionResponse.from(session, subscription, realtimeSessionId);
     }
 
     // ──────────────────────────────────────────────
@@ -127,7 +127,18 @@ public class CallSessionService {
     public CallSessionResponse endSession(String sessionId, EndSessionRequest request) {
         CallSession session = callSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new CallSessionException(ErrorCode.SESSION_NOT_FOUND));
+        return endSession(session, request, true);
+    }
 
+    @Transactional
+    public CallSessionResponse endMySession(String sessionId, String userId, EndSessionRequest request) {
+        String phoneNumber = getPhoneNumberByUserId(userId);
+        CallSession session = callSessionRepository.findByIdAndPhoneNumber(sessionId, phoneNumber)
+                .orElseThrow(() -> new CallSessionException(ErrorCode.SESSION_NOT_FOUND));
+        return endSession(session, request, false);
+    }
+
+    private CallSessionResponse endSession(CallSession session, EndSessionRequest request, boolean requireTurnsForCompleted) {
         if (!session.isInProgress()) {
             throw new CallSessionException(ErrorCode.SESSION_ALREADY_ENDED);
         }
@@ -136,7 +147,7 @@ public class CallSessionService {
         Integer requestedDurationMinutes = request != null ? request.durationMinutes() : null;
         List<CallSessionTurn> turns = request != null ? request.toCallSessionTurns() : List.of();
 
-        if ("completed".equals(resolvedStatus) && turns.isEmpty()) {
+        if (requireTurnsForCompleted && "completed".equals(resolvedStatus) && turns.isEmpty()) {
             throw new CallSessionException(ErrorCode.INVALID_REQUEST, "completed 상태로 종료하려면 turns가 필요합니다.");
         }
 
@@ -160,12 +171,12 @@ public class CallSessionService {
 
         // 통화 종료 후 비동기 워커 트리거 (Spring Event)
         // 리포트 생성 → Qdrant upsert 순으로 처리
-        if ("completed".equals(session.getStatus())) {
+        if ("completed".equals(session.getStatus()) && !turns.isEmpty()) {
             eventPublisher.publishEvent(new SessionEndedEvent(session.getId(), session.getUserId(), session.isLevelTest()));
         }
 
         log.info("통화 세션 종료 — sessionId: {}, duration: {}초, status: {}",
-                sessionId, session.getDurationSeconds(), session.getStatus());
+                session.getId(), session.getDurationSeconds(), session.getStatus());
 
         return CallSessionResponse.from(session);
     }

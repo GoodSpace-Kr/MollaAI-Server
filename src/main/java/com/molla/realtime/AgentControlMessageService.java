@@ -13,6 +13,7 @@ public class AgentControlMessageService {
 
     private final CloudflareRealtimeClient cloudflareRealtimeClient;
     private final AgentConnectionRegistry agentConnectionRegistry;
+    private final RealtimeSessionNegotiationService realtimeSessionNegotiationService;
 
     public void handle(WebSocketSession session, Map<String, Object> payload) {
         String type = String.valueOf(payload.getOrDefault("type", ""));
@@ -32,6 +33,7 @@ public class AgentControlMessageService {
             realtimeSessionId = String.valueOf(response.getOrDefault("sessionId", ""));
         }
         Object sessionDescription = response.get("sessionDescription");
+        realtimeSessionNegotiationService.complete(callId, realtimeSessionId);
         agentConnectionRegistry.send(
                 session,
                 Map.of(
