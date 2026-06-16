@@ -300,6 +300,49 @@
     });
   }
 
+  function describeSdp(label, description) {
+    const sdp = description?.sdp || "";
+    const mediaLines = sdp.split(/\r?\n/).filter((line) => line.startsWith("m="));
+    const candidateLines = sdp.split(/\r?\n/).filter((line) => line.startsWith("a=candidate:"));
+    log(`${label} SDP summary`, {
+      type: description?.type || "",
+      mediaLines,
+      candidateCount: candidateLines.length,
+      hasEndOfCandidates: sdp.includes("a=end-of-candidates"),
+    });
+  }
+
+  async function logIceStats(label) {
+    if (!peerConnection) {
+      return;
+    }
+    const stats = await peerConnection.getStats();
+    const rows = [];
+    stats.forEach((report) => {
+      if (["local-candidate", "remote-candidate", "candidate-pair", "transport"].includes(report.type)) {
+        rows.push({
+          type: report.type,
+          id: report.id,
+          candidateType: report.candidateType,
+          protocol: report.protocol,
+          address: report.address || report.ip,
+          port: report.port,
+          state: report.state,
+          nominated: report.nominated,
+          selected: report.selected,
+          localCandidateId: report.localCandidateId,
+          remoteCandidateId: report.remoteCandidateId,
+          iceState: report.iceState,
+          dtlsState: report.dtlsState,
+          selectedCandidatePairId: report.selectedCandidatePairId,
+          bytesSent: report.bytesSent,
+          bytesReceived: report.bytesReceived,
+        });
+      }
+    });
+    log(label, rows);
+  }
+
   async function startCall() {
     try {
       elements.startButton.disabled = true;
@@ -349,6 +392,7 @@
       await peerConnection.setLocalDescription(offer);
       log("Waiting for ICE gathering to complete...");
       await waitForIceGatheringComplete(peerConnection);
+      describeSdp("Local offer", peerConnection.localDescription);
       const tracks = peerConnection.getTransceivers()
         .filter((transceiver) => transceiver.sender && transceiver.sender.track)
         .map((transceiver, index) => ({
@@ -379,8 +423,11 @@
       if (!answer?.type || !answer?.sdp) {
         throw new Error("Missing sessionDescription in /webrtc/offer response.");
       }
+      describeSdp("Remote answer", answer);
       await peerConnection.setRemoteDescription(answer);
       log("Remote description applied.");
+      window.setTimeout(() => logIceStats("ICE stats after remote description"), 1000);
+      window.setTimeout(() => logIceStats("ICE stats after 6 seconds"), 6000);
       setState();
     } catch (error) {
       log("Start failed: " + (error?.message || error));
