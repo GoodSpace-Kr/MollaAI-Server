@@ -213,7 +213,7 @@ public class CallSessionService {
         callSessionRepository.findByIdAndPhoneNumber(sessionId, phoneNumber)
                 .orElseThrow(() -> new CallSessionException(ErrorCode.SESSION_NOT_FOUND));
         return WebrtcOfferResponse.fromCloudflare(
-                cloudflareRealtimeClient.addTracks(request.realtimeSessionId(), request.toCloudflarePayload())
+                cloudflareRealtimeClient.createSession(request.toCloudflarePayload())
         );
     }
 

@@ -68,6 +68,18 @@
       gap: 8px;
     }
 
+    .inline-option {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 12px;
+      font-weight: 500;
+    }
+
+    .inline-option input {
+      width: auto;
+    }
+
     button {
       min-height: 40px;
       border: 1px solid #1b5fbf;
@@ -169,6 +181,10 @@
       <label for="accessToken">Access Token</label>
       <textarea id="accessToken" placeholder="Bearer 없이 access token만 붙여넣기"></textarea>
     </div>
+    <label class="inline-option" for="relayOnly">
+      <input id="relayOnly" type="checkbox" />
+      Relay only
+    </label>
   </section>
 
   <section>
@@ -197,11 +213,13 @@
   let localStream = null;
   let callSessionId = "";
   let realtimeSessionId = "";
+  let appRealtimeSessionId = "";
 
   const elements = {
     baseUrl: document.getElementById("baseUrl"),
     iceServers: document.getElementById("iceServers"),
     accessToken: document.getElementById("accessToken"),
+    relayOnly: document.getElementById("relayOnly"),
     startButton: document.getElementById("startButton"),
     endButton: document.getElementById("endButton"),
     clearButton: document.getElementById("clearButton"),
@@ -350,6 +368,10 @@
           iceState: report.iceState,
           dtlsState: report.dtlsState,
           selectedCandidatePairId: report.selectedCandidatePairId,
+          requestsSent: report.requestsSent,
+          responsesReceived: report.responsesReceived,
+          requestsReceived: report.requestsReceived,
+          responsesSent: report.responsesSent,
           bytesSent: report.bytesSent,
           bytesReceived: report.bytesReceived,
         });
@@ -373,7 +395,11 @@
       log("Creating RTCPeerConnection...");
       const iceServers = resolveIceServers(startResponse);
       log("Using ICE servers.", redactIceServers(iceServers));
-      peerConnection = new RTCPeerConnection({ iceServers });
+      peerConnection = new RTCPeerConnection({
+        iceServers,
+        iceTransportPolicy: elements.relayOnly.checked ? "relay" : "all",
+      });
+      log("ICE transport policy: " + (elements.relayOnly.checked ? "relay" : "all"));
 
       peerConnection.oniceconnectionstatechange = () => {
         log("ICE state: " + peerConnection.iceConnectionState);
@@ -437,6 +463,10 @@
       });
 
       const answer = answerResponse?.data?.sessionDescription;
+      appRealtimeSessionId = answerResponse?.data?.realtimeSessionId || "";
+      if (appRealtimeSessionId) {
+        log("App realtime session created: " + appRealtimeSessionId);
+      }
       if (!answer?.type || !answer?.sdp) {
         throw new Error("Missing sessionDescription in /webrtc/offer response.");
       }
@@ -485,6 +515,7 @@
 
     callSessionId = "";
     realtimeSessionId = "";
+    appRealtimeSessionId = "";
   }
 
   elements.startButton.addEventListener("click", startCall);

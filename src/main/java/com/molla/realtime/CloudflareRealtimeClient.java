@@ -12,6 +12,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
 
 @Slf4j
 @Component
@@ -34,9 +36,12 @@ public class CloudflareRealtimeClient {
 
     public Map<String, Object> createSession(Map<String, Object> offerPayload) {
         ensureConfigured();
-        Map<String, Object> request = Map.of(
-                "sessionDescription", offerPayload.get("sessionDescription")
-        );
+        Map<String, Object> request = new HashMap<>();
+        request.put("sessionDescription", offerPayload.get("sessionDescription"));
+        Object tracks = offerPayload.get("tracks");
+        if (tracks instanceof List<?> list && !list.isEmpty()) {
+            request.put("tracks", tracks);
+        }
         Map<String, Object> response = post("/apps/" + appId + "/sessions/new", request);
         Object sessionId = response.get("sessionId");
         if (!(sessionId instanceof String value) || !StringUtils.hasText(value)) {
