@@ -192,6 +192,43 @@ class CallSessionServiceTest {
     }
 
     @Test
+    void submitWebrtcOfferAppendsEndOfCandidatesToCloudflareAnswer() {
+        User existingUser = User.createByPhone("01012345678");
+        CallSession session = CallSession.create(
+                existingUser.getId(),
+                existingUser.getPhoneNumber(),
+                null,
+                "practice",
+                "subscribed"
+        );
+        WebrtcOfferRequest request = new WebrtcOfferRequest(
+                "cf-session-1",
+                Map.of("type", "offer", "sdp", "local-sdp"),
+                List.of(Map.of("location", "local", "mid", "0", "trackName", "user_audio"))
+        );
+        String cloudflareAnswerSdp = """
+                v=0\r
+                m=audio 1473 UDP/TLS/RTP/SAVPF 96\r
+                a=mid:0\r
+                a=candidate:513273236 1 udp 2130706431 141.101.90.0 1473 typ host generation 0\r
+                """;
+        Map<String, Object> cloudflareResponse = Map.of(
+                "sessionDescription", Map.of("type", "answer", "sdp", cloudflareAnswerSdp),
+                "tracks", List.of(Map.of("mid", "0", "trackName", "user_audio"))
+        );
+
+        when(userRepository.findById(existingUser.getId())).thenReturn(Optional.of(existingUser));
+        when(callSessionRepository.findByIdAndPhoneNumber(session.getId(), existingUser.getPhoneNumber()))
+                .thenReturn(Optional.of(session));
+        when(cloudflareRealtimeClient.addTracks("cf-session-1", request.toCloudflarePayload()))
+                .thenReturn(cloudflareResponse);
+
+        WebrtcOfferResponse response = callSessionService.submitWebrtcOffer(session.getId(), existingUser.getId(), request);
+
+        assertThat(response.sessionDescription().get("sdp").toString()).contains("a=end-of-candidates\r\n");
+    }
+
+    @Test
     void endSessionStoresProvidedDurationMinutesFromRequestAsSeconds() {
         User existingUser = User.createByPhone("01012345678");
         when(userRepository.findByPhoneNumber(existingUser.getPhoneNumber())).thenReturn(Optional.of(existingUser));

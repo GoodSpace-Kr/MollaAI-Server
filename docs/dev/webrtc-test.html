@@ -162,7 +162,7 @@
       </div>
       <div>
         <label for="iceServers">ICE Servers JSON</label>
-        <input id="iceServers" value="[]" />
+        <input id="iceServers" value='[{"urls":"stun:stun.l.google.com:19302"}]' />
       </div>
     </div>
     <div style="margin-top: 12px;">
@@ -276,6 +276,30 @@
     return parsed;
   }
 
+  function waitForIceGatheringComplete(pc) {
+    if (pc.iceGatheringState === "complete") {
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+      const timeout = setTimeout(() => {
+        pc.removeEventListener("icegatheringstatechange", onStateChange);
+        log("ICE gathering wait timed out; continuing with current localDescription.");
+        resolve();
+      }, 5000);
+
+      function onStateChange() {
+        log("ICE gathering state: " + pc.iceGatheringState);
+        if (pc.iceGatheringState === "complete") {
+          clearTimeout(timeout);
+          pc.removeEventListener("icegatheringstatechange", onStateChange);
+          resolve();
+        }
+      }
+
+      pc.addEventListener("icegatheringstatechange", onStateChange);
+    });
+  }
+
   async function startCall() {
     try {
       elements.startButton.disabled = true;
@@ -323,6 +347,20 @@
       log("Creating local offer...");
       const offer = await peerConnection.createOffer();
       await peerConnection.setLocalDescription(offer);
+      log("Waiting for ICE gathering to complete...");
+      await waitForIceGatheringComplete(peerConnection);
+      const tracks = peerConnection.getTransceivers()
+        .filter((transceiver) => transceiver.sender && transceiver.sender.track)
+        .map((transceiver, index) => ({
+          location: "local",
+          mid: transceiver.mid ?? String(index),
+          trackName: transceiver.sender.track.kind === "audio" ? "user_audio" : transceiver.sender.track.kind,
+        }));
+
+      if (tracks.length === 0) {
+        throw new Error("No local WebRTC tracks were found after setLocalDescription.");
+      }
+      log("Prepared Cloudflare track metadata.", tracks);
 
       log("Sending app WebRTC offer to backend...");
       const answerResponse = await api(`/api/v1/sessions/${callSessionId}/webrtc/offer`, {
@@ -333,7 +371,7 @@
             type: peerConnection.localDescription.type,
             sdp: peerConnection.localDescription.sdp,
           },
-          tracks: [],
+          tracks,
         }),
       });
 
