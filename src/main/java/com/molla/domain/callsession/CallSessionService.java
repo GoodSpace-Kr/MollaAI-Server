@@ -14,6 +14,7 @@ import com.molla.domain.user.User;
 import com.molla.domain.user.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.molla.realtime.CloudflareRealtimeClient;
+import com.molla.realtime.IceServerProvider;
 import com.molla.realtime.JoinCallCommand;
 import com.molla.realtime.RealtimeSessionNegotiationService;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +37,7 @@ public class CallSessionService {
     private final ObjectMapper objectMapper;
     private final CloudflareRealtimeClient cloudflareRealtimeClient;
     private final RealtimeSessionNegotiationService realtimeSessionNegotiationService;
+    private final IceServerProvider iceServerProvider;
 
     public CallSessionService(
             CallSessionRepository callSessionRepository,
@@ -45,7 +47,8 @@ public class CallSessionService {
             ApplicationEventPublisher eventPublisher,
             ObjectMapper objectMapper,
             CloudflareRealtimeClient cloudflareRealtimeClient,
-            RealtimeSessionNegotiationService realtimeSessionNegotiationService
+            RealtimeSessionNegotiationService realtimeSessionNegotiationService,
+            IceServerProvider iceServerProvider
     ) {
         this.callSessionRepository = callSessionRepository;
         this.userRepository = userRepository;
@@ -55,6 +58,7 @@ public class CallSessionService {
         this.objectMapper = objectMapper;
         this.cloudflareRealtimeClient = cloudflareRealtimeClient;
         this.realtimeSessionNegotiationService = realtimeSessionNegotiationService;
+        this.iceServerProvider = iceServerProvider;
     }
 
     // ──────────────────────────────────────────────
@@ -116,7 +120,7 @@ public class CallSessionService {
         log.info("앱 통화 세션 시작 — sessionId: {}, userId: {}, type: {}",
                 session.getId(), session.getUserId(), sessionType);
 
-        return CallSessionResponse.from(session, subscription, realtimeSessionId);
+        return CallSessionResponse.from(session, subscription, realtimeSessionId, iceServerProvider.getIceServers());
     }
 
     // ──────────────────────────────────────────────

@@ -32,6 +32,9 @@ cloudflare:
     api-base: ${CLOUDFLARE_REALTIME_API_BASE:https://rtc.live.cloudflare.com/v1}
     app-id: ${CLOUDFLARE_REALTIME_APP_ID:}
     api-token: ${CLOUDFLARE_API_TOKEN:}
+    turn-token-id: ${TURN_TOKEN_ID:}
+    turn-api-token: ${TURN_API_TOKEN:}
+    turn-credential-ttl-seconds: ${TURN_CREDENTIAL_TTL_SECONDS:86400}
 
 naver:
   sens:

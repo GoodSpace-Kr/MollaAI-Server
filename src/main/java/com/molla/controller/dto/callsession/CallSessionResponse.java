@@ -5,6 +5,8 @@ import com.molla.controller.dto.subscription.SubscriptionWithRemainingResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 @Schema(description = "통화 세션 응답. 앱용 start 응답에서는 Cloudflare Realtime session ID와 subscription이 함께 내려오고, 목록/상세/종료 응답에서는 null일 수 있습니다.")
 public record CallSessionResponse(
@@ -39,6 +41,9 @@ public record CallSessionResponse(
         @Schema(description = "Cloudflare Realtime SFU session ID. 앱 WebRTC offer API 호출 시 사용합니다.", example = "cf-session-id")
         String realtimeSessionId,
 
+        @Schema(description = "앱 RTCPeerConnection 생성에 사용할 ICE 서버 목록. 앱용 start 응답에서 내려옵니다.")
+        List<Map<String, Object>> iceServers,
+
         @Schema(description = "세션 상태 (in_progress / completed / failed)", example = "completed")
         String status
 ) {
@@ -58,6 +63,15 @@ public record CallSessionResponse(
             SubscriptionWithRemainingResponse subscription,
             String realtimeSessionId
     ) {
+        return from(session, subscription, realtimeSessionId, List.of());
+    }
+
+    public static CallSessionResponse from(
+            CallSession session,
+            SubscriptionWithRemainingResponse subscription,
+            String realtimeSessionId,
+            List<Map<String, Object>> iceServers
+    ) {
         return new CallSessionResponse(
                 session.getId(),
                 session.getSessionType(),
@@ -69,6 +83,7 @@ public record CallSessionResponse(
                 null,
                 null,
                 realtimeSessionId,
+                iceServers,
                 session.getStatus()
         );
     }

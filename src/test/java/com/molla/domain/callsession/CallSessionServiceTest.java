@@ -12,6 +12,7 @@ import com.molla.domain.subscription.SubscriptionService;
 import com.molla.domain.user.User;
 import com.molla.domain.user.UserRepository;
 import com.molla.realtime.CloudflareRealtimeClient;
+import com.molla.realtime.IceServerProvider;
 import com.molla.realtime.JoinCallCommand;
 import com.molla.realtime.RealtimeSessionNegotiationService;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,7 @@ class CallSessionServiceTest {
     private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
     private final CloudflareRealtimeClient cloudflareRealtimeClient = mock(CloudflareRealtimeClient.class);
     private final RealtimeSessionNegotiationService realtimeSessionNegotiationService = mock(RealtimeSessionNegotiationService.class);
+    private final IceServerProvider iceServerProvider = mock(IceServerProvider.class);
 
     private final CallSessionService callSessionService = new CallSessionService(
             callSessionRepository,
@@ -47,7 +49,8 @@ class CallSessionServiceTest {
             eventPublisher,
             objectMapper,
             cloudflareRealtimeClient,
-            realtimeSessionNegotiationService
+            realtimeSessionNegotiationService,
+            iceServerProvider
     );
 
     @Test
@@ -104,6 +107,14 @@ class CallSessionServiceTest {
         when(subscriptionService.getMySubscription(existingUser.getId())).thenReturn(subscription);
         when(realtimeSessionNegotiationService.requestRealtimeSession(org.mockito.ArgumentMatchers.any(JoinCallCommand.class)))
                 .thenReturn("cf-session-1");
+        when(iceServerProvider.getIceServers()).thenReturn(List.of(
+                Map.of("urls", List.of("stun:stun.cloudflare.com:3478")),
+                Map.of(
+                        "urls", List.of("turn:turn.cloudflare.com:3478?transport=udp"),
+                        "username", "turn-user",
+                        "credential", "turn-credential"
+                )
+        ));
 
         CallSessionResponse response = callSessionService.startMySession(existingUser.getId());
 
@@ -122,6 +133,8 @@ class CallSessionServiceTest {
         assertThat(response.agentToken()).isNull();
         assertThat(response.wssUrl()).isNull();
         assertThat(response.realtimeSessionId()).isEqualTo("cf-session-1");
+        assertThat(response.iceServers()).hasSize(2);
+        assertThat(response.iceServers().get(1)).containsEntry("username", "turn-user");
         assertThat(response.subscription()).isEqualTo(subscription);
     }
 
