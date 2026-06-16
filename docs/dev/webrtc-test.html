@@ -276,6 +276,21 @@
     return parsed;
   }
 
+  function resolveIceServers(startResponse) {
+    const backendIceServers = startResponse?.data?.iceServers;
+    if (Array.isArray(backendIceServers) && backendIceServers.length > 0) {
+      return backendIceServers;
+    }
+    return parseIceServers();
+  }
+
+  function redactIceServers(iceServers) {
+    return iceServers.map((server) => ({
+      ...server,
+      credential: server.credential ? "[redacted]" : server.credential,
+    }));
+  }
+
   function waitForIceGatheringComplete(pc) {
     if (pc.iceGatheringState === "complete") {
       return Promise.resolve();
@@ -356,7 +371,9 @@
       setState();
 
       log("Creating RTCPeerConnection...");
-      peerConnection = new RTCPeerConnection({ iceServers: parseIceServers() });
+      const iceServers = resolveIceServers(startResponse);
+      log("Using ICE servers.", redactIceServers(iceServers));
+      peerConnection = new RTCPeerConnection({ iceServers });
 
       peerConnection.oniceconnectionstatechange = () => {
         log("ICE state: " + peerConnection.iceConnectionState);
