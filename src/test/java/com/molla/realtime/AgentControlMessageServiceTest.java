@@ -13,9 +13,11 @@ class AgentControlMessageServiceTest {
 
     private final CloudflareRealtimeClient cloudflareRealtimeClient = mock(CloudflareRealtimeClient.class);
     private final AgentConnectionRegistry agentConnectionRegistry = mock(AgentConnectionRegistry.class);
+    private final RealtimeSessionNegotiationService realtimeSessionNegotiationService = mock(RealtimeSessionNegotiationService.class);
     private final AgentControlMessageService service = new AgentControlMessageService(
             cloudflareRealtimeClient,
-            agentConnectionRegistry
+            agentConnectionRegistry,
+            realtimeSessionNegotiationService
     );
 
     @Test
@@ -64,6 +66,7 @@ class AgentControlMessageServiceTest {
         service.handle(session, offer);
 
         verify(cloudflareRealtimeClient).createSession(offer);
+        verify(realtimeSessionNegotiationService).complete("call-1", "cf-session-1");
         verify(agentConnectionRegistry).send(
                 session,
                 Map.of(
