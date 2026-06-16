@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.HashMap;
 
 public record WebrtcOfferResponse(
+        String realtimeSessionId,
         Map<String, Object> sessionDescription,
         List<Map<String, Object>> tracks
 ) {
@@ -12,7 +13,9 @@ public record WebrtcOfferResponse(
     public static WebrtcOfferResponse fromCloudflare(Map<String, Object> payload) {
         Object description = payload.get("sessionDescription");
         Object tracks = payload.get("tracks");
+        Object sessionId = payload.get("sessionId");
         return new WebrtcOfferResponse(
+                sessionId instanceof String value ? value : null,
                 description instanceof Map<?, ?> map ? withEndOfCandidates((Map<String, Object>) map) : Map.of(),
                 tracks instanceof List<?> list ? (List<Map<String, Object>>) list : List.of()
         );

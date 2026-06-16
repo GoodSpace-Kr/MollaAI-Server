@@ -171,7 +171,7 @@ class CallSessionServiceTest {
     }
 
     @Test
-    void submitWebrtcOfferForwardsOwnedSessionOfferToCloudflare() {
+    void submitWebrtcOfferCreatesAppCloudflareSession() {
         User existingUser = User.createByPhone("01012345678");
         CallSession session = CallSession.create(
                 existingUser.getId(),
@@ -186,6 +186,7 @@ class CallSessionServiceTest {
                 List.of(Map.of("trackName", "user_audio"))
         );
         Map<String, Object> cloudflareResponse = Map.of(
+                "sessionId", "cf-app-session-1",
                 "sessionDescription", Map.of("type", "answer", "sdp", "remote-sdp"),
                 "tracks", List.of(Map.of("trackName", "assistant_audio"))
         );
@@ -193,12 +194,13 @@ class CallSessionServiceTest {
         when(userRepository.findById(existingUser.getId())).thenReturn(Optional.of(existingUser));
         when(callSessionRepository.findByIdAndPhoneNumber(session.getId(), existingUser.getPhoneNumber()))
                 .thenReturn(Optional.of(session));
-        when(cloudflareRealtimeClient.addTracks("cf-session-1", request.toCloudflarePayload()))
+        when(cloudflareRealtimeClient.createSession(request.toCloudflarePayload()))
                 .thenReturn(cloudflareResponse);
 
         WebrtcOfferResponse response = callSessionService.submitWebrtcOffer(session.getId(), existingUser.getId(), request);
 
-        verify(cloudflareRealtimeClient).addTracks("cf-session-1", request.toCloudflarePayload());
+        verify(cloudflareRealtimeClient).createSession(request.toCloudflarePayload());
+        assertThat(response.realtimeSessionId()).isEqualTo("cf-app-session-1");
         assertThat(response.sessionDescription()).containsEntry("type", "answer");
         assertThat(response.sessionDescription()).containsEntry("sdp", "remote-sdp");
         assertThat(response.tracks()).hasSize(1);
@@ -226,6 +228,7 @@ class CallSessionServiceTest {
                 a=candidate:513273236 1 udp 2130706431 141.101.90.0 1473 typ host generation 0\r
                 """;
         Map<String, Object> cloudflareResponse = Map.of(
+                "sessionId", "cf-app-session-1",
                 "sessionDescription", Map.of("type", "answer", "sdp", cloudflareAnswerSdp),
                 "tracks", List.of(Map.of("mid", "0", "trackName", "user_audio"))
         );
@@ -233,7 +236,7 @@ class CallSessionServiceTest {
         when(userRepository.findById(existingUser.getId())).thenReturn(Optional.of(existingUser));
         when(callSessionRepository.findByIdAndPhoneNumber(session.getId(), existingUser.getPhoneNumber()))
                 .thenReturn(Optional.of(session));
-        when(cloudflareRealtimeClient.addTracks("cf-session-1", request.toCloudflarePayload()))
+        when(cloudflareRealtimeClient.createSession(request.toCloudflarePayload()))
                 .thenReturn(cloudflareResponse);
 
         WebrtcOfferResponse response = callSessionService.submitWebrtcOffer(session.getId(), existingUser.getId(), request);
