@@ -55,6 +55,14 @@ public class CloudflareRealtimeClient {
         return post("/apps/" + appId + "/sessions/" + realtimeSessionId + "/tracks/new", offerPayload);
     }
 
+    public Map<String, Object> renegotiateSession(String realtimeSessionId, Map<String, Object> offerPayload) {
+        ensureConfigured();
+        Map<String, Object> request = Map.of(
+                "sessionDescription", offerPayload.get("sessionDescription")
+        );
+        return post("/apps/" + appId + "/sessions/" + realtimeSessionId + "/renegotiate", request);
+    }
+
     private Map<String, Object> post(String path, Object body) {
         try {
             Map<?, ?> response = webClient.post()
