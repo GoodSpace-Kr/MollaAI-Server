@@ -21,9 +21,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -114,13 +114,13 @@ public class CallSessionService {
 
         callSessionRepository.save(session);
         SubscriptionWithRemainingResponse subscription = subscriptionService.getMySubscription(user.getId());
-        String realtimeSessionId = realtimeSessionNegotiationService.requestRealtimeSession(
+        String agentRealtimeSessionId = realtimeSessionNegotiationService.requestRealtimeSession(
                 JoinCallCommand.of(session.getId(), session.getId(), user.getId(), "")
         );
         log.info("앱 통화 세션 시작 — sessionId: {}, userId: {}, type: {}",
                 session.getId(), session.getUserId(), sessionType);
 
-        return CallSessionResponse.from(session, subscription, realtimeSessionId, iceServerProvider.getIceServers());
+        return CallSessionResponse.from(session, subscription, agentRealtimeSessionId, iceServerProvider.getIceServers());
     }
 
     // ──────────────────────────────────────────────
@@ -212,8 +212,31 @@ public class CallSessionService {
         String phoneNumber = getPhoneNumberByUserId(userId);
         callSessionRepository.findByIdAndPhoneNumber(sessionId, phoneNumber)
                 .orElseThrow(() -> new CallSessionException(ErrorCode.SESSION_NOT_FOUND));
-        return WebrtcOfferResponse.fromCloudflare(
+        WebrtcOfferResponse appResponse = WebrtcOfferResponse.fromCloudflare(
                 cloudflareRealtimeClient.createSession(request.toCloudflarePayload())
+        );
+        subscribeAgentToUserAudio(request.agentRealtimeSessionId(), appResponse.appRealtimeSessionId());
+        return appResponse;
+    }
+
+    private void subscribeAgentToUserAudio(String agentRealtimeSessionId, String appRealtimeSessionId) {
+        if (agentRealtimeSessionId == null || agentRealtimeSessionId.isBlank()
+                || appRealtimeSessionId == null || appRealtimeSessionId.isBlank()) {
+            return;
+        }
+        Map<String, Object> subscribePayload = Map.of(
+                "tracks", List.of(Map.of(
+                        "location", "remote",
+                        "sessionId", appRealtimeSessionId,
+                        "trackName", "user_audio"
+                ))
+        );
+        Map<String, Object> response = cloudflareRealtimeClient.addTracks(agentRealtimeSessionId, subscribePayload);
+        log.info(
+                "agent_subscribed_to_user_audio agentRealtimeSessionId={} appRealtimeSessionId={} responseKeys={}",
+                agentRealtimeSessionId,
+                appRealtimeSessionId,
+                response == null ? List.of() : response.keySet()
         );
     }
 

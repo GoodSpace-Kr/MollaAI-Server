@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.HashMap;
 
 public record WebrtcOfferResponse(
-        String realtimeSessionId,
+        String appRealtimeSessionId,
         Map<String, Object> sessionDescription,
         List<Map<String, Object>> tracks
 ) {

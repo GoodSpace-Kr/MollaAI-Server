@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
-@Schema(description = "통화 세션 응답. 앱용 start 응답에서는 Cloudflare Realtime session ID와 subscription이 함께 내려오고, 목록/상세/종료 응답에서는 null일 수 있습니다.")
+@Schema(description = "통화 세션 응답. 앱용 start 응답에서는 agent Cloudflare session ID, ICE 서버 목록, subscription이 함께 내려오고 목록/상세/종료 응답에서는 null일 수 있습니다.")
 public record CallSessionResponse(
 
         @Schema(description = "세션 ID", example = "550e8400-e29b-41d4-a716-446655440000")
@@ -32,14 +32,8 @@ public record CallSessionResponse(
         @Schema(description = "현재 활성 구독 정보와 오늘 잔여 통화 시간. 내부 start 세션 응답에서는 채워지고, 그 외 응답에서는 null일 수 있습니다.")
         SubscriptionWithRemainingResponse subscription,
 
-        @Schema(description = "레거시 필드. 앱은 더 이상 agent control WSS에 직접 접속하지 않습니다.")
-        String agentToken,
-
-        @Schema(description = "레거시 필드. 앱은 더 이상 agent control WSS에 직접 접속하지 않습니다.")
-        String wssUrl,
-
-        @Schema(description = "Cloudflare Realtime SFU session ID. 앱 WebRTC offer API 호출 시 사용합니다.", example = "cf-session-id")
-        String realtimeSessionId,
+        @Schema(description = "AI orchestrator 쪽 Cloudflare Realtime SFU session ID. 앱 WebRTC offer API 호출 시 agentRealtimeSessionId로 전달합니다.", example = "agent-cf-session-id")
+        String agentRealtimeSessionId,
 
         @Schema(description = "앱 RTCPeerConnection 생성에 사용할 ICE 서버 목록. 앱용 start 응답에서 내려옵니다.")
         List<Map<String, Object>> iceServers,
@@ -61,15 +55,15 @@ public record CallSessionResponse(
     public static CallSessionResponse from(
             CallSession session,
             SubscriptionWithRemainingResponse subscription,
-            String realtimeSessionId
+            String agentRealtimeSessionId
     ) {
-        return from(session, subscription, realtimeSessionId, List.of());
+        return from(session, subscription, agentRealtimeSessionId, List.of());
     }
 
     public static CallSessionResponse from(
             CallSession session,
             SubscriptionWithRemainingResponse subscription,
-            String realtimeSessionId,
+            String agentRealtimeSessionId,
             List<Map<String, Object>> iceServers
     ) {
         return new CallSessionResponse(
@@ -80,9 +74,7 @@ public record CallSessionResponse(
                 session.getEndedAt(),
                 session.getDurationSeconds(),
                 subscription,
-                null,
-                null,
-                realtimeSessionId,
+                agentRealtimeSessionId,
                 iceServers,
                 session.getStatus()
         );

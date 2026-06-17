@@ -196,7 +196,7 @@
 
     <div class="status">
       <div class="pill"><strong>Call Session ID</strong><span id="callSessionId">-</span></div>
-      <div class="pill"><strong>Realtime Session ID</strong><span id="realtimeSessionId">-</span></div>
+      <div class="pill"><strong>Agent Realtime Session ID</strong><span id="agentRealtimeSessionId">-</span></div>
       <div class="pill"><strong>PeerConnection</strong><span id="pcState">idle</span></div>
     </div>
 
@@ -212,7 +212,7 @@
   let peerConnection = null;
   let localStream = null;
   let callSessionId = "";
-  let realtimeSessionId = "";
+  let agentRealtimeSessionId = "";
   let appRealtimeSessionId = "";
 
   const elements = {
@@ -225,7 +225,7 @@
     clearButton: document.getElementById("clearButton"),
     log: document.getElementById("log"),
     callSessionId: document.getElementById("callSessionId"),
-    realtimeSessionId: document.getElementById("realtimeSessionId"),
+    agentRealtimeSessionId: document.getElementById("agentRealtimeSessionId"),
     pcState: document.getElementById("pcState"),
     remoteAudio: document.getElementById("remoteAudio"),
   };
@@ -239,7 +239,7 @@
 
   function setState() {
     elements.callSessionId.textContent = callSessionId || "-";
-    elements.realtimeSessionId.textContent = realtimeSessionId || "-";
+    elements.agentRealtimeSessionId.textContent = agentRealtimeSessionId || "-";
     elements.pcState.textContent = peerConnection
       ? `${peerConnection.connectionState} / ICE ${peerConnection.iceConnectionState}`
       : "idle";
@@ -386,9 +386,9 @@
       log("Starting backend session...");
       const startResponse = await api("/api/v1/sessions/start", { method: "POST" });
       callSessionId = startResponse?.data?.id || "";
-      realtimeSessionId = startResponse?.data?.realtimeSessionId || "";
-      if (!callSessionId || !realtimeSessionId) {
-        throw new Error("Missing id or realtimeSessionId in /sessions/start response.");
+      agentRealtimeSessionId = startResponse?.data?.agentRealtimeSessionId || "";
+      if (!callSessionId || !agentRealtimeSessionId) {
+        throw new Error("Missing id or agentRealtimeSessionId in /sessions/start response.");
       }
       setState();
 
@@ -453,7 +453,7 @@
       const answerResponse = await api(`/api/v1/sessions/${callSessionId}/webrtc/offer`, {
         method: "POST",
         body: JSON.stringify({
-          realtimeSessionId,
+          agentRealtimeSessionId,
           sessionDescription: {
             type: peerConnection.localDescription.type,
             sdp: peerConnection.localDescription.sdp,
@@ -463,7 +463,7 @@
       });
 
       const answer = answerResponse?.data?.sessionDescription;
-      appRealtimeSessionId = answerResponse?.data?.realtimeSessionId || "";
+      appRealtimeSessionId = answerResponse?.data?.appRealtimeSessionId || "";
       if (appRealtimeSessionId) {
         log("App realtime session created: " + appRealtimeSessionId);
       }
@@ -514,7 +514,7 @@
     }
 
     callSessionId = "";
-    realtimeSessionId = "";
+    agentRealtimeSessionId = "";
     appRealtimeSessionId = "";
   }
 
