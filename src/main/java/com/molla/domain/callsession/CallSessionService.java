@@ -236,13 +236,18 @@ public class CallSessionService {
                 ))
         );
         Map<String, Object> response = cloudflareRealtimeClient.addTracks(agentRealtimeSessionId, subscribePayload);
+        Object immediateRenegotiation = response == null ? null : response.get("requiresImmediateRenegotiation");
+        boolean shouldRenegotiate = requiresImmediateRenegotiation(response);
         log.info(
-                "agent_subscribed_to_user_audio agentRealtimeSessionId={} appRealtimeSessionId={} responseKeys={}",
+                "agent_subscribed_to_user_audio agentRealtimeSessionId={} appRealtimeSessionId={} responseKeys={} requiresImmediateRenegotiation={} shouldRenegotiate={} tracks={}",
                 agentRealtimeSessionId,
                 appRealtimeSessionId,
-                response == null ? List.of() : response.keySet()
+                response == null ? List.of() : response.keySet(),
+                immediateRenegotiation,
+                shouldRenegotiate,
+                response == null ? null : response.get("tracks")
         );
-        if (requiresImmediateRenegotiation(response)) {
+        if (shouldRenegotiate) {
             agentConnectionRegistry.current().ifPresentOrElse(
                     agentSession -> {
                         agentConnectionRegistry.send(
