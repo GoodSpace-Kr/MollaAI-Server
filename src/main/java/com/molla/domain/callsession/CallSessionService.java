@@ -243,14 +243,26 @@ public class CallSessionService {
                 response == null ? List.of() : response.keySet()
         );
         if (requiresImmediateRenegotiation(response)) {
-            agentConnectionRegistry.current().ifPresent(agentSession ->
-                    agentConnectionRegistry.send(
-                            agentSession,
-                            Map.of(
-                                    "type", "webrtc_renegotiate",
-                                    "callId", callSessionId,
-                                    "realtimeSessionId", agentRealtimeSessionId
-                            )
+            agentConnectionRegistry.current().ifPresentOrElse(
+                    agentSession -> {
+                        agentConnectionRegistry.send(
+                                agentSession,
+                                Map.of(
+                                        "type", "webrtc_renegotiate",
+                                        "callId", callSessionId,
+                                        "realtimeSessionId", agentRealtimeSessionId
+                                )
+                        );
+                        log.info(
+                                "agent_renegotiate_sent callSessionId={} agentRealtimeSessionId={}",
+                                callSessionId,
+                                agentRealtimeSessionId
+                        );
+                    },
+                    () -> log.warn(
+                            "agent_renegotiate_skipped_no_agent callSessionId={} agentRealtimeSessionId={}",
+                            callSessionId,
+                            agentRealtimeSessionId
                     )
             );
         }
