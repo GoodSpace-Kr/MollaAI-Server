@@ -6,6 +6,7 @@ import com.molla.controller.dto.callsession.EndSessionRequest;
 import com.molla.controller.dto.callsession.StartSessionRequest;
 import com.molla.controller.dto.callsession.WebrtcOfferRequest;
 import com.molla.controller.dto.callsession.WebrtcOfferResponse;
+import com.molla.controller.dto.callsession.WebrtcSubscribeRequest;
 import com.molla.controller.dto.subscription.SubscriptionWithRemainingResponse;
 import com.molla.domain.subscription.SubscriptionRepository;
 import com.molla.domain.subscription.SubscriptionService;
@@ -173,7 +174,7 @@ class CallSessionServiceTest {
     }
 
     @Test
-    void submitWebrtcOfferCreatesAppCloudflareSession() {
+    void submitWebrtcOfferCreatesAppCloudflareSessionWithoutSubscribingBeforeAppConnects() {
         User existingUser = User.createByPhone("01012345678");
         CallSession session = CallSession.create(
                 existingUser.getId(),
@@ -198,6 +199,36 @@ class CallSessionServiceTest {
                 .thenReturn(Optional.of(session));
         when(cloudflareRealtimeClient.createSession(request.toCloudflarePayload()))
                 .thenReturn(cloudflareResponse);
+        WebrtcOfferResponse response = callSessionService.submitWebrtcOffer(session.getId(), existingUser.getId(), request);
+
+        verify(cloudflareRealtimeClient).createSession(request.toCloudflarePayload());
+        verify(cloudflareRealtimeClient, org.mockito.Mockito.never())
+                .addTracks(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyMap());
+        assertThat(response.appRealtimeSessionId()).isEqualTo("cf-app-session-1");
+        assertThat(response.sessionDescription()).containsEntry("type", "answer");
+        assertThat(response.sessionDescription()).containsEntry("sdp", "remote-sdp");
+        assertThat(response.tracks()).hasSize(1);
+    }
+
+    @Test
+    void subscribeWebrtcAudioAddsAppTrackToAgentSessionAfterAppConnects() {
+        User existingUser = User.createByPhone("01012345678");
+        CallSession session = CallSession.create(
+                existingUser.getId(),
+                existingUser.getPhoneNumber(),
+                null,
+                "practice",
+                "subscribed"
+        );
+        WebrtcSubscribeRequest request = new WebrtcSubscribeRequest(
+                "cf-session-1",
+                "cf-app-session-1",
+                null
+        );
+
+        when(userRepository.findById(existingUser.getId())).thenReturn(Optional.of(existingUser));
+        when(callSessionRepository.findByIdAndPhoneNumber(session.getId(), existingUser.getPhoneNumber()))
+                .thenReturn(Optional.of(session));
         when(cloudflareRealtimeClient.addTracks("cf-session-1", Map.of(
                 "tracks", List.of(Map.of(
                         "location", "remote",
@@ -211,9 +242,8 @@ class CallSessionServiceTest {
         WebSocketSession agentSession = mock(WebSocketSession.class);
         when(agentConnectionRegistry.current()).thenReturn(Optional.of(agentSession));
 
-        WebrtcOfferResponse response = callSessionService.submitWebrtcOffer(session.getId(), existingUser.getId(), request);
+        callSessionService.subscribeWebrtcAudio(session.getId(), existingUser.getId(), request);
 
-        verify(cloudflareRealtimeClient).createSession(request.toCloudflarePayload());
         verify(cloudflareRealtimeClient).addTracks("cf-session-1", Map.of(
                 "tracks", List.of(Map.of(
                         "location", "remote",
@@ -226,10 +256,6 @@ class CallSessionServiceTest {
                 "callId", session.getId(),
                 "realtimeSessionId", "cf-session-1"
         ));
-        assertThat(response.appRealtimeSessionId()).isEqualTo("cf-app-session-1");
-        assertThat(response.sessionDescription()).containsEntry("type", "answer");
-        assertThat(response.sessionDescription()).containsEntry("sdp", "remote-sdp");
-        assertThat(response.tracks()).hasSize(1);
     }
 
     @Test
@@ -264,14 +290,6 @@ class CallSessionServiceTest {
                 .thenReturn(Optional.of(session));
         when(cloudflareRealtimeClient.createSession(request.toCloudflarePayload()))
                 .thenReturn(cloudflareResponse);
-        when(cloudflareRealtimeClient.addTracks("cf-session-1", Map.of(
-                "tracks", List.of(Map.of(
-                        "location", "remote",
-                        "sessionId", "cf-app-session-1",
-                        "trackName", "user_audio"
-                ))
-        ))).thenReturn(Map.of("tracks", List.of()));
-
         WebrtcOfferResponse response = callSessionService.submitWebrtcOffer(session.getId(), existingUser.getId(), request);
 
         assertThat(response.sessionDescription().get("sdp").toString()).contains("a=end-of-candidates\r\n");

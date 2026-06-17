@@ -7,6 +7,7 @@ import com.molla.controller.dto.callsession.EndSessionRequest;
 import com.molla.controller.dto.callsession.StartSessionRequest;
 import com.molla.controller.dto.callsession.WebrtcOfferRequest;
 import com.molla.controller.dto.callsession.WebrtcOfferResponse;
+import com.molla.controller.dto.callsession.WebrtcSubscribeRequest;
 import com.molla.controller.dto.subscription.SubscriptionWithRemainingResponse;
 import com.molla.domain.subscription.SubscriptionRepository;
 import com.molla.domain.subscription.SubscriptionService;
@@ -219,11 +220,27 @@ public class CallSessionService {
         WebrtcOfferResponse appResponse = WebrtcOfferResponse.fromCloudflare(
                 cloudflareRealtimeClient.createSession(request.toCloudflarePayload())
         );
-        subscribeAgentToUserAudio(sessionId, request.agentRealtimeSessionId(), appResponse.appRealtimeSessionId());
         return appResponse;
     }
 
-    private void subscribeAgentToUserAudio(String callSessionId, String agentRealtimeSessionId, String appRealtimeSessionId) {
+    public void subscribeWebrtcAudio(String sessionId, String userId, WebrtcSubscribeRequest request) {
+        String phoneNumber = getPhoneNumberByUserId(userId);
+        callSessionRepository.findByIdAndPhoneNumber(sessionId, phoneNumber)
+                .orElseThrow(() -> new CallSessionException(ErrorCode.SESSION_NOT_FOUND));
+        subscribeAgentToUserAudio(
+                sessionId,
+                request.agentRealtimeSessionId(),
+                request.appRealtimeSessionId(),
+                request.resolvedTrackName()
+        );
+    }
+
+    private void subscribeAgentToUserAudio(
+            String callSessionId,
+            String agentRealtimeSessionId,
+            String appRealtimeSessionId,
+            String trackName
+    ) {
         if (agentRealtimeSessionId == null || agentRealtimeSessionId.isBlank()
                 || appRealtimeSessionId == null || appRealtimeSessionId.isBlank()) {
             return;
@@ -232,7 +249,7 @@ public class CallSessionService {
                 "tracks", List.of(Map.of(
                         "location", "remote",
                         "sessionId", appRealtimeSessionId,
-                        "trackName", "user_audio"
+                        "trackName", trackName
                 ))
         );
         Map<String, Object> response = cloudflareRealtimeClient.addTracks(agentRealtimeSessionId, subscribePayload);
