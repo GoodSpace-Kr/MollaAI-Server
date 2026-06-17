@@ -96,7 +96,7 @@ public class CallSessionController {
                     JWT로 인증된 유저의 통화 세션을 생성합니다.
                     - 앱은 AI 오케스트레이터 WSS에 직접 접속하지 않습니다.
                     - 백엔드는 연결된 AI 오케스트레이터 agent WSS로 join_call을 전송합니다.
-                    - 응답의 realtimeSessionId는 앱 WebRTC offer API에서 사용할 Cloudflare Realtime session ID입니다.
+                    - 응답의 agentRealtimeSessionId는 앱 WebRTC offer API에서 사용할 AI orchestrator 쪽 Cloudflare session ID입니다.
                     """
     )
     @ApiResponses({
@@ -161,7 +161,7 @@ public class CallSessionController {
             summary = "앱 WebRTC offer 등록",
             description = """
                     앱이 만든 WebRTC offer를 Cloudflare Realtime SFU에 전달하고 answer를 반환합니다.
-                    - realtimeSessionId는 /api/v1/sessions/start 응답값을 사용합니다.
+                    - agentRealtimeSessionId는 /api/v1/sessions/start 응답값을 사용합니다.
                     - 실제 음성 media는 이후 앱과 Cloudflare Realtime 사이의 WebRTC 연결로 이동합니다.
                     """
     )

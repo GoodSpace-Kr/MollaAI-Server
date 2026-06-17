@@ -8,7 +8,7 @@ import java.util.Map;
 
 public record WebrtcOfferRequest(
         @NotBlank
-        String realtimeSessionId,
+        String agentRealtimeSessionId,
 
         @NotEmpty
         Map<String, Object> sessionDescription,
