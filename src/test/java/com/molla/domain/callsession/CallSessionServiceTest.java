@@ -11,6 +11,7 @@ import com.molla.domain.subscription.SubscriptionRepository;
 import com.molla.domain.subscription.SubscriptionService;
 import com.molla.domain.user.User;
 import com.molla.domain.user.UserRepository;
+import com.molla.realtime.AgentConnectionRegistry;
 import com.molla.realtime.CloudflareRealtimeClient;
 import com.molla.realtime.IceServerProvider;
 import com.molla.realtime.JoinCallCommand;
@@ -18,6 +19,7 @@ import com.molla.realtime.RealtimeSessionNegotiationService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.web.socket.WebSocketSession;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -40,6 +42,7 @@ class CallSessionServiceTest {
     private final CloudflareRealtimeClient cloudflareRealtimeClient = mock(CloudflareRealtimeClient.class);
     private final RealtimeSessionNegotiationService realtimeSessionNegotiationService = mock(RealtimeSessionNegotiationService.class);
     private final IceServerProvider iceServerProvider = mock(IceServerProvider.class);
+    private final AgentConnectionRegistry agentConnectionRegistry = mock(AgentConnectionRegistry.class);
 
     private final CallSessionService callSessionService = new CallSessionService(
             callSessionRepository,
@@ -50,7 +53,8 @@ class CallSessionServiceTest {
             objectMapper,
             cloudflareRealtimeClient,
             realtimeSessionNegotiationService,
-            iceServerProvider
+            iceServerProvider,
+            agentConnectionRegistry
     );
 
     @Test
@@ -200,7 +204,12 @@ class CallSessionServiceTest {
                         "sessionId", "cf-app-session-1",
                         "trackName", "user_audio"
                 ))
-        ))).thenReturn(Map.of("tracks", List.of()));
+        ))).thenReturn(Map.of(
+                "requiresImmediateRenegotiation", true,
+                "tracks", List.of()
+        ));
+        WebSocketSession agentSession = mock(WebSocketSession.class);
+        when(agentConnectionRegistry.current()).thenReturn(Optional.of(agentSession));
 
         WebrtcOfferResponse response = callSessionService.submitWebrtcOffer(session.getId(), existingUser.getId(), request);
 
@@ -211,6 +220,11 @@ class CallSessionServiceTest {
                         "sessionId", "cf-app-session-1",
                         "trackName", "user_audio"
                 ))
+        ));
+        verify(agentConnectionRegistry).send(agentSession, Map.of(
+                "type", "webrtc_renegotiate",
+                "callId", session.getId(),
+                "realtimeSessionId", "cf-session-1"
         ));
         assertThat(response.appRealtimeSessionId()).isEqualTo("cf-app-session-1");
         assertThat(response.sessionDescription()).containsEntry("type", "answer");

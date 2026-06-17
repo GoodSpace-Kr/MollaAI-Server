@@ -13,6 +13,7 @@ import com.molla.domain.subscription.SubscriptionService;
 import com.molla.domain.user.User;
 import com.molla.domain.user.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.molla.realtime.AgentConnectionRegistry;
 import com.molla.realtime.CloudflareRealtimeClient;
 import com.molla.realtime.IceServerProvider;
 import com.molla.realtime.JoinCallCommand;
@@ -38,6 +39,7 @@ public class CallSessionService {
     private final CloudflareRealtimeClient cloudflareRealtimeClient;
     private final RealtimeSessionNegotiationService realtimeSessionNegotiationService;
     private final IceServerProvider iceServerProvider;
+    private final AgentConnectionRegistry agentConnectionRegistry;
 
     public CallSessionService(
             CallSessionRepository callSessionRepository,
@@ -48,7 +50,8 @@ public class CallSessionService {
             ObjectMapper objectMapper,
             CloudflareRealtimeClient cloudflareRealtimeClient,
             RealtimeSessionNegotiationService realtimeSessionNegotiationService,
-            IceServerProvider iceServerProvider
+            IceServerProvider iceServerProvider,
+            AgentConnectionRegistry agentConnectionRegistry
     ) {
         this.callSessionRepository = callSessionRepository;
         this.userRepository = userRepository;
@@ -59,6 +62,7 @@ public class CallSessionService {
         this.cloudflareRealtimeClient = cloudflareRealtimeClient;
         this.realtimeSessionNegotiationService = realtimeSessionNegotiationService;
         this.iceServerProvider = iceServerProvider;
+        this.agentConnectionRegistry = agentConnectionRegistry;
     }
 
     // ──────────────────────────────────────────────
@@ -215,11 +219,11 @@ public class CallSessionService {
         WebrtcOfferResponse appResponse = WebrtcOfferResponse.fromCloudflare(
                 cloudflareRealtimeClient.createSession(request.toCloudflarePayload())
         );
-        subscribeAgentToUserAudio(request.agentRealtimeSessionId(), appResponse.appRealtimeSessionId());
+        subscribeAgentToUserAudio(sessionId, request.agentRealtimeSessionId(), appResponse.appRealtimeSessionId());
         return appResponse;
     }
 
-    private void subscribeAgentToUserAudio(String agentRealtimeSessionId, String appRealtimeSessionId) {
+    private void subscribeAgentToUserAudio(String callSessionId, String agentRealtimeSessionId, String appRealtimeSessionId) {
         if (agentRealtimeSessionId == null || agentRealtimeSessionId.isBlank()
                 || appRealtimeSessionId == null || appRealtimeSessionId.isBlank()) {
             return;
@@ -238,6 +242,26 @@ public class CallSessionService {
                 appRealtimeSessionId,
                 response == null ? List.of() : response.keySet()
         );
+        if (requiresImmediateRenegotiation(response)) {
+            agentConnectionRegistry.current().ifPresent(agentSession ->
+                    agentConnectionRegistry.send(
+                            agentSession,
+                            Map.of(
+                                    "type", "webrtc_renegotiate",
+                                    "callId", callSessionId,
+                                    "realtimeSessionId", agentRealtimeSessionId
+                            )
+                    )
+            );
+        }
+    }
+
+    private boolean requiresImmediateRenegotiation(Map<String, Object> response) {
+        if (response == null) {
+            return false;
+        }
+        Object value = response.get("requiresImmediateRenegotiation");
+        return value instanceof Boolean bool ? bool : Boolean.parseBoolean(String.valueOf(value));
     }
 
     // ──────────────────────────────────────────────

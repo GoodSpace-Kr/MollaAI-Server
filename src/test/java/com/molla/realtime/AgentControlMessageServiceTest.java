@@ -50,4 +50,31 @@ class AgentControlMessageServiceTest {
                 )
         );
     }
+
+    @Test
+    void agentRenegotiationOfferIsForwardedToCloudflareAndAnswerIsSentBackToAgent() {
+        WebSocketSession session = mock(WebSocketSession.class);
+        Map<String, Object> offer = Map.of(
+                "type", "agent_webrtc_renegotiation_offer",
+                "callId", "call-1",
+                "realtimeSessionId", "cf-session-1",
+                "sessionDescription", Map.of("type", "offer", "sdp", "renegotiation-sdp")
+        );
+        Map<String, Object> answer = Map.of("type", "answer", "sdp", "remote-sdp");
+        when(cloudflareRealtimeClient.renegotiateSession("cf-session-1", offer))
+                .thenReturn(Map.of("sessionDescription", answer));
+
+        service.handle(session, offer);
+
+        verify(cloudflareRealtimeClient).renegotiateSession("cf-session-1", offer);
+        verify(agentConnectionRegistry).send(
+                session,
+                Map.of(
+                        "type", "webrtc_answer",
+                        "callId", "call-1",
+                        "realtimeSessionId", "cf-session-1",
+                        "sessionDescription", answer
+                )
+        );
+    }
 }
