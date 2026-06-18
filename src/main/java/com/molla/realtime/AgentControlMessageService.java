@@ -20,8 +20,8 @@ public class AgentControlMessageService {
             handleAgentWebrtcOffer(session, payload);
             return;
         }
-        if ("agent_webrtc_renegotiation_offer".equals(type)) {
-            handleAgentWebrtcRenegotiationOffer(session, payload);
+        if ("agent_webrtc_renegotiation_answer".equals(type)) {
+            handleAgentWebrtcRenegotiationAnswer(payload);
         }
     }
 
@@ -42,19 +42,8 @@ public class AgentControlMessageService {
         );
     }
 
-    private void handleAgentWebrtcRenegotiationOffer(WebSocketSession session, Map<String, Object> payload) {
-        String callId = String.valueOf(payload.getOrDefault("callId", ""));
+    private void handleAgentWebrtcRenegotiationAnswer(Map<String, Object> payload) {
         String realtimeSessionId = String.valueOf(payload.getOrDefault("realtimeSessionId", ""));
-        Map<String, Object> response = cloudflareRealtimeClient.renegotiateSession(realtimeSessionId, payload);
-        Object sessionDescription = response.get("sessionDescription");
-        agentConnectionRegistry.send(
-                session,
-                Map.of(
-                        "type", "webrtc_answer",
-                        "callId", callId,
-                        "realtimeSessionId", realtimeSessionId,
-                        "sessionDescription", sessionDescription
-                )
-        );
+        cloudflareRealtimeClient.renegotiateSession(realtimeSessionId, payload);
     }
 }

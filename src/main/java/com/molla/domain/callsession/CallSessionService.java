@@ -307,6 +307,16 @@ public class CallSessionService {
                 response == null ? null : response.get("tracks")
         );
         if (shouldRenegotiate) {
+            Object renegotiationOffer = response == null ? null : response.get("sessionDescription");
+            if (!(renegotiationOffer instanceof Map<?, ?>)) {
+                log.warn(
+                        "agent_renegotiate_skipped_missing_offer callSessionId={} agentRealtimeSessionId={} responseKeys={}",
+                        callSessionId,
+                        agentRealtimeSessionId,
+                        response == null ? List.of() : response.keySet()
+                );
+                return;
+            }
             agentConnectionRegistry.current().ifPresentOrElse(
                     agentSession -> {
                         agentConnectionRegistry.send(
@@ -314,7 +324,8 @@ public class CallSessionService {
                                 Map.of(
                                         "type", "webrtc_renegotiate",
                                         "callId", callSessionId,
-                                        "realtimeSessionId", agentRealtimeSessionId
+                                        "realtimeSessionId", agentRealtimeSessionId,
+                                        "sessionDescription", renegotiationOffer
                                 )
                         );
                         log.info(
