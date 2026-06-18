@@ -275,6 +275,7 @@ class CallSessionServiceTest {
                 ))
         ))).thenReturn(Map.of(
                 "requiresImmediateRenegotiation", true,
+                "sessionDescription", Map.of("type", "offer", "sdp", "cloudflare-renegotiation-offer-sdp"),
                 "tracks", List.of()
         ));
         WebSocketSession agentSession = mock(WebSocketSession.class);
@@ -292,7 +293,8 @@ class CallSessionServiceTest {
         verify(agentConnectionRegistry).send(agentSession, Map.of(
                 "type", "webrtc_renegotiate",
                 "callId", session.getId(),
-                "realtimeSessionId", "cf-session-1"
+                "realtimeSessionId", "cf-session-1",
+                "sessionDescription", Map.of("type", "offer", "sdp", "cloudflare-renegotiation-offer-sdp")
         ));
     }
 

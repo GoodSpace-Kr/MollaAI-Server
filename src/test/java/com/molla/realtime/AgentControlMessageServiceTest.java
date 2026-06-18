@@ -7,6 +7,7 @@ import java.util.Map;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class AgentControlMessageServiceTest {
@@ -52,29 +53,18 @@ class AgentControlMessageServiceTest {
     }
 
     @Test
-    void agentRenegotiationOfferIsForwardedToCloudflareAndAnswerIsSentBackToAgent() {
+    void agentRenegotiationAnswerIsForwardedToCloudflareWithoutSendingAnotherAnswer() {
         WebSocketSession session = mock(WebSocketSession.class);
-        Map<String, Object> offer = Map.of(
-                "type", "agent_webrtc_renegotiation_offer",
+        Map<String, Object> answer = Map.of(
+                "type", "agent_webrtc_renegotiation_answer",
                 "callId", "call-1",
                 "realtimeSessionId", "cf-session-1",
-                "sessionDescription", Map.of("type", "offer", "sdp", "renegotiation-sdp")
+                "sessionDescription", Map.of("type", "answer", "sdp", "renegotiation-answer-sdp")
         );
-        Map<String, Object> answer = Map.of("type", "answer", "sdp", "remote-sdp");
-        when(cloudflareRealtimeClient.renegotiateSession("cf-session-1", offer))
-                .thenReturn(Map.of("sessionDescription", answer));
 
-        service.handle(session, offer);
+        service.handle(session, answer);
 
-        verify(cloudflareRealtimeClient).renegotiateSession("cf-session-1", offer);
-        verify(agentConnectionRegistry).send(
-                session,
-                Map.of(
-                        "type", "webrtc_answer",
-                        "callId", "call-1",
-                        "realtimeSessionId", "cf-session-1",
-                        "sessionDescription", answer
-                )
-        );
+        verify(cloudflareRealtimeClient).renegotiateSession("cf-session-1", answer);
+        verifyNoMoreInteractions(agentConnectionRegistry);
     }
 }
