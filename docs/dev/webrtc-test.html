@@ -211,6 +211,7 @@
 <script>
   let peerConnection = null;
   let localStream = null;
+  let audioTransceiver = null;
   let callSessionId = "";
   let agentRealtimeSessionId = "";
   let appRealtimeSessionId = "";
@@ -490,24 +491,15 @@
         }
       };
 
-      log("Requesting microphone...");
-      localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-      for (const track of localStream.getAudioTracks()) {
-        peerConnection.addTrack(track, localStream);
-      }
+      log("Preparing initial recvonly audio transceiver...");
+      audioTransceiver = peerConnection.addTransceiver("audio", { direction: "recvonly" });
 
-      log("Creating local offer...");
+      log("Creating initial local offer...");
       const offer = await peerConnection.createOffer();
       await peerConnection.setLocalDescription(offer);
       log("Waiting for ICE gathering to complete...");
       await waitForIceGatheringComplete(peerConnection);
-      describeSdp("Local offer", peerConnection.localDescription);
-      const tracks = getLocalTrackMetadata();
-
-      if (tracks.length === 0) {
-        throw new Error("No local WebRTC tracks were found after setLocalDescription.");
-      }
-      log("Prepared initial Cloudflare track metadata.", tracks);
+      describeSdp("Initial local offer", peerConnection.localDescription);
 
       log("Sending app WebRTC offer to backend...");
       const answerResponse = await api(`/api/v1/sessions/${callSessionId}/webrtc/offer`, {
@@ -518,7 +510,7 @@
             type: peerConnection.localDescription.type,
             sdp: peerConnection.localDescription.sdp,
           },
-          tracks,
+          tracks: [],
         }),
       });
 
@@ -537,6 +529,16 @@
       window.setTimeout(() => logIceStats("ICE stats after 6 seconds"), 6000);
       log("Waiting for WebRTC connection before subscribing audio track...");
       await waitForPeerConnectionReady(peerConnection);
+
+      log("Requesting microphone...");
+      localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      const audioTrack = localStream.getAudioTracks()[0];
+      if (!audioTrack) {
+        throw new Error("No microphone audio track was returned.");
+      }
+      await audioTransceiver.sender.replaceTrack(audioTrack);
+      audioTransceiver.direction = "sendrecv";
+      log("Microphone attached to existing audio transceiver.");
 
       log("Creating track publish offer...");
       const publishOffer = await peerConnection.createOffer();
@@ -616,6 +618,7 @@
       }
       localStream = null;
     }
+    audioTransceiver = null;
     elements.remoteAudio.srcObject = null;
 
     if (notifyBackend && callSessionId) {
