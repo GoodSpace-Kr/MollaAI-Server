@@ -413,6 +413,29 @@
     log(label, rows);
   }
 
+  async function getOutboundAudioBytesSent(pc) {
+    const stats = await pc.getStats();
+    let bytesSent = 0;
+    stats.forEach((report) => {
+      if (report.type === "outbound-rtp" && report.kind === "audio" && !report.isRemote) {
+        bytesSent += report.bytesSent || 0;
+      }
+    });
+    return bytesSent;
+  }
+
+  async function waitForOutboundAudioPackets(pc) {
+    for (let attempt = 1; attempt <= 20; attempt += 1) {
+      const bytesSent = await getOutboundAudioBytesSent(pc);
+      log(`Outbound audio bytes before subscribe: ${bytesSent}`);
+      if (bytesSent > 0) {
+        return;
+      }
+      await new Promise((resolve) => window.setTimeout(resolve, 250));
+    }
+    throw new Error("Timed out waiting for outbound audio packets before subscribing audio track.");
+  }
+
   async function startCall() {
     try {
       elements.startButton.disabled = true;
@@ -510,6 +533,8 @@
       window.setTimeout(() => logIceStats("ICE stats after 6 seconds"), 6000);
       log("Waiting for WebRTC connection before subscribing audio track...");
       await waitForPeerConnectionReady(peerConnection);
+      log("Waiting for outbound audio packets before subscribing audio track...");
+      await waitForOutboundAudioPackets(peerConnection);
       log("Subscribing app audio track to orchestrator...");
       await api(`/api/v1/sessions/${callSessionId}/webrtc/subscribe`, {
         method: "POST",

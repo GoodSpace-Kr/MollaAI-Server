@@ -252,7 +252,7 @@ public class CallSessionService {
                         "trackName", trackName
                 ))
         );
-        Map<String, Object> response = cloudflareRealtimeClient.addTracks(agentRealtimeSessionId, subscribePayload);
+        Map<String, Object> response = addTracksWhenPublisherIsReady(agentRealtimeSessionId, subscribePayload);
         Object immediateRenegotiation = response == null ? null : response.get("requiresImmediateRenegotiation");
         boolean shouldRenegotiate = requiresImmediateRenegotiation(response);
         log.info(
@@ -287,6 +287,41 @@ public class CallSessionService {
                             agentRealtimeSessionId
                     )
             );
+        }
+    }
+
+    private Map<String, Object> addTracksWhenPublisherIsReady(String agentRealtimeSessionId, Map<String, Object> subscribePayload) {
+        Map<String, Object> response = Map.of();
+        for (int attempt = 1; attempt <= 10; attempt++) {
+            response = cloudflareRealtimeClient.addTracks(agentRealtimeSessionId, subscribePayload);
+            if (!hasTrackNotFoundError(response)) {
+                return response;
+            }
+            log.info("agent_subscribe_waiting_for_publisher attempt={} responseTracks={}", attempt, response.get("tracks"));
+            sleepBeforeSubscribeRetry();
+        }
+        return response;
+    }
+
+    private boolean hasTrackNotFoundError(Map<String, Object> response) {
+        if (response == null) {
+            return false;
+        }
+        Object tracks = response.get("tracks");
+        if (!(tracks instanceof List<?> list)) {
+            return false;
+        }
+        return list.stream()
+                .filter(Map.class::isInstance)
+                .map(Map.class::cast)
+                .anyMatch(track -> "not_found_track_error".equals(String.valueOf(track.get("errorCode"))));
+    }
+
+    private void sleepBeforeSubscribeRetry() {
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
