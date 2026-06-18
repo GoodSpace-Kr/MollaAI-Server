@@ -8,6 +8,7 @@ import com.molla.controller.dto.callsession.StartSessionRequest;
 import com.molla.controller.dto.callsession.WebrtcOfferRequest;
 import com.molla.controller.dto.callsession.WebrtcOfferResponse;
 import com.molla.controller.dto.callsession.WebrtcSubscribeRequest;
+import com.molla.controller.dto.callsession.WebrtcTrackPublishRequest;
 import com.molla.controller.dto.subscription.SubscriptionWithRemainingResponse;
 import com.molla.domain.subscription.SubscriptionRepository;
 import com.molla.domain.subscription.SubscriptionService;
@@ -228,15 +229,26 @@ public class CallSessionService {
                 appRealtimeSessionId,
                 request.tracks()
         );
-        Map<String, Object> publishResponse = cloudflareRealtimeClient.addTracks(appRealtimeSessionId, request.toCloudflarePayload());
+        return WebrtcOfferResponse.fromCloudflare(cloudflareSession);
+    }
+
+    public WebrtcOfferResponse publishWebrtcTracks(String sessionId, String userId, WebrtcTrackPublishRequest request) {
+        String phoneNumber = getPhoneNumberByUserId(userId);
+        callSessionRepository.findByIdAndPhoneNumber(sessionId, phoneNumber)
+                .orElseThrow(() -> new CallSessionException(ErrorCode.SESSION_NOT_FOUND));
+        Map<String, Object> publishResponse = cloudflareRealtimeClient.addTracks(
+                request.appRealtimeSessionId(),
+                request.toCloudflarePayload()
+        );
         log.info(
-                "app_realtime_tracks_published appRealtimeSessionId={} requestTracks={} responseKeys={} responseTracks={}",
-                appRealtimeSessionId,
+                "app_realtime_tracks_published agentRealtimeSessionId={} appRealtimeSessionId={} requestTracks={} responseKeys={} responseTracks={}",
+                request.agentRealtimeSessionId(),
+                request.appRealtimeSessionId(),
                 request.tracks(),
                 publishResponse == null ? List.of() : publishResponse.keySet(),
                 publishResponse == null ? null : publishResponse.get("tracks")
         );
-        return WebrtcOfferResponse.fromCloudflare(appRealtimeSessionId, publishResponse);
+        return WebrtcOfferResponse.fromCloudflare(request.appRealtimeSessionId(), publishResponse);
     }
 
     public void subscribeWebrtcAudio(String sessionId, String userId, WebrtcSubscribeRequest request) {
