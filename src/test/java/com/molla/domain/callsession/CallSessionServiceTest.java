@@ -226,6 +226,7 @@ class CallSessionServiceTest {
                 Map.of("type", "offer", "sdp", "publish-sdp"),
                 List.of(Map.of("location", "local", "mid", "0", "trackName", "user_audio"))
         );
+        Map<String, Object> cloudflarePayload = request.toCloudflarePayload();
         Map<String, Object> publishResponse = Map.of(
                 "sessionDescription", Map.of("type", "answer", "sdp", "publish-answer-sdp"),
                 "tracks", List.of(Map.of("mid", "0", "trackName", "user_audio"))
@@ -234,11 +235,13 @@ class CallSessionServiceTest {
         when(userRepository.findById(existingUser.getId())).thenReturn(Optional.of(existingUser));
         when(callSessionRepository.findByIdAndPhoneNumber(session.getId(), existingUser.getPhoneNumber()))
                 .thenReturn(Optional.of(session));
-        when(cloudflareRealtimeClient.addTracks("cf-app-session-1", request.toCloudflarePayload()))
+        when(cloudflareRealtimeClient.addTracks("cf-app-session-1", cloudflarePayload))
                 .thenReturn(publishResponse);
         WebrtcOfferResponse response = callSessionService.publishWebrtcTracks(session.getId(), existingUser.getId(), request);
 
-        verify(cloudflareRealtimeClient).addTracks("cf-app-session-1", request.toCloudflarePayload());
+        verify(cloudflareRealtimeClient).addTracks("cf-app-session-1", cloudflarePayload);
+        assertThat(cloudflarePayload.get("tracks").toString()).contains("bidirectionalMediaStream=true");
+        assertThat(cloudflarePayload.get("tracks").toString()).contains("kind=audio");
         assertThat(response.appRealtimeSessionId()).isEqualTo("cf-app-session-1");
         assertThat(response.sessionDescription()).containsEntry("type", "answer");
         assertThat(response.sessionDescription()).containsEntry("sdp", "publish-answer-sdp");
