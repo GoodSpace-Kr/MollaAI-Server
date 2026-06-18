@@ -6,6 +6,7 @@ import com.molla.controller.dto.callsession.EndSessionRequest;
 import com.molla.controller.dto.callsession.StartSessionRequest;
 import com.molla.controller.dto.callsession.WebrtcOfferRequest;
 import com.molla.controller.dto.callsession.WebrtcOfferResponse;
+import com.molla.controller.dto.callsession.WebrtcSubscribeRequest;
 import com.molla.domain.callsession.CallSessionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -173,6 +174,23 @@ public class CallSessionController {
         String userId = getCurrentUserId();
         WebrtcOfferResponse response = callSessionService.submitWebrtcOffer(id, userId, request);
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @Operation(
+            summary = "앱 오디오 track을 오케스트레이터에 구독",
+            description = """
+                    앱이 Cloudflare Realtime answer를 적용하고 WebRTC 연결이 완료된 뒤 호출합니다.
+                    Cloudflare SFU에서 앱의 user_audio track을 오케스트레이터 WebRTC session에 연결합니다.
+                    """
+    )
+    @PostMapping("/api/v1/sessions/{id}/webrtc/subscribe")
+    public ResponseEntity<ApiResponse<Void>> subscribeWebrtcAudio(
+            @PathVariable String id,
+            @RequestBody @Valid WebrtcSubscribeRequest request
+    ) {
+        String userId = getCurrentUserId();
+        callSessionService.subscribeWebrtcAudio(id, userId, request);
+        return ResponseEntity.ok(ApiResponse.success());
     }
 
     @Operation(
