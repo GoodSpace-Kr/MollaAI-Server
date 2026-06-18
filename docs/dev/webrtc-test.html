@@ -444,6 +444,8 @@
         location: "local",
         mid: transceiver.mid ?? String(index),
         trackName: transceiver.sender.track.kind === "audio" ? "user_audio" : transceiver.sender.track.kind,
+        bidirectionalMediaStream: true,
+        kind: transceiver.sender.track.kind,
       }));
   }
 
