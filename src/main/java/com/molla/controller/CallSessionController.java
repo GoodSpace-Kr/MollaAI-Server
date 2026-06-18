@@ -7,6 +7,7 @@ import com.molla.controller.dto.callsession.StartSessionRequest;
 import com.molla.controller.dto.callsession.WebrtcOfferRequest;
 import com.molla.controller.dto.callsession.WebrtcOfferResponse;
 import com.molla.controller.dto.callsession.WebrtcSubscribeRequest;
+import com.molla.controller.dto.callsession.WebrtcTrackPublishRequest;
 import com.molla.domain.callsession.CallSessionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -173,6 +174,23 @@ public class CallSessionController {
     ) {
         String userId = getCurrentUserId();
         WebrtcOfferResponse response = callSessionService.submitWebrtcOffer(id, userId, request);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @Operation(
+            summary = "앱 오디오 track publish",
+            description = """
+                    앱이 /webrtc/offer answer를 적용하고 WebRTC 연결이 완료된 뒤 호출합니다.
+                    Cloudflare Realtime app session에 user_audio track을 등록하고 renegotiation answer를 반환합니다.
+                    """
+    )
+    @PostMapping("/api/v1/sessions/{id}/webrtc/tracks")
+    public ResponseEntity<ApiResponse<WebrtcOfferResponse>> publishWebrtcTracks(
+            @PathVariable String id,
+            @RequestBody @Valid WebrtcTrackPublishRequest request
+    ) {
+        String userId = getCurrentUserId();
+        WebrtcOfferResponse response = callSessionService.publishWebrtcTracks(id, userId, request);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 

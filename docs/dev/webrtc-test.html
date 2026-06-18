@@ -436,6 +436,16 @@
     throw new Error("Timed out waiting for outbound audio packets before subscribing audio track.");
   }
 
+  function getLocalTrackMetadata() {
+    return peerConnection.getTransceivers()
+      .filter((transceiver) => transceiver.sender && transceiver.sender.track)
+      .map((transceiver, index) => ({
+        location: "local",
+        mid: transceiver.mid ?? String(index),
+        trackName: transceiver.sender.track.kind === "audio" ? "user_audio" : transceiver.sender.track.kind,
+      }));
+  }
+
   async function startCall() {
     try {
       elements.startButton.disabled = true;
@@ -492,18 +502,12 @@
       log("Waiting for ICE gathering to complete...");
       await waitForIceGatheringComplete(peerConnection);
       describeSdp("Local offer", peerConnection.localDescription);
-      const tracks = peerConnection.getTransceivers()
-        .filter((transceiver) => transceiver.sender && transceiver.sender.track)
-        .map((transceiver, index) => ({
-          location: "local",
-          mid: transceiver.mid ?? String(index),
-          trackName: transceiver.sender.track.kind === "audio" ? "user_audio" : transceiver.sender.track.kind,
-        }));
+      const tracks = getLocalTrackMetadata();
 
       if (tracks.length === 0) {
         throw new Error("No local WebRTC tracks were found after setLocalDescription.");
       }
-      log("Prepared Cloudflare track metadata.", tracks);
+      log("Prepared initial Cloudflare track metadata.", tracks);
 
       log("Sending app WebRTC offer to backend...");
       const answerResponse = await api(`/api/v1/sessions/${callSessionId}/webrtc/offer`, {
@@ -519,9 +523,6 @@
       });
 
       const answer = answerResponse?.data?.sessionDescription;
-      const publishedTracks = Array.isArray(answerResponse?.data?.tracks) ? answerResponse.data.tracks : [];
-      const audioTrackName = publishedTracks.find((track) => track?.trackName)?.trackName || tracks[0]?.trackName || "user_audio";
-      log("Cloudflare published tracks.", publishedTracks);
       appRealtimeSessionId = answerResponse?.data?.appRealtimeSessionId || "";
       if (appRealtimeSessionId) {
         log("App realtime session created: " + appRealtimeSessionId);
@@ -536,6 +537,41 @@
       window.setTimeout(() => logIceStats("ICE stats after 6 seconds"), 6000);
       log("Waiting for WebRTC connection before subscribing audio track...");
       await waitForPeerConnectionReady(peerConnection);
+
+      log("Creating track publish offer...");
+      const publishOffer = await peerConnection.createOffer();
+      await peerConnection.setLocalDescription(publishOffer);
+      log("Waiting for track publish ICE gathering to complete...");
+      await waitForIceGatheringComplete(peerConnection);
+      describeSdp("Track publish offer", peerConnection.localDescription);
+      const publishTracks = getLocalTrackMetadata();
+      if (publishTracks.length === 0) {
+        throw new Error("No local WebRTC tracks were found before publishing.");
+      }
+      log("Publishing app audio track to Cloudflare...");
+      const publishResponse = await api(`/api/v1/sessions/${callSessionId}/webrtc/tracks`, {
+        method: "POST",
+        body: JSON.stringify({
+          agentRealtimeSessionId,
+          appRealtimeSessionId,
+          sessionDescription: {
+            type: peerConnection.localDescription.type,
+            sdp: peerConnection.localDescription.sdp,
+          },
+          tracks: publishTracks,
+        }),
+      });
+      const publishAnswer = publishResponse?.data?.sessionDescription;
+      if (!publishAnswer?.type || !publishAnswer?.sdp) {
+        throw new Error("Missing sessionDescription in /webrtc/tracks response.");
+      }
+      const publishedTracks = Array.isArray(publishResponse?.data?.tracks) ? publishResponse.data.tracks : [];
+      const audioTrackName = publishedTracks.find((track) => track?.trackName)?.trackName || publishTracks[0]?.trackName || "user_audio";
+      log("Cloudflare published tracks.", publishedTracks);
+      describeSdp("Track publish answer", publishAnswer);
+      await peerConnection.setRemoteDescription(publishAnswer);
+      log("Track publish remote description applied.");
+
       log("Waiting for outbound audio packets before subscribing audio track...");
       await waitForOutboundAudioPackets(peerConnection);
       log("Subscribing app audio track to orchestrator...");
