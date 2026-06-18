@@ -248,6 +248,7 @@ public class CallSessionService {
                 publishResponse == null ? List.of() : publishResponse.keySet(),
                 publishResponse == null ? null : publishResponse.get("tracks")
         );
+        logRealtimeSessionState("app_realtime_state_after_publish", request.appRealtimeSessionId());
         return WebrtcOfferResponse.fromCloudflare(request.appRealtimeSessionId(), publishResponse);
     }
 
@@ -280,6 +281,7 @@ public class CallSessionService {
                         "trackName", trackName
                 ))
         );
+        logRealtimeSessionState("app_realtime_state_before_agent_subscribe", appRealtimeSessionId);
         Map<String, Object> response = addTracksWhenPublisherIsReady(agentRealtimeSessionId, subscribePayload);
         Object immediateRenegotiation = response == null ? null : response.get("requiresImmediateRenegotiation");
         boolean shouldRenegotiate = requiresImmediateRenegotiation(response);
@@ -327,6 +329,21 @@ public class CallSessionService {
                             agentRealtimeSessionId
                     )
             );
+        }
+    }
+
+    private void logRealtimeSessionState(String event, String realtimeSessionId) {
+        try {
+            Map<String, Object> state = cloudflareRealtimeClient.getSessionState(realtimeSessionId);
+            log.info(
+                    "{} realtimeSessionId={} responseKeys={} tracks={}",
+                    event,
+                    realtimeSessionId,
+                    state == null ? List.of() : state.keySet(),
+                    state == null ? null : state.get("tracks")
+            );
+        } catch (Exception e) {
+            log.warn("{}_failed realtimeSessionId={} error={}", event, realtimeSessionId, e.getMessage());
         }
     }
 
