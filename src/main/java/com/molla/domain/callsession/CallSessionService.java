@@ -255,10 +255,21 @@ public class CallSessionService {
         Map<String, Object> response = addTracksWhenPublisherIsReady(agentRealtimeSessionId, subscribePayload);
         Object immediateRenegotiation = response == null ? null : response.get("requiresImmediateRenegotiation");
         boolean shouldRenegotiate = requiresImmediateRenegotiation(response);
+        boolean trackNotFound = hasTrackNotFoundError(response);
+        if (trackNotFound) {
+            log.warn(
+                    "agent_subscribe_failed_track_not_found agentRealtimeSessionId={} appRealtimeSessionId={} trackName={} tracks={}",
+                    agentRealtimeSessionId,
+                    appRealtimeSessionId,
+                    trackName,
+                    response == null ? null : response.get("tracks")
+            );
+        }
         log.info(
-                "agent_subscribed_to_user_audio agentRealtimeSessionId={} appRealtimeSessionId={} responseKeys={} requiresImmediateRenegotiation={} shouldRenegotiate={} tracks={}",
+                "agent_subscribed_to_user_audio agentRealtimeSessionId={} appRealtimeSessionId={} trackName={} responseKeys={} requiresImmediateRenegotiation={} shouldRenegotiate={} tracks={}",
                 agentRealtimeSessionId,
                 appRealtimeSessionId,
+                trackName,
                 response == null ? List.of() : response.keySet(),
                 immediateRenegotiation,
                 shouldRenegotiate,

@@ -519,6 +519,9 @@
       });
 
       const answer = answerResponse?.data?.sessionDescription;
+      const publishedTracks = Array.isArray(answerResponse?.data?.tracks) ? answerResponse.data.tracks : [];
+      const audioTrackName = publishedTracks.find((track) => track?.trackName)?.trackName || tracks[0]?.trackName || "user_audio";
+      log("Cloudflare published tracks.", publishedTracks);
       appRealtimeSessionId = answerResponse?.data?.appRealtimeSessionId || "";
       if (appRealtimeSessionId) {
         log("App realtime session created: " + appRealtimeSessionId);
@@ -541,7 +544,7 @@
         body: JSON.stringify({
           agentRealtimeSessionId,
           appRealtimeSessionId,
-          trackName: tracks[0]?.trackName || "user_audio",
+          trackName: audioTrackName,
         }),
       });
       log("Subscribe request completed.");
