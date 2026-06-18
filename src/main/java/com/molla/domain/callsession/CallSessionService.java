@@ -217,9 +217,15 @@ public class CallSessionService {
         String phoneNumber = getPhoneNumberByUserId(userId);
         callSessionRepository.findByIdAndPhoneNumber(sessionId, phoneNumber)
                 .orElseThrow(() -> new CallSessionException(ErrorCode.SESSION_NOT_FOUND));
-        WebrtcOfferResponse appResponse = WebrtcOfferResponse.fromCloudflare(
-                cloudflareRealtimeClient.createSession(request.toCloudflarePayload())
+        Map<String, Object> cloudflareResponse = cloudflareRealtimeClient.createSession(request.toCloudflarePayload());
+        log.info(
+                "app_realtime_session_created agentRealtimeSessionId={} appRealtimeSessionId={} requestTracks={} responseTracks={}",
+                request.agentRealtimeSessionId(),
+                cloudflareResponse.get("sessionId"),
+                request.tracks(),
+                cloudflareResponse.get("tracks")
         );
+        WebrtcOfferResponse appResponse = WebrtcOfferResponse.fromCloudflare(cloudflareResponse);
         return appResponse;
     }
 
@@ -264,6 +270,7 @@ public class CallSessionService {
                     trackName,
                     response == null ? null : response.get("tracks")
             );
+            return;
         }
         log.info(
                 "agent_subscribed_to_user_audio agentRealtimeSessionId={} appRealtimeSessionId={} trackName={} responseKeys={} requiresImmediateRenegotiation={} shouldRenegotiate={} tracks={}",
