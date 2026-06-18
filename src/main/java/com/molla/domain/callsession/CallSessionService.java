@@ -217,7 +217,7 @@ public class CallSessionService {
         String phoneNumber = getPhoneNumberByUserId(userId);
         callSessionRepository.findByIdAndPhoneNumber(sessionId, phoneNumber)
                 .orElseThrow(() -> new CallSessionException(ErrorCode.SESSION_NOT_FOUND));
-        Map<String, Object> cloudflareSession = cloudflareRealtimeClient.createSession();
+        Map<String, Object> cloudflareSession = cloudflareRealtimeClient.createSession(request.toCloudflarePayload());
         Object appRealtimeSessionIdValue = cloudflareSession.get("sessionId");
         if (!(appRealtimeSessionIdValue instanceof String appRealtimeSessionId) || appRealtimeSessionId.isBlank()) {
             throw new CallSessionException(ErrorCode.INTERNAL_SERVER_ERROR);

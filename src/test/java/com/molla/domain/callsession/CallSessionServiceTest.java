@@ -199,12 +199,12 @@ class CallSessionServiceTest {
         when(userRepository.findById(existingUser.getId())).thenReturn(Optional.of(existingUser));
         when(callSessionRepository.findByIdAndPhoneNumber(session.getId(), existingUser.getPhoneNumber()))
                 .thenReturn(Optional.of(session));
-        when(cloudflareRealtimeClient.createSession()).thenReturn(cloudflareSession);
+        when(cloudflareRealtimeClient.createSession(request.toCloudflarePayload())).thenReturn(cloudflareSession);
         when(cloudflareRealtimeClient.addTracks("cf-app-session-1", request.toCloudflarePayload()))
                 .thenReturn(publishResponse);
         WebrtcOfferResponse response = callSessionService.submitWebrtcOffer(session.getId(), existingUser.getId(), request);
 
-        verify(cloudflareRealtimeClient).createSession();
+        verify(cloudflareRealtimeClient).createSession(request.toCloudflarePayload());
         verify(cloudflareRealtimeClient).addTracks("cf-app-session-1", request.toCloudflarePayload());
         assertThat(response.appRealtimeSessionId()).isEqualTo("cf-app-session-1");
         assertThat(response.sessionDescription()).containsEntry("type", "answer");
@@ -292,7 +292,7 @@ class CallSessionServiceTest {
         when(userRepository.findById(existingUser.getId())).thenReturn(Optional.of(existingUser));
         when(callSessionRepository.findByIdAndPhoneNumber(session.getId(), existingUser.getPhoneNumber()))
                 .thenReturn(Optional.of(session));
-        when(cloudflareRealtimeClient.createSession()).thenReturn(cloudflareSession);
+        when(cloudflareRealtimeClient.createSession(request.toCloudflarePayload())).thenReturn(cloudflareSession);
         when(cloudflareRealtimeClient.addTracks("cf-app-session-1", request.toCloudflarePayload()))
                 .thenReturn(publishResponse);
         WebrtcOfferResponse response = callSessionService.submitWebrtcOffer(session.getId(), existingUser.getId(), request);
