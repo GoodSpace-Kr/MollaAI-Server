@@ -21,6 +21,17 @@ public record WebrtcOfferResponse(
         );
     }
 
+    @SuppressWarnings("unchecked")
+    public static WebrtcOfferResponse fromCloudflare(String appRealtimeSessionId, Map<String, Object> payload) {
+        Object description = payload.get("sessionDescription");
+        Object tracks = payload.get("tracks");
+        return new WebrtcOfferResponse(
+                appRealtimeSessionId,
+                description instanceof Map<?, ?> map ? withEndOfCandidates((Map<String, Object>) map) : Map.of(),
+                tracks instanceof List<?> list ? (List<Map<String, Object>>) list : List.of()
+        );
+    }
+
     private static Map<String, Object> withEndOfCandidates(Map<String, Object> description) {
         Object sdpValue = description.get("sdp");
         if (!(sdpValue instanceof String sdp)

@@ -217,16 +217,26 @@ public class CallSessionService {
         String phoneNumber = getPhoneNumberByUserId(userId);
         callSessionRepository.findByIdAndPhoneNumber(sessionId, phoneNumber)
                 .orElseThrow(() -> new CallSessionException(ErrorCode.SESSION_NOT_FOUND));
-        Map<String, Object> cloudflareResponse = cloudflareRealtimeClient.createSession(request.toCloudflarePayload());
+        Map<String, Object> cloudflareSession = cloudflareRealtimeClient.createSession();
+        Object appRealtimeSessionIdValue = cloudflareSession.get("sessionId");
+        if (!(appRealtimeSessionIdValue instanceof String appRealtimeSessionId) || appRealtimeSessionId.isBlank()) {
+            throw new CallSessionException(ErrorCode.INTERNAL_SERVER_ERROR);
+        }
         log.info(
-                "app_realtime_session_created agentRealtimeSessionId={} appRealtimeSessionId={} requestTracks={} responseTracks={}",
+                "app_realtime_session_created agentRealtimeSessionId={} appRealtimeSessionId={} requestTracks={}",
                 request.agentRealtimeSessionId(),
-                cloudflareResponse.get("sessionId"),
-                request.tracks(),
-                cloudflareResponse.get("tracks")
+                appRealtimeSessionId,
+                request.tracks()
         );
-        WebrtcOfferResponse appResponse = WebrtcOfferResponse.fromCloudflare(cloudflareResponse);
-        return appResponse;
+        Map<String, Object> publishResponse = cloudflareRealtimeClient.addTracks(appRealtimeSessionId, request.toCloudflarePayload());
+        log.info(
+                "app_realtime_tracks_published appRealtimeSessionId={} requestTracks={} responseKeys={} responseTracks={}",
+                appRealtimeSessionId,
+                request.tracks(),
+                publishResponse == null ? List.of() : publishResponse.keySet(),
+                publishResponse == null ? null : publishResponse.get("tracks")
+        );
+        return WebrtcOfferResponse.fromCloudflare(appRealtimeSessionId, publishResponse);
     }
 
     public void subscribeWebrtcAudio(String sessionId, String userId, WebrtcSubscribeRequest request) {

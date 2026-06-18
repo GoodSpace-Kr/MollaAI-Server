@@ -13,7 +13,6 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 
 import java.util.Map;
 import java.util.HashMap;
-import java.util.List;
 
 @Slf4j
 @Component
@@ -34,13 +33,16 @@ public class CloudflareRealtimeClient {
         this.apiToken = apiToken;
     }
 
+    public Map<String, Object> createSession() {
+        return createSession(Map.of());
+    }
+
     public Map<String, Object> createSession(Map<String, Object> offerPayload) {
         ensureConfigured();
         Map<String, Object> request = new HashMap<>();
-        request.put("sessionDescription", offerPayload.get("sessionDescription"));
-        Object tracks = offerPayload.get("tracks");
-        if (tracks instanceof List<?> list && !list.isEmpty()) {
-            request.put("tracks", tracks);
+        Object sessionDescription = offerPayload.get("sessionDescription");
+        if (sessionDescription != null) {
+            request.put("sessionDescription", sessionDescription);
         }
         Map<String, Object> response = post("/apps/" + appId + "/sessions/new", request);
         Object sessionId = response.get("sessionId");
@@ -60,12 +62,36 @@ public class CloudflareRealtimeClient {
         Map<String, Object> request = Map.of(
                 "sessionDescription", offerPayload.get("sessionDescription")
         );
-        return post("/apps/" + appId + "/sessions/" + realtimeSessionId + "/renegotiate", request);
+        return put("/apps/" + appId + "/sessions/" + realtimeSessionId + "/renegotiate", request);
     }
 
     private Map<String, Object> post(String path, Object body) {
         try {
             Map<?, ?> response = webClient.post()
+                    .uri(path)
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiToken)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(body)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block();
+            return response.entrySet().stream()
+                    .collect(java.util.stream.Collectors.toMap(
+                            entry -> String.valueOf(entry.getKey()),
+                            Map.Entry::getValue
+                    ));
+        } catch (WebClientResponseException e) {
+            log.error("cloudflare_realtime_request_failed path={} status={} response={}", path, e.getStatusCode(), e.getResponseBodyAsString());
+            throw new GlobalException(ErrorCode.INTERNAL_SERVER_ERROR);
+        } catch (Exception e) {
+            log.error("cloudflare_realtime_request_failed path={} error={}", path, e.getMessage());
+            throw new GlobalException(ErrorCode.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private Map<String, Object> put(String path, Object body) {
+        try {
+            Map<?, ?> response = webClient.put()
                     .uri(path)
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiToken)
                     .contentType(MediaType.APPLICATION_JSON)

@@ -188,22 +188,24 @@ class CallSessionServiceTest {
                 Map.of("type", "offer", "sdp", "local-sdp"),
                 List.of(Map.of("trackName", "user_audio"))
         );
-        Map<String, Object> cloudflareResponse = Map.of(
-                "sessionId", "cf-app-session-1",
+        Map<String, Object> cloudflareSession = Map.of(
+                "sessionId", "cf-app-session-1"
+        );
+        Map<String, Object> publishResponse = Map.of(
                 "sessionDescription", Map.of("type", "answer", "sdp", "remote-sdp"),
-                "tracks", List.of(Map.of("trackName", "assistant_audio"))
+                "tracks", List.of(Map.of("trackName", "user_audio"))
         );
 
         when(userRepository.findById(existingUser.getId())).thenReturn(Optional.of(existingUser));
         when(callSessionRepository.findByIdAndPhoneNumber(session.getId(), existingUser.getPhoneNumber()))
                 .thenReturn(Optional.of(session));
-        when(cloudflareRealtimeClient.createSession(request.toCloudflarePayload()))
-                .thenReturn(cloudflareResponse);
+        when(cloudflareRealtimeClient.createSession()).thenReturn(cloudflareSession);
+        when(cloudflareRealtimeClient.addTracks("cf-app-session-1", request.toCloudflarePayload()))
+                .thenReturn(publishResponse);
         WebrtcOfferResponse response = callSessionService.submitWebrtcOffer(session.getId(), existingUser.getId(), request);
 
-        verify(cloudflareRealtimeClient).createSession(request.toCloudflarePayload());
-        verify(cloudflareRealtimeClient, org.mockito.Mockito.never())
-                .addTracks(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyMap());
+        verify(cloudflareRealtimeClient).createSession();
+        verify(cloudflareRealtimeClient).addTracks("cf-app-session-1", request.toCloudflarePayload());
         assertThat(response.appRealtimeSessionId()).isEqualTo("cf-app-session-1");
         assertThat(response.sessionDescription()).containsEntry("type", "answer");
         assertThat(response.sessionDescription()).containsEntry("sdp", "remote-sdp");
@@ -279,8 +281,10 @@ class CallSessionServiceTest {
                 a=mid:0\r
                 a=candidate:513273236 1 udp 2130706431 141.101.90.0 1473 typ host generation 0\r
                 """;
-        Map<String, Object> cloudflareResponse = Map.of(
-                "sessionId", "cf-app-session-1",
+        Map<String, Object> cloudflareSession = Map.of(
+                "sessionId", "cf-app-session-1"
+        );
+        Map<String, Object> publishResponse = Map.of(
                 "sessionDescription", Map.of("type", "answer", "sdp", cloudflareAnswerSdp),
                 "tracks", List.of(Map.of("mid", "0", "trackName", "user_audio"))
         );
@@ -288,8 +292,9 @@ class CallSessionServiceTest {
         when(userRepository.findById(existingUser.getId())).thenReturn(Optional.of(existingUser));
         when(callSessionRepository.findByIdAndPhoneNumber(session.getId(), existingUser.getPhoneNumber()))
                 .thenReturn(Optional.of(session));
-        when(cloudflareRealtimeClient.createSession(request.toCloudflarePayload()))
-                .thenReturn(cloudflareResponse);
+        when(cloudflareRealtimeClient.createSession()).thenReturn(cloudflareSession);
+        when(cloudflareRealtimeClient.addTracks("cf-app-session-1", request.toCloudflarePayload()))
+                .thenReturn(publishResponse);
         WebrtcOfferResponse response = callSessionService.submitWebrtcOffer(session.getId(), existingUser.getId(), request);
 
         assertThat(response.sessionDescription().get("sdp").toString()).contains("a=end-of-candidates\r\n");
