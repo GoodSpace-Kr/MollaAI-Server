@@ -57,6 +57,11 @@ public class CloudflareRealtimeClient {
         return post("/apps/" + appId + "/sessions/" + realtimeSessionId + "/tracks/new", offerPayload);
     }
 
+    public Map<String, Object> getSessionState(String realtimeSessionId) {
+        ensureConfigured();
+        return get("/apps/" + appId + "/sessions/" + realtimeSessionId);
+    }
+
     public Map<String, Object> renegotiateSession(String realtimeSessionId, Map<String, Object> offerPayload) {
         ensureConfigured();
         Map<String, Object> request = Map.of(
@@ -72,6 +77,28 @@ public class CloudflareRealtimeClient {
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiToken)
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(body)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block();
+            return response.entrySet().stream()
+                    .collect(java.util.stream.Collectors.toMap(
+                            entry -> String.valueOf(entry.getKey()),
+                            Map.Entry::getValue
+                    ));
+        } catch (WebClientResponseException e) {
+            log.error("cloudflare_realtime_request_failed path={} status={} response={}", path, e.getStatusCode(), e.getResponseBodyAsString());
+            throw new GlobalException(ErrorCode.INTERNAL_SERVER_ERROR);
+        } catch (Exception e) {
+            log.error("cloudflare_realtime_request_failed path={} error={}", path, e.getMessage());
+            throw new GlobalException(ErrorCode.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private Map<String, Object> get(String path) {
+        try {
+            Map<?, ?> response = webClient.get()
+                    .uri(path)
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiToken)
                     .retrieve()
                     .bodyToMono(Map.class)
                     .block();
