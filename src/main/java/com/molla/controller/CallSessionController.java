@@ -3,7 +3,6 @@ package com.molla.controller;
 import com.molla.common.response.ApiResponse;
 import com.molla.controller.dto.callsession.CallSessionResponse;
 import com.molla.controller.dto.callsession.EndSessionRequest;
-import com.molla.controller.dto.callsession.StartSessionRequest;
 import com.molla.controller.dto.callsession.WebrtcOfferRequest;
 import com.molla.controller.dto.callsession.WebrtcOfferResponse;
 import com.molla.controller.dto.callsession.WebrtcSubscribeRequest;
@@ -28,34 +27,6 @@ import java.util.List;
 public class CallSessionController {
 
     private final CallSessionService callSessionService;
-//
-//    // ──────────────────────────────────────────────
-//    // 내부 API (AI 오케스트레이션 서버 전용)
-//    // ──────────────────────────────────────────────
-//
-//    @Operation(
-//            summary = "[내부] 통화 세션 시작",
-//            description = """
-//                    AI 오케스트레이션 서버가 통화 연결 시 호출합니다.
-//                    - 전화번호로 유저를 조회하고, 없으면 미가입 유저와 데모 free 구독을 생성합니다.
-//                    - 해당 전화번호의 첫 통화면 level_test, 아니면 practice로 자동 결정합니다.
-//                    - 유저 상태(user_state_at_call) 스냅샷을 저장합니다.
-//                    - 응답에는 현재 활성 구독 정보와 오늘 잔여 통화 시간도 포함됩니다.
-//                    - 이 API는 JWT 인증 없이 호출됩니다 (내부망 전용).
-//                    """
-//    )
-//    @ApiResponses({
-//            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-//                    responseCode = "200", description = "세션 시작 성공",
-//                    content = @Content(schema = @Schema(implementation = CallSessionResponse.class)))
-//    })
-//    @PostMapping("/api/v1/internal/sessions/start")
-//    public ResponseEntity<ApiResponse<CallSessionResponse>> startSession(
-//            @RequestBody @Valid StartSessionRequest request
-//    ) {
-//        CallSessionResponse response = callSessionService.startSession(request);
-//        return ResponseEntity.ok(ApiResponse.success(response));
-//    }
 
     @Operation(
             summary = "[내부] 통화 세션 종료",
