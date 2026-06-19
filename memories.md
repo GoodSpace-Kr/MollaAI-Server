@@ -1,3 +1,12 @@
+## 2026-06-19 - 프론트/앱 WebRTC 연동 문서 추가
+
+- 구분: 문서, 엔드포인트, 메인 로직
+- 변경: 웹 프론트와 앱 개발자가 현재 Cloudflare Realtime SFU 기반 통화 연결을 구현할 수 있도록 `docs/frontend-webrtc-integration.md`를 추가했다. 문서에는 `/api/v1/sessions/start`, `/webrtc/offer`, `/webrtc/tracks`, `/webrtc/subscribe`, `/end`의 요청/응답, WebRTC PeerConnection 순서, track metadata, 디버깅 체크리스트를 정리했다.
+- 영향: 클라이언트 개발자는 앱이 agent control WSS나 Cloudflare REST API에 직접 접근하지 않고, 백엔드 API를 통해 signaling한 뒤 Cloudflare SFU로 media를 보내는 현재 구조를 기준으로 구현할 수 있다.
+- 확인: 문서와 현재 DTO/컨트롤러 대조.
+- 관련 파일: `docs/frontend-webrtc-integration.md`, `docs/dev/webrtc-test.html`, `src/main/java/com/molla/controller/CallSessionController.java`, `src/main/java/com/molla/controller/dto/callsession/*`
+- 비고: 실제 API 동작은 기존 구현을 변경하지 않고 문서만 추가했다.
+
 ## 2026-06-19 - 오래된 WSS 연결 테스트 경로 제거
 
 - 구분: 엔드포인트, 운영, 배포, 문서
