@@ -1,3 +1,12 @@
+## 2026-06-19 - 오래된 WSS 연결 테스트 경로 제거
+
+- 구분: 엔드포인트, 운영, 배포, 문서
+- 변경: 현재 앱-백엔드-오케스트레이터 연결은 `/api/v1/agents/control` agent control WSS와 Cloudflare Realtime SFU WebRTC 흐름을 사용하므로, 예전 outbound 연결 검증용 `/workers/ws` Spring WebSocket 핸들러와 `ws-connectivity-test/` 독립 테스트 도구를 제거했다. `WebSocketConfig`, `SecurityConfig`, Nginx 예시, 배포 문서에서도 `/workers/ws` 안내를 삭제했다. `CallSessionController`에 주석으로 남아 있던 내부 start API 블록도 제거했다.
+- 영향: 운영 WebSocket 경로는 오케스트레이터 상시 연결용 `/api/v1/agents/control`만 남는다. 앱 음성 media는 Cloudflare Realtime WebRTC API와 `/api/v1/sessions/{id}/webrtc/*` API 흐름을 사용한다.
+- 확인: `rg -n "workers/ws|ws-connectivity-test|internal/sessions/start|agent_webrtc_renegotiation_offer" src docs`
+- 관련 파일: `src/main/java/com/molla/config/WebSocketConfig.java`, `src/main/java/com/molla/config/SecurityConfig.java`, `src/main/java/com/molla/config/WorkerWebSocketHandler.java`, `src/test/java/com/molla/config/WorkerWebSocketHandlerTest.java`, `ws-connectivity-test/`, `docs/deploy/nginx.conf`, `docs/deploy/README.md`, `src/main/java/com/molla/controller/CallSessionController.java`
+- 비고: `/api/v1/internal/sessions/{id}/end`는 세션 종료/후처리 경로와 연결되어 있어 이번 연결 정리 범위에서는 유지했다.
+
 ## 2026-06-09 - agent control WSS를 오케스트레이터 상시 연결 구조로 정정
 
 - 구분: 환경변수, 엔드포인트, 인증, 메인 로직
